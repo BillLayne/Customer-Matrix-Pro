@@ -24,6 +24,11 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
   const [gisInfo, setGisInfo] = useState<{ county: string; url: string; note?: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const GOOGLE_DRIVE_CONSTANTS = {
+      agencyEmail: 'docs@billlayneinsurance.com',
+      clientsFolderId: '11O0Cm9gOdgXp_j8OXMO4Pm5tqh18uXd5'
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
@@ -70,9 +75,12 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
       case 'people':
         url = `https://www.truepeoplesearch.com/results?name=${encodeURIComponent(query)}`;
         break;
-      case 'onedrive':
-        url = `https://onedrive.live.com/?id=root&qt=search&q=${encodeURIComponent(query)}&scope=drive`;
+      case 'onedrive': {
+        const clientName = query.trim();
+        const searchQuery = `parent:${GOOGLE_DRIVE_CONSTANTS.clientsFolderId} title:(${clientName})`;
+        url = `https://drive.google.com/drive/search?q=${encodeURIComponent(searchQuery)}&authuser=${GOOGLE_DRIVE_CONSTANTS.agencyEmail}`;
         break;
+      }
     }
     window.open(url, '_blank');
     addToast(`Searching ${mode}...`, 'info');
@@ -108,12 +116,18 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
     }
   };
 
+  const handleNewFolder = () => {
+    const url = `https://drive.google.com/drive/folders/${GOOGLE_DRIVE_CONSTANTS.clientsFolderId}?authuser=${GOOGLE_DRIVE_CONSTANTS.agencyEmail}`;
+    window.open(url, '_blank');
+    addToast('Opening Client folder directory...', 'info');
+  };
+
   const modeButtons: { mode: SearchMode, icon: string, label: string }[] = [
     { mode: 'agency', icon: 'fa-shield-halved', label: 'Agency Matrix' },
     { mode: 'web', icon: 'fa-brands fa-google', label: 'Web Search' },
     { mode: 'realestate', icon: 'fa-solid fa-house', label: 'Real Estate' },
     { mode: 'people', icon: 'fa-solid fa-user', label: 'People' },
-    { mode: 'onedrive', icon: 'fa-solid fa-cloud', label: 'OneDrive' },
+    { mode: 'onedrive', icon: 'fa-brands fa-google-drive', label: 'Client Folder' },
   ];
 
   return (
@@ -159,8 +173,8 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
         <i className="fa-solid fa-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary-light dark:text-text-secondary-dark"></i>
       </div>
       
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <button onClick={handleSearch} className="col-span-2 md:col-span-1 w-full bg-gradient-to-r from-primary to-secondary text-white font-bold py-3 rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <button onClick={handleSearch} className="col-span-2 md:col-span-4 lg:col-span-1 w-full bg-gradient-to-r from-primary to-secondary text-white font-bold py-3 rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
             <i className="fa-solid fa-magnifying-glass"></i> Search
         </button>
         <button onClick={() => window.open("https://agents.agencymatrix.com/#/", "_blank")} className="bg-bg-light dark:bg-card-dark border-2 border-border-light dark:border-border-dark font-semibold py-3 rounded-lg hover:border-secondary dark:hover:border-accent hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
@@ -168,6 +182,9 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
         </button>
         <button onClick={() => window.open("https://agents.agencymatrix.com/customerEdit.php?id=0", "_blank")} className="bg-accent text-white font-bold py-3 rounded-lg shadow-md shadow-accent/30 hover:shadow-lg hover:shadow-accent/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
             <i className="fa-solid fa-user-plus"></i> Add Customer
+        </button>
+        <button onClick={handleNewFolder} className="bg-sky-500 text-white font-bold py-3 rounded-lg shadow-md shadow-sky-500/30 hover:shadow-lg hover:shadow-sky-500/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+            <i className="fa-solid fa-folder-plus"></i> New Folder
         </button>
          {mode === 'realestate' && (
             <button onClick={handleGisSearch} className="bg-gradient-to-br from-green-600 to-green-500 text-white font-bold py-3 rounded-lg shadow-md shadow-green-600/30 hover:shadow-lg hover:shadow-green-600/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">

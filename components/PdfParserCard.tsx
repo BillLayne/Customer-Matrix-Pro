@@ -38,6 +38,7 @@ const FileInput: React.FC<{
 const PdfParserCard: React.FC<PdfParserCardProps> = ({ addToast }) => {
     const [pdfFile1, setPdfFile1] = useState<File | null>(null);
     const [pdfFile2, setPdfFile2] = useState<File | null>(null);
+    const [instructions, setInstructions] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [htmlBody, setHtmlBody] = useState('');
     const [emailSubject, setEmailSubject] = useState('');
@@ -81,6 +82,7 @@ const PdfParserCard: React.FC<PdfParserCardProps> = ({ addToast }) => {
         setEmailSubject('');
         clearPdfFile(1);
         clearPdfFile(2);
+        setInstructions('');
         addToast('Preview cleared.', 'info');
     };
 
@@ -117,7 +119,18 @@ You are an expert insurance analyst and marketing designer for Bill Layne Insura
 4.  Write a summary highlighting the most significant differences (e.g., "Option 2 offers higher liability coverage for a slightly lower premium.").
 5.  Conclude with a professional recommendation or a clear call to action for the client to discuss the options.
 `;
+            const userInstructionsPrompt = instructions.trim()
+                ? `
+**User's Instructions:**
+---
+${instructions.trim()}
+---
+You MUST prioritize and follow these instructions when processing the document(s). For example, if the user asks to combine two quotes, you must create a single, unified document reflecting that combination.
+`
+                : '';
+
             const commonPromptFooter = `
+${userInstructionsPrompt}
 **Output:** You MUST return a single JSON object with two keys:
 1. "subject": A compelling and relevant email subject line.
 2. "htmlBody": The full, self-contained HTML code for the email body.
@@ -131,24 +144,24 @@ You are an expert insurance analyst and marketing designer for Bill Layne Insura
 
 2.  **Branding & Style:**
     *   **Agency:** Bill Layne Insurance Agency Inc.
-    *   **Agency Logo:** Use this URL: \`https://i.imgur.com/uVVShPM.png\` (This is our agency's logo, not a carrier logo).
+    *   **Agency Logo:** Use this URL: \`https://i.imgur.com/O25RJzu.png\` (This is our agency's logo, not a carrier logo).
     *   **Primary Color (Deep Blue):** \`#003366\`
     *   **Accent Color (Golden Yellow):** \`#FFC300\`
     *   **Font:** Use a web-safe font stack like \`'Segoe UI', Inter, Arial, sans-serif\`.
     *   **Visuals:** Use emojis strategically (e.g., 🏡, 🛡️, ⭐, 📋).
 
-3.  **Carrier Logos (Use these when referencing a specific carrier in the document):**
-    *   **Alamance:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Alamance%20Logo.webp?raw=true\`
-    *   **Dairyland:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Dairyland%20Logo.webp?raw=true\`
-    *   **Foremost:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Foremost.webp?raw=true\`
-    *   **Hagerty:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Hagerty.webp?raw=true\`
-    *   **JSA:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/JSA%20LOGO.png?raw=true\`
-    *   **NC Grange:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/NC%20Grange%20Logo.webp?raw=true\`
-    *   **National General:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/National%20General%20Insurance%20Logo.webp?raw=true\`
-    *   **Nationwide:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Nationwide%20Logo%20(1).webp?raw=true\`
-    *   **Progressive:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Progressive%20Logo.webp?raw=true\`
-    *   **Travelers:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Travelers%20Logo.webp?raw=true\`
-    *   **NCJUA:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/ncjua%20LOGO.png?raw=true\`
+3.  **Carrier Logos (Use these Imgur URLs when referencing a specific carrier):**
+    *   **Alamance:** \`https://i.imgur.com/GZPTa01.png\`
+    *   **Dairyland:** \`https://i.imgur.com/Ery1d4W.png\`
+    *   **Foremost:** \`https://i.imgur.com/1BneP2S.png\`
+    *   **Hagerty:** \`https://i.imgur.com/kS5W3aY.png\`
+    *   **JSA:** \`https://i.imgur.com/gKSlO1K.png\`
+    *   **NC Grange:** \`https://i.imgur.com/dO2gT8E.png\`
+    *   **National General:** \`https://i.imgur.com/V7YqM3P.png\`
+    *   **Nationwide:** \`https://i.imgur.com/K3337EV.png\`
+    *   **Progressive:** \`https://i.imgur.com/pYf1LcF.png\`
+    *   **Travelers:** \`https://i.imgur.com/B9421yZ.png\`
+    *   **NCJUA:** \`https://i.imgur.com/9C3VwYp.png\`
 
 4.  **Print Optimization & Content Structure:**
     *   Include print styles: \`<style type="text/css" media="print"> @page { margin: 1in; } .no-break { page-break-inside: avoid; } </style>\`.
@@ -238,8 +251,16 @@ Now, analyze the attached PDF(s) and generate the JSON output.
     const handleEmail = async () => {
         if (!htmlBody) return;
 
+        // Extract content within <body> tag to prevent issues with pasting full HTML documents.
+        // This is a common source of problems when pasting into rich text editors like Gmail.
+        let contentToCopy = htmlBody;
+        const bodyContentMatch = htmlBody.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        if (bodyContentMatch && bodyContentMatch[1]) {
+            contentToCopy = bodyContentMatch[1];
+        }
+
         try {
-            const blob = new Blob([htmlBody], { type: 'text/html' });
+            const blob = new Blob([contentToCopy], { type: 'text/html' });
             // @ts-ignore
             const clipboardItem = new ClipboardItem({ 'text/html': blob });
             // @ts-ignore
@@ -247,16 +268,19 @@ Now, analyze the attached PDF(s) and generate the JSON output.
             addToast('Styled document copied! Paste it into the Gmail window.', 'success');
         } catch (error) {
             console.error('Failed to copy styled HTML to clipboard:', error);
+            // Fallback for browsers that don't support rich text copy.
+            // This copies the raw HTML source code.
             try {
                 await navigator.clipboard.writeText(htmlBody);
                 addToast('Copied document as HTML code. Paste it into the Gmail window.', 'info');
             } catch (copyError) {
                 addToast('Could not copy document automatically. Please copy manually.', 'danger');
+                return; // If both copy methods fail, don't open gmail.
             }
-            return;
         }
     
-        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(emailSubject)}&body=`;
+        // Open Gmail with the subject pre-filled. Remove empty body to keep URL clean.
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(emailSubject)}`;
         
         window.open(gmailUrl, '_blank');
     };
@@ -290,6 +314,15 @@ Now, analyze the attached PDF(s) and generate the JSON output.
                     onFileChange={(e) => handleFileChange(e, 2)}
                     onClear={() => clearPdfFile(2)}
                 />
+                <div>
+                    <label className="text-xs font-semibold text-text-secondary-light dark:text-text-secondary-dark">OPTIONAL INSTRUCTIONS</label>
+                    <textarea
+                        value={instructions}
+                        onChange={(e) => setInstructions(e.target.value)}
+                        placeholder="e.g., Combine these into a single auto/home bundle quote. Highlight the multi-policy discount."
+                        className="w-full h-20 p-2 mt-1 bg-bg-light dark:bg-bg-dark border border-border-light dark:border-border-dark rounded-md text-sm"
+                    />
+                </div>
                 <button 
                     onClick={handleProcessRequest} 
                     disabled={isProcessing || !pdfFile1} 

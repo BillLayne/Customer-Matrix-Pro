@@ -187,24 +187,24 @@ ${finalUserRequest}
 
 2.  **Branding & Style:**
     *   **Agency:** Bill Layne Insurance Agency Inc.
-    *   **Agency Logo:** Use this URL: \`https://i.imgur.com/uVVShPM.png\` (This is our agency's logo, not a carrier logo).
+    *   **Agency Logo:** Use this URL: \`https://i.imgur.com/O25RJzu.png\` (This is our agency's logo, not a carrier logo).
     *   **Primary Color (Deep Blue):** \`#003366\`
     *   **Accent Color (Golden Yellow):** \`#FFC300\`
     *   **Font:** Use a web-safe font stack like \`'Segoe UI', Inter, Arial, sans-serif\`.
     *   **Visuals:** Use emojis strategically (e.g., 🏡, 🛡️, ⭐, 📋).
 
-3.  **Carrier Logos (Use these when referencing a specific carrier in the document):**
-    *   **Alamance:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Alamance%20Logo.webp?raw=true\`
-    *   **Dairyland:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Dairyland%20Logo.webp?raw=true\`
-    *   **Foremost:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Foremost.webp?raw=true\`
-    *   **Hagerty:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Hagerty.webp?raw=true\`
-    *   **JSA:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/JSA%20LOGO.png?raw=true\`
-    *   **NC Grange:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/NC%20Grange%20Logo.webp?raw=true\`
-    *   **National General:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/National%20General%20Insurance%20Logo.webp?raw=true\`
-    *   **Nationwide:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Nationwide%20Logo%20(1).webp?raw=true\`
-    *   **Progressive:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Progressive%20Logo.webp?raw=true\`
-    *   **Travelers:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Travelers%20Logo.webp?raw=true\`
-    *   **NCJUA:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/ncjua%20LOGO.png?raw=true\`
+3.  **Carrier Logos (Use these Imgur URLs when referencing a specific carrier):**
+    *   **Alamance:** \`https://i.imgur.com/GZPTa01.png\`
+    *   **Dairyland:** \`https://i.imgur.com/Ery1d4W.png\`
+    *   **Foremost:** \`https://i.imgur.com/1BneP2S.png\`
+    *   **Hagerty:** \`https://i.imgur.com/kS5W3aY.png\`
+    *   **JSA:** \`https://i.imgur.com/gKSlO1K.png\`
+    *   **NC Grange:** \`https://i.imgur.com/dO2gT8E.png\`
+    *   **National General:** \`https://i.imgur.com/V7YqM3P.png\`
+    *   **Nationwide:** \`https://i.imgur.com/K3337EV.png\`
+    *   **Progressive:** \`https://i.imgur.com/pYf1LcF.png\`
+    *   **Travelers:** \`https://i.imgur.com/B9421yZ.png\`
+    *   **NCJUA:** \`https://i.imgur.com/9C3VwYp.png\`
 
 4.  **Print Optimization:**
     *   Include a \`<style type="text/css" media="print">\` block with rules like \`@page { margin: 1in; }\` and \`.no-break { page-break-inside: avoid; }\`.
@@ -225,7 +225,7 @@ ${finalUserRequest}
         <tr>
             <td style="padding: 16px;">
                 <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                    <tr><td align="center" style="padding: 20px 0;"><img src="https://i.imgur.com/uVVShPM.png" alt="Logo" width="200"></td></tr>
+                    <tr><td align="center" style="padding: 20px 0;"><img src="https://i.imgur.com/O25RJzu.png" alt="Logo" width="200"></td></tr>
                     <tr><td bgcolor="#ffffff" style="padding: 32px; border-top: 8px solid #FFC300; border-radius: 8px; text-align: center;"><p style="font-size: 22px; color: #003366; font-weight: 700;">Hi [Client Name], your document is ready! 📄</p><p style="font-size: 72px; font-weight: 900; color: #FFC300; line-height: 1;">$1,072<span style="font-size: 24px;">/yr</span></p></td></tr>
                     <tr><td height="40"></td></tr>
                     <tr><td bgcolor="#003366" style="padding: 32px; border-radius: 8px; text-align: center;"><h2 style="font-size: 30px; font-weight: 700; color: #ffffff;">Ready to Proceed?</h2><table align="center"><tr><td align="center" style="border-radius: 8px; background-color: #FFC300;"><a href="mailto:bill@billlayneinsurance.com" target="_blank" style="font-size: 18px; font-weight: 700; color: #003366; text-decoration: none; padding: 14px 28px; display: inline-block;">CONTACT US</a></td></tr></table></td></tr>
@@ -338,8 +338,16 @@ Now, fulfill the user's request and generate the JSON output.
     const handleEmail = async () => {
         if (!htmlBody) return;
 
+        // Extract content within <body> tag to prevent issues with pasting full HTML documents.
+        // This is a common source of problems when pasting into rich text editors like Gmail.
+        let contentToCopy = htmlBody;
+        const bodyContentMatch = htmlBody.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        if (bodyContentMatch && bodyContentMatch[1]) {
+            contentToCopy = bodyContentMatch[1];
+        }
+
         try {
-            const blob = new Blob([htmlBody], { type: 'text/html' });
+            const blob = new Blob([contentToCopy], { type: 'text/html' });
             // @ts-ignore
             const clipboardItem = new ClipboardItem({ 'text/html': blob });
             // @ts-ignore
@@ -347,16 +355,19 @@ Now, fulfill the user's request and generate the JSON output.
             addToast('Styled document copied! Paste it into the Gmail window.', 'success');
         } catch (error) {
             console.error('Failed to copy styled HTML to clipboard:', error);
+            // Fallback for browsers that don't support rich text copy.
+            // This copies the raw HTML source code.
             try {
                 await navigator.clipboard.writeText(htmlBody);
                 addToast('Copied document as HTML code. Paste it into the Gmail window.', 'info');
             } catch (copyError) {
                 addToast('Could not copy document automatically. Please copy manually.', 'danger');
+                return; // If both copy methods fail, don't open gmail.
             }
-            return;
         }
     
-        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(emailSubject)}&body=`;
+        // Open Gmail with the subject pre-filled. Remove empty body to keep URL clean.
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(emailSubject)}`;
         
         window.open(gmailUrl, '_blank');
     };

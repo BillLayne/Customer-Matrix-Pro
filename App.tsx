@@ -11,6 +11,7 @@ import type { ToastMessage } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import NeedsAnalysisCard from './components/NeedsAnalysisCard';
 import PdfParserCard from './components/PdfParserCard';
+import QuoteAssistantCard from './components/QuoteAssistantCard';
 
 export default function App() {
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
@@ -59,6 +60,7 @@ export default function App() {
       <main className="mt-5 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
         <div className="flex flex-col gap-5">
           <SearchCard addToast={addToast} searchCount={searchCount} onSearch={() => setSearchCount(prev => prev + 1)} />
+          <QuoteAssistantCard addToast={addToast} />
           <PortalsCard addToast={addToast} />
           <PdfParserCard addToast={addToast} />
         </div>

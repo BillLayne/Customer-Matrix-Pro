@@ -15,7 +15,7 @@ export const MODE_META: Record<SearchMode, { placeholder: string; showTax: boole
   web: { placeholder:"Search the web…", showTax:false },
   realestate: { placeholder:"Enter full address (City, NC, County)…", showTax:true },
   people: { placeholder:"Enter name, phone, or address…", showTax:false },
-  onedrive: { placeholder:"Search OneDrive files…", showTax:false }
+  onedrive: { placeholder:"Search Client Folder by name…", showTax:false }
 };
 
 export const NC_COUNTY_GIS_DATA: Record<string, { name: string; url: string; note?: string }> = {
