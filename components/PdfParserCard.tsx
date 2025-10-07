@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 
@@ -143,29 +142,32 @@ ${userInstructionsPrompt}
     *   Ensure the design is responsive and looks great on mobile devices, with a main content wrapper of \`max-width: 600px;\`.
 
 2.  **Branding & Style:**
-    *   **Agency:** Bill Layne Insurance Agency Inc.
-    *   **Agency Logo:** Use this URL: \`https://i.imgur.com/O25RJzu.png\` (This is our agency's logo, not a carrier logo).
+    *   **Agency:** Bill Layne Insurance Agency
+    *   **Agency Logos:**
+        *   **For light backgrounds:** \`https://i.imgur.com/O25RJzu.png\`
+        *   **For dark backgrounds:** \`https://i.imgur.com/qoWnvrv.png\` (white text version)
     *   **Primary Color (Deep Blue):** \`#003366\`
     *   **Accent Color (Golden Yellow):** \`#FFC300\`
     *   **Font:** Use a web-safe font stack like \`'Segoe UI', Inter, Arial, sans-serif\`.
     *   **Visuals:** Use emojis strategically (e.g., 🏡, 🛡️, ⭐, 📋).
 
-3.  **Carrier Logos (Use these Imgur URLs when referencing a specific carrier):**
-    *   **Alamance:** \`https://i.imgur.com/GZPTa01.png\`
-    *   **Dairyland:** \`https://i.imgur.com/Ery1d4W.png\`
-    *   **Foremost:** \`https://i.imgur.com/1BneP2S.png\`
-    *   **Hagerty:** \`https://i.imgur.com/kS5W3aY.png\`
-    *   **JSA:** \`https://i.imgur.com/gKSlO1K.png\`
-    *   **NC Grange:** \`https://i.imgur.com/dO2gT8E.png\`
-    *   **National General:** \`https://i.imgur.com/V7YqM3P.png\`
-    *   **Nationwide:** \`https://i.imgur.com/K3337EV.png\`
-    *   **Progressive:** \`https://i.imgur.com/pYf1LcF.png\`
-    *   **Travelers:** \`https://i.imgur.com/B9421yZ.png\`
-    *   **NCJUA:** \`https://i.imgur.com/9C3VwYp.png\`
+3.  **Carrier Logos (Use these URLs when referencing a specific carrier):**
+    *   **Alamance:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Alamance%20Logo.webp?raw=true\`
+    *   **Dairyland:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Dairyland%20Logo.webp?raw=true\`
+    *   **Foremost:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Foremost.webp?raw=true\`
+    *   **Hagerty:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Hagerty.webp?raw=true\`
+    *   **JSA:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/JSA%20LOGO.png?raw=true\`
+    *   **NC Grange:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/NC%20Grange%20Logo.webp?raw=true\`
+    *   **National General:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/National%20General%20Insurance%20Logo.webp?raw=true\`
+    *   **Nationwide:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Nationwide%20Logo%20(1).webp?raw=true\`
+    *   **Progressive:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Progressive%20Logo.webp?raw=true\`
+    *   **Travelers:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Travelers%20Logo.webp?raw=true\`
+    *   **NCJUA:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/ncjua%20LOGO.png?raw=true\`
 
 4.  **Print Optimization & Content Structure:**
     *   Include print styles: \`<style type="text/css" media="print"> @page { margin: 1in; } .no-break { page-break-inside: avoid; } </style>\`.
-    *   Structure the content logically with a Hero Section, Details, a clear Call to Action, and a branded Footer with agency contact info. For comparisons, use a two-column table.
+    *   Structure the content logically with a Hero Section, Details, a clear Call to Action, and a branded Footer with this exact agency contact info: Bill Layne Insurance Agency, 1283 N Bridge ST, Elkin NC 28621, Phone: 336-835-1993, Email: save@billlayneinsurance.com, Website: BillLayneInsurance.com. For comparisons, use a two-column table.
+    *   **IMPORTANT:** When using a header, include the appropriate agency logo based on the background color.
 
 Now, analyze the attached PDF(s) and generate the JSON output.
 `;

@@ -4,7 +4,6 @@ import Header from './components/Header';
 import SearchCard from './components/SearchCard';
 import PortalsCard from './components/PortalsCard';
 import QuickActions from './components/QuickActions';
-import Favorites from './components/Favorites';
 import AiAssistant from './components/AiAssistant';
 import Toast from './components/Toast';
 import type { ToastMessage } from './types';
@@ -12,6 +11,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import NeedsAnalysisCard from './components/NeedsAnalysisCard';
 import PdfParserCard from './components/PdfParserCard';
 import QuoteAssistantCard from './components/QuoteAssistantCard';
+import TaskMatrixCard from './components/TaskMatrixCard';
 
 export default function App() {
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
@@ -63,11 +63,11 @@ export default function App() {
           <QuoteAssistantCard addToast={addToast} />
           <PortalsCard addToast={addToast} />
           <PdfParserCard addToast={addToast} />
+          <TaskMatrixCard addToast={addToast} />
         </div>
         <aside className="flex flex-col gap-5">
           <QuickActions />
           <NeedsAnalysisCard addToast={addToast} />
-          <Favorites addToast={addToast} />
           {showAiAssistant && <AiAssistant addToast={addToast} />}
         </aside>
       </main>

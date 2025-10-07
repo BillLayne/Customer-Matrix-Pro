@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 
@@ -54,7 +53,7 @@ ${quoteNotes}
     *   **Client Summary:** A section with the organized client data you extracted.
     *   **Recommended Enhancements:** The section with your upsell analysis and explanations.
     *   **Next Steps:** A brief note for the agent (e.g., "Proceed with quoting these carriers...").
-    *   **Footer:** Agency branding and contact information. This is acceptable at the bottom of the last page.
+    *   **Footer:** A branded footer with this exact agency contact information: Bill Layne Insurance Agency, 1283 N Bridge ST, Elkin NC 28621, Phone: 336-835-1993, Email: save@billlayneinsurance.com, Website: BillLayneInsurance.com. This is acceptable at the bottom of the last page.
 *   **Print Optimization:**
     *   To ensure the document prints correctly on letterhead, include this exact style block inside the HTML's \`<head>\`: \`<style type="text/css" media="print"> @page { size: letter; margin: 1in; } body { -webkit-print-color-adjust: exact; color-adjust: exact; } .no-break { page-break-inside: avoid !important; } </style>\`.
     *   Wrap each major section (e.g., the entire "Client Summary" table, each item in "Recommended Coverage Enhancements") in a container (like a \`<tr>\` or a wrapper table) with \`class="no-break"\` to prevent them from being split across pages during printing.
@@ -63,18 +62,18 @@ ${quoteNotes}
 *   **Agency Logo:** Do NOT use the agency logo.
 *   **Primary Color (Deep Blue):** \`#003366\`
 *   **Accent Color (Golden Yellow):** \`#FFC300\`
-*   **Carrier Logos (Use these Imgur URLs when referencing a specific carrier):**
-    *   **Alamance:** \`https://i.imgur.com/GZPTa01.png\`
-    *   **Dairyland:** \`https://i.imgur.com/Ery1d4W.png\`
-    *   **Foremost:** \`https://i.imgur.com/1BneP2S.png\`
-    *   **Hagerty:** \`https://i.imgur.com/kS5W3aY.png\`
-    *   **JSA:** \`https://i.imgur.com/gKSlO1K.png\`
-    *   **NC Grange:** \`https://i.imgur.com/dO2gT8E.png\`
-    *   **National General:** \`https://i.imgur.com/V7YqM3P.png\`
-    *   **Nationwide:** \`https://i.imgur.com/K3337EV.png\`
-    *   **Progressive:** \`https://i.imgur.com/pYf1LcF.png\`
-    *   **Travelers:** \`https://i.imgur.com/B9421yZ.png\`
-    *   **NCJUA:** \`https://i.imgur.com/9C3VwYp.png\`
+*   **Carrier Logos (Use these URLs when referencing a specific carrier):**
+    *   **Alamance:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Alamance%20Logo.webp?raw=true\`
+    *   **Dairyland:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Dairyland%20Logo.webp?raw=true\`
+    *   **Foremost:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Foremost.webp?raw=true\`
+    *   **Hagerty:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Hagerty.webp?raw=true\`
+    *   **JSA:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/JSA%20LOGO.png?raw=true\`
+    *   **NC Grange:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/NC%20Grange%20Logo.webp?raw=true\`
+    *   **National General:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/National%20General%20Insurance%20Logo.webp?raw=true\`
+    *   **Nationwide:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Nationwide%20Logo%20(1).webp?raw=true\`
+    *   **Progressive:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Progressive%20Logo.webp?raw=true\`
+    *   **Travelers:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Travelers%20Logo.webp?raw=true\`
+    *   **NCJUA:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/ncjua%20LOGO.png?raw=true\`
 
 Now, analyze the user's notes and generate the JSON output.
 `;
@@ -150,7 +149,7 @@ Now, analyze the user's notes and generate the JSON output.
             printWindow.focus();
             printWindow.print();
         } else {
-            addToast('Could not open print window.', 'warning');
+            addToast('Could not open print window. Please check your browser settings.', 'warning');
         }
     };
 

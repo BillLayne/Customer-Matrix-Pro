@@ -71,5 +71,7 @@ export const CARRIER_CONTEXTS: Record<string, string> = {
   nationwide: "\n\nCarrier Context: Nationwide Insurance\n- On Your Side® commitment\n- Vanishing deductible options\n- Brand New Belongings®\n- Accident forgiveness\n- SmartRide® discount program",
   progressive: "\n\nCarrier Context: Progressive Insurance\n- Name Your Price® tool\n- Snapshot® program\n- Bundle discounts\n- 24/7 claims service\n- Gap coverage available",
   alamance: "\n\nCarrier Context: Alamance Insurance\n- North Carolina mutual company\n- Focus on homeowners and farm insurance\n- Local claims handling\n- Competitive rates for rural properties",
-  foremost: "\n\nCarrier Context: Foremost Insurance\n- Specializes in manufactured/mobile homes\n- Vacant property coverage\n- Seasonal homes\n- Landlord/rental property options"
+  foremost: "\n\nCarrier Context: Foremost Insurance\n- Specializes in manufactured/mobile homes\n- Vacant property coverage\n- Seasonal homes\n- Landlord/rental property options",
+  "national-general": "\n\nCarrier Context: National General\n- Part of the Allstate family\n- Offers a wide range of products including Auto, Home, and RV\n- Formerly known as GMAC Insurance",
+  "nc-grange": "\n\nCarrier Context: NC Grange Mutual\n- Serving North Carolina residents\n- Focus on farm, home, and auto insurance\n- Member-owned mutual insurance company\n- Partnership with local, independent agents"
 };

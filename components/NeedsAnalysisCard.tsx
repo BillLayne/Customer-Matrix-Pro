@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import Modal from './Modal';
-import { generateContentStream } from '../services/geminiService';
+import { GoogleGenAI, Type } from "@google/genai";
 
 interface NeedsAnalysisCardProps {
     addToast: (message: string, type?: 'success' | 'warning' | 'danger' | 'info') => void;
@@ -18,7 +17,8 @@ const NeedsAnalysisCard: React.FC<NeedsAnalysisCardProps> = ({ addToast }) => {
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
     const [clientNotes, setClientNotes] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [questionnaire, setQuestionnaire] = useState('');
+    const [analysisHtml, setAnalysisHtml] = useState('');
+    const [analysisSubject, setAnalysisSubject] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const toggleType = (id: string) => {
@@ -33,48 +33,133 @@ const NeedsAnalysisCard: React.FC<NeedsAnalysisCardProps> = ({ addToast }) => {
             return;
         }
         setIsLoading(true);
-        setQuestionnaire('');
+        setAnalysisHtml('');
+        setAnalysisSubject('');
+        setIsModalOpen(true);
         
         const prompt = `
-You are an expert insurance agent at Bill Layne Insurance Agency. Your task is to generate a friendly and comprehensive questionnaire for a potential new client to gather the necessary information for an insurance quote.
+You are an expert insurance agent at Bill Layne Insurance Agency. Your task is to generate a friendly, engaging, and comprehensive questionnaire for a potential new client. The output MUST be a beautifully designed, mobile-optimized, and Gmail-compatible HTML email.
 
 The client is interested in the following types of insurance: ${selectedTypes.join(', ')}.
 
 Here are some initial notes about the client:
+---
 ${clientNotes || 'No initial notes provided.'}
+---
 
-Please create a questionnaire that is easy for a client to understand and fill out. Group questions by insurance type. For each type, ask for all the critical information needed to provide an accurate quote.
+**Your Goal:**
+Create a questionnaire that is welcoming and easy for a client to complete. It should gather all the critical information needed to provide an accurate quote.
 
-For Auto insurance, ask about all drivers (name, DOB, license #), all vehicles (year, make, model, VIN), driving history (accidents, violations in past 5 years), and current insurance carrier if any.
-For Home insurance, ask about the property address, year built, construction type (brick, frame), square footage, roof age, security systems, any pets (breed), and any valuable personal property.
-For Life insurance, ask about the client's date of birth, gender, height, weight, health status (including smoking history), occupation, income, and any dependents.
-For Commercial insurance, ask about the business name, address, type of business, number of employees, annual revenue, and any specific risks associated with the business operations.
+**Content & Tone Requirements:**
+*   **Engaging Language:** Use a friendly, conversational tone. Use emojis strategically to break up text and make the form feel less intimidating (e.g., 🚗 for Auto, 🏠 for Home, ❤️ for Life, 🏢 for Commercial).
+*   **Clear Sections:** Group questions by insurance type with clear, friendly headings.
+*   **Comprehensive Questions:**
+    *   **Auto 🚗:** Ask for all drivers (name, DOB, license #), all vehicles (year, make, model, VIN), driving history (accidents/violations in past 5 years), and current insurance.
+    *   **Home 🏠:** Ask about property address, year built, construction, square footage, roof age, security systems, pets (especially dog breeds), and any valuable personal property.
+    *   **Life ❤️:** Ask about DOB, gender, height/weight, health status (including smoking), occupation, income, and dependents.
+    *   **Commercial 🏢:** Ask about business name, address, type, number of employees, annual revenue, and specific risks.
+*   **Introduction & Conclusion:** Start with a warm welcome and end with a "Thank you" and "Next Steps" section.
 
-Start with a friendly introduction ("Hello! To help us find the best insurance coverage for your needs...") and end with a concluding remark ("Thank you for providing this information! We'll be in touch shortly with your personalized quotes."). Format the output clearly with headings and lists.
+**Output:** You MUST return a single JSON object with two keys:
+1. "subject": A friendly and clear email subject line (e.g., "A Few Quick Questions for Your Insurance Quote!").
+2. "htmlBody": The full, self-contained HTML code for the email body.
+
+**HTML Requirements (CRITICAL):**
+*   Follow all branding and technical guidelines (table-based layout, inline CSS, responsive design, primary color #003366, accent color #FFC300).
+*   **Agency Logos:**
+    *   **For light backgrounds:** \`https://i.imgur.com/O25RJzu.png\`
+    *   **For dark backgrounds:** \`https://i.imgur.com/qoWnvrv.png\` (white text version)
+*   Include the appropriate agency logo at the top, depending on your header design's background color.
+*   Include the full agency contact information in the footer: Bill Layne Insurance Agency, 1283 N Bridge ST, Elkin NC 28621, Phone: 336-835-1993, Email: save@billlayneinsurance.com, Website: BillLayneInsurance.com.
+*   Make input fields visually clear, even though they won't be functional in an email. Use styled divs or tables to look like a form.
+
+Now, create the questionnaire based on the client's needs and generate the JSON output.
         `;
 
         try {
-            const stream = await generateContentStream(prompt);
-            setIsModalOpen(true);
-            for await (const chunk of stream) {
-                setQuestionnaire(prev => prev + chunk.text);
+            const API_KEY = process.env.API_KEY;
+            if (!API_KEY) throw new Error("API key not found.");
+            const ai = new GoogleGenAI({ apiKey: API_KEY });
+            
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            subject: { type: Type.STRING },
+                            htmlBody: { type: Type.STRING }
+                        },
+                        required: ['subject', 'htmlBody']
+                    }
+                }
+            });
+
+            if (!response.text) {
+                 throw new Error("Content generation failed: Empty response from AI.");
             }
+
+            const parsedResult = JSON.parse(response.text);
+
+            if (!parsedResult.subject || !parsedResult.htmlBody) {
+                throw new Error('AI response did not match the required format.');
+            }
+        
+            setAnalysisHtml(parsedResult.htmlBody);
+            setAnalysisSubject(parsedResult.subject);
+            addToast('Questionnaire generated successfully!', 'success');
+
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-            addToast(errorMessage, 'danger');
+            addToast(`Generation failed: ${errorMessage}`, 'danger');
             setIsModalOpen(false);
         } finally {
             setIsLoading(false);
         }
     };
-
-    const handleCopy = () => {
-        if (!questionnaire) {
+    
+    const handleCopy = async () => {
+        if (!analysisHtml) {
             addToast('Nothing to copy.', 'warning');
             return;
         }
-        navigator.clipboard.writeText(questionnaire);
-        addToast('Questionnaire copied to clipboard!', 'success');
+        try {
+            let contentToCopy = analysisHtml;
+            const bodyContentMatch = analysisHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+            if (bodyContentMatch && bodyContentMatch[1]) {
+                contentToCopy = bodyContentMatch[1];
+            }
+            const blob = new Blob([contentToCopy], { type: 'text/html' });
+            // @ts-ignore
+            const clipboardItem = new ClipboardItem({ 'text/html': blob });
+            // @ts-ignore
+            await navigator.clipboard.write([clipboardItem]);
+            addToast('Questionnaire copied to clipboard!', 'success');
+        } catch (error) {
+            addToast('Could not copy automatically.', 'danger');
+        }
+    };
+    
+    const handlePrint = () => {
+        if (!analysisHtml) return;
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(analysisHtml);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+        } else {
+            addToast('Could not open print window.', 'warning');
+        }
+    };
+
+    const handleEmail = async () => {
+        if (!analysisHtml) return;
+        await handleCopy();
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(analysisSubject)}`;
+        window.open(gmailUrl, '_blank');
     };
 
     return (
@@ -129,26 +214,34 @@ Start with a friendly introduction ("Hello! To help us find the best insurance c
                     </button>
                 </div>
             </div>
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Generated Client Questionnaire">
-                {questionnaire ? (
-                    <div>
-                        <div className="bg-bg-light dark:bg-bg-dark border border-border-light dark:border-border-dark rounded-md p-4 max-h-96 overflow-y-auto mb-4">
-                           <pre className="text-sm text-text-light dark:text-text-dark font-sans whitespace-pre-wrap break-words">
-                                {questionnaire}
-                            </pre>
-                        </div>
-                        <button
-                            onClick={handleCopy}
-                            className="w-full bg-primary text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
-                        >
-                            <i className="fa-solid fa-copy"></i> Copy to Clipboard
-                        </button>
-                    </div>
-                ) : (
-                     <div className="flex flex-col items-center justify-center h-48 text-text-secondary-light dark:text-text-secondary-dark">
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={analysisSubject || "Generated Client Questionnaire"}>
+                {isLoading && !analysisHtml ? (
+                     <div className="flex flex-col items-center justify-center h-96 text-text-secondary-light dark:text-text-secondary-dark">
                         <i className="fa-solid fa-spinner fa-spin text-3xl mb-4"></i>
                         <p className="font-semibold">Generating your questionnaire...</p>
                         <p className="text-xs mt-1">This may take a moment.</p>
+                    </div>
+                ) : (
+                    <div>
+                        <div className="w-full h-96 bg-white dark:bg-bg-dark border border-border-light dark:border-border-dark rounded-md overflow-hidden mb-4">
+                            <iframe
+                                srcDoc={analysisHtml}
+                                title="Generated Client Questionnaire"
+                                className="w-full h-full border-0"
+                                sandbox="allow-same-origin"
+                            />
+                        </div>
+                        <div className="flex items-center justify-end gap-2">
+                             <button onClick={handleCopy} title="Copy HTML" className="px-3 py-1.5 text-xs bg-card-light dark:bg-card-dark rounded border border-border-light dark:border-border-dark hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center gap-1.5">
+                               <i className="fa-solid fa-copy"></i> <span className="hidden sm:inline">Copy</span>
+                            </button>
+                            <button onClick={handlePrint} title="Print" className="px-3 py-1.5 text-xs bg-card-light dark:bg-card-dark rounded border border-border-light dark:border-border-dark hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center gap-1.5">
+                               <i className="fa-solid fa-print"></i> <span className="hidden sm:inline">Print</span>
+                            </button>
+                            <button onClick={handleEmail} title="Email" className="px-3 py-1.5 text-xs bg-card-light dark:bg-card-dark rounded border border-border-light dark:border-border-dark hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center gap-1.5">
+                               <i className="fa-solid fa-envelope"></i> <span className="hidden sm:inline">Email</span>
+                            </button>
+                        </div>
                     </div>
                 )}
             </Modal>

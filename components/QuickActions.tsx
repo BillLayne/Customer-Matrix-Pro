@@ -18,6 +18,9 @@ const QuickButton: React.FC<{ title: string; desc: string; icon: string; url: st
 
 const QuickActions: React.FC = () => {
   const actions = [
+    { title: "Social Media Composer", desc: "Craft posts for social platforms", icon: "fa-solid fa-share-nodes", url: "https://aistudio.google.com/u/0/apps/drive/1RB3_0--C1TkvUeMunl6o6OcU9wm2Os0m?showPreview=true&showAssistant=true", color: "bg-gradient-to-br from-orange-600 to-orange-500" },
+    { title: "New Business Followup", desc: "Draft follow-up emails for leads", icon: "fa-solid fa-user-plus", url: "https://aistudio.google.com/u/2/apps/drive/1k8WpG5vdFJhZJp_UORoFh7GI1sxwrBFj?showPreview=true&showAssistant=true&resourceKey=", color: "bg-gradient-to-br from-teal-600 to-teal-500" },
+    { title: "Email Composer", desc: "General purpose email drafting", icon: "fa-solid fa-envelope-open-text", url: "https://aistudio.google.com/u/2/apps/drive/1pHGvEjfpAiNNsoBD9tsV3jWP5G9KdBYf?showPreview=true&showAssistant=true", color: "bg-gradient-to-br from-indigo-600 to-indigo-500" },
     { title: "Create PDF Document", desc: "Claude PDF generator project", icon: "fa-solid fa-file-pdf", url: "https://claude.ai/project/01993948-a57c-7166-ae81-c547e60fe8fa", color: "bg-gradient-to-br from-red-600 to-red-500" },
     { title: "Home Address Research", desc: "Property & address analysis", icon: "fa-solid fa-house-chimney-user", url: "https://claude.ai/project/0198f624-8a25-73be-a9e1-98389bc44b2c", color: "bg-gradient-to-br from-green-600 to-green-500" },
     { title: "Auto Quote Template", desc: "Generate auto insurance quotes", icon: "fa-solid fa-car", url: "https://claude.ai/project/0197c35a-7c70-72f7-8d5c-83df3286f0a4", color: "bg-gradient-to-br from-purple-600 to-purple-500" },
@@ -31,7 +34,7 @@ const QuickActions: React.FC = () => {
           <i className="fa-solid fa-bolt text-primary dark:text-accent mr-2"></i>
           Quick AI Actions
         </span>
-        <span className="text-xs font-bold uppercase bg-gradient-to-r from-primary to-secondary text-white px-2 py-0.5 rounded-full">Claude</span>
+        <span className="text-xs font-bold uppercase bg-gradient-to-r from-primary to-secondary text-white px-2 py-0.5 rounded-full">AI Studio</span>
       </h3>
       <div className="flex flex-col gap-2">
         {actions.map(action => (

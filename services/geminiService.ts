@@ -14,9 +14,10 @@ const SYSTEM_INSTRUCTION = `Act as an expert insurance agent for Bill Layne Insu
 Our agency's key carriers are: Nationwide, Progressive, National General, Alamance, Foremost, Travelers, and NC Grange.
 When drafting communications, use our contact info:
 Bill Layne Insurance Agency
-1283 N Bridge St, Elkin NC 28621
+1283 N Bridge ST, Elkin NC 28621
 Phone: 336-835-1993
-Email: Save@BillLayneInsurance.com
+Email: save@billlayneinsurance.com
+Website: BillLayneInsurance.com
 
 Always provide concise, accurate, and actionable information tailored to the user's request. Format complex information in tables or lists for clarity.`;
 
@@ -57,5 +58,21 @@ export const generateContentStream = async (prompt: string) => {
   } catch (error) {
     console.error("Error generating content from Gemini:", error);
     throw new Error("Failed to get response from AI assistant.");
+  }
+};
+
+export const generateTextMessage = async (prompt: string) => {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        systemInstruction: "You are a friendly and professional insurance agent's assistant. You generate short, engaging text messages for clients. Use emojis where appropriate. The message must be concise, clear, and ready to be sent as an SMS.",
+      }
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Error generating text message from Gemini:", error);
+    throw new Error("Failed to get response from AI text message assistant.");
   }
 };

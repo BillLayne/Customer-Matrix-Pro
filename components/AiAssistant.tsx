@@ -1,10 +1,10 @@
-
 import React, { useState, useRef } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { PROMPT_TEMPLATES, CARRIER_CONTEXTS } from '../constants';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { CustomContext } from '../types';
 import Modal from './Modal';
+import { generateTextMessage } from '../services/geminiService';
 
 interface AiAssistantProps {
     addToast: (message: string, type?: 'success' | 'warning' | 'danger' | 'info') => void;
@@ -25,6 +25,11 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast }) => {
 
     const [pdfFile, setPdfFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // State for Text Message Assistant
+    const [textGenPrompt, setTextGenPrompt] = useState('');
+    const [isGeneratingText, setIsGeneratingText] = useState(false);
+    const [generatedTextMessage, setGeneratedTextMessage] = useState('');
 
     const fileToBase64 = (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {
@@ -135,6 +140,38 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast }) => {
         addToast('Context removed.', 'success');
     };
 
+    const handleGenerateTextMessage = async () => {
+        if (!textGenPrompt.trim()) {
+            addToast('Please enter a prompt for the text message.', 'warning');
+            return;
+        }
+        setIsGeneratingText(true);
+        setGeneratedTextMessage('');
+        try {
+            const result = await generateTextMessage(textGenPrompt);
+            if (!result) {
+                throw new Error("AI returned an empty message.");
+            }
+            setGeneratedTextMessage(result);
+            addToast('Text message generated!', 'success');
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+            addToast(errorMessage, 'danger');
+        } finally {
+            setIsGeneratingText(false);
+        }
+    };
+
+    const handleCopyTextMessage = () => {
+        if (!generatedTextMessage) {
+            addToast('Nothing to copy.', 'warning');
+            return;
+        }
+        navigator.clipboard.writeText(generatedTextMessage)
+            .then(() => addToast('Message copied to clipboard!', 'success'))
+            .catch(() => addToast('Failed to copy message.', 'danger'));
+    };
+
     const handleGenerate = async () => {
         if (!prompt.trim() && !pdfFile) {
             addToast('Please enter data or upload a PDF.', 'warning');
@@ -186,36 +223,39 @@ ${finalUserRequest}
     *   Ensure the design is responsive and looks great on mobile devices, with a main content wrapper of \`max-width: 600px;\`.
 
 2.  **Branding & Style:**
-    *   **Agency:** Bill Layne Insurance Agency Inc.
-    *   **Agency Logo:** Use this URL: \`https://i.imgur.com/O25RJzu.png\` (This is our agency's logo, not a carrier logo).
+    *   **Agency:** Bill Layne Insurance Agency
+    *   **Agency Logos:**
+        *   **For light backgrounds:** \`https://i.imgur.com/O25RJzu.png\`
+        *   **For dark backgrounds:** \`https://i.imgur.com/qoWnvrv.png\` (white text version)
     *   **Primary Color (Deep Blue):** \`#003366\`
     *   **Accent Color (Golden Yellow):** \`#FFC300\`
     *   **Font:** Use a web-safe font stack like \`'Segoe UI', Inter, Arial, sans-serif\`.
     *   **Visuals:** Use emojis strategically (e.g., 🏡, 🛡️, ⭐, 📋).
 
-3.  **Carrier Logos (Use these Imgur URLs when referencing a specific carrier):**
-    *   **Alamance:** \`https://i.imgur.com/GZPTa01.png\`
-    *   **Dairyland:** \`https://i.imgur.com/Ery1d4W.png\`
-    *   **Foremost:** \`https://i.imgur.com/1BneP2S.png\`
-    *   **Hagerty:** \`https://i.imgur.com/kS5W3aY.png\`
-    *   **JSA:** \`https://i.imgur.com/gKSlO1K.png\`
-    *   **NC Grange:** \`https://i.imgur.com/dO2gT8E.png\`
-    *   **National General:** \`https://i.imgur.com/V7YqM3P.png\`
-    *   **Nationwide:** \`https://i.imgur.com/K3337EV.png\`
-    *   **Progressive:** \`https://i.imgur.com/pYf1LcF.png\`
-    *   **Travelers:** \`https://i.imgur.com/B9421yZ.png\`
-    *   **NCJUA:** \`https://i.imgur.com/9C3VwYp.png\`
+3.  **Carrier Logos (Use these URLs when referencing a specific carrier):**
+    *   **Alamance:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Alamance%20Logo.webp?raw=true\`
+    *   **Dairyland:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Dairyland%20Logo.webp?raw=true\`
+    *   **Foremost:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Foremost.webp?raw=true\`
+    *   **Hagerty:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Hagerty.webp?raw=true\`
+    *   **JSA:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/JSA%20LOGO.png?raw=true\`
+    *   **NC Grange:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/NC%20Grange%20Logo.webp?raw=true\`
+    *   **National General:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/National%20General%20Insurance%20Logo.webp?raw=true\`
+    *   **Nationwide:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Nationwide%20Logo%20(1).webp?raw=true\`
+    *   **Progressive:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Progressive%20Logo.webp?raw=true\`
+    *   **Travelers:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/Travelers%20Logo.webp?raw=true\`
+    *   **NCJUA:** \`https://github.com/BillLayne/bill-layne-images/blob/main/logos/ncjua%20LOGO.png?raw=true\`
 
 4.  **Print Optimization:**
     *   Include a \`<style type="text/css" media="print">\` block with rules like \`@page { margin: 1in; }\` and \`.no-break { page-break-inside: avoid; }\`.
     *   Apply the \`no-break\` class to important elements like coverage sections.
 
 5.  **Content Structure (Adapt based on the request):**
+    *   **Header:** If you create a header, use the appropriate agency logo based on the background color.
     *   **Hero Section:** Highlight the most important information.
     *   **Detailed Sections:** Clearly labeled sections for coverages, comparisons, etc.
     *   **Trust Builders:** Include sections about our agency.
     *   **Call to Action (CTA):** A clear "Next Steps" section if applicable.
-    *   **Footer:** Agency contact information and a disclaimer.
+    *   **Footer:** A branded footer with this exact agency contact information: Bill Layne Insurance Agency, 1283 N Bridge ST, Elkin NC 28621, Phone: 336-835-1993, Email: save@billlayneinsurance.com, Website: BillLayneInsurance.com. Also include a disclaimer.
 
 **Inspiration - Use this as your primary style guide for quotes/proposals:**
 <!DOCTYPE html>
@@ -228,9 +268,9 @@ ${finalUserRequest}
                     <tr><td align="center" style="padding: 20px 0;"><img src="https://i.imgur.com/O25RJzu.png" alt="Logo" width="200"></td></tr>
                     <tr><td bgcolor="#ffffff" style="padding: 32px; border-top: 8px solid #FFC300; border-radius: 8px; text-align: center;"><p style="font-size: 22px; color: #003366; font-weight: 700;">Hi [Client Name], your document is ready! 📄</p><p style="font-size: 72px; font-weight: 900; color: #FFC300; line-height: 1;">$1,072<span style="font-size: 24px;">/yr</span></p></td></tr>
                     <tr><td height="40"></td></tr>
-                    <tr><td bgcolor="#003366" style="padding: 32px; border-radius: 8px; text-align: center;"><h2 style="font-size: 30px; font-weight: 700; color: #ffffff;">Ready to Proceed?</h2><table align="center"><tr><td align="center" style="border-radius: 8px; background-color: #FFC300;"><a href="mailto:bill@billlayneinsurance.com" target="_blank" style="font-size: 18px; font-weight: 700; color: #003366; text-decoration: none; padding: 14px 28px; display: inline-block;">CONTACT US</a></td></tr></table></td></tr>
+                    <tr><td bgcolor="#003366" style="padding: 32px; border-radius: 8px; text-align: center;"><h2 style="font-size: 30px; font-weight: 700; color: #ffffff;">Ready to Proceed?</h2><table align="center"><tr><td align="center" style="border-radius: 8px; background-color: #FFC300;"><a href="mailto:save@billlayneinsurance.com" target="_blank" style="font-size: 18px; font-weight: 700; color: #003366; text-decoration: none; padding: 14px 28px; display: inline-block;">CONTACT US</a></td></tr></table></td></tr>
                     <tr><td height="40"></td></tr>
-                    <tr><td bgcolor="#1f2937" style="padding: 24px; text-align: center; color: #ffffff; border-radius: 8px;"><h3 style="font-size: 20px;">Your Agent: Bill Layne</h3><p>Bill Layne Insurance Agency Inc.</p><p style="color: #d1d5db;">1283 N Bridge Street, Elkin NC 28621</p><p style="color: #d1d5db;">Phone: (336) 835-1993 | Email: bill@billlayneinsurance.com</p></td></tr>
+                    <tr><td bgcolor="#1f2937" style="padding: 24px; text-align: center; color: #ffffff; border-radius: 8px;"><h3 style="font-size: 20px;">Your Agent: Bill Layne</h3><p>Bill Layne Insurance Agency</p><p style="color: #d1d5db;">1283 N Bridge ST, Elkin NC 28621</p><p style="color: #d1d5db;">Phone: 336-835-1993 | Email: save@billlayneinsurance.com | Website: BillLayneInsurance.com</p></td></tr>
                 </table>
             </td>
         </tr>
@@ -410,7 +450,7 @@ Now, fulfill the user's request and generate the JSON output.
                     <div className="grid grid-cols-2 gap-2 mt-1">
                         {Object.entries(CARRIER_CONTEXTS).map(([key]) => (
                              <button key={key} onClick={() => handleContextClick(key)} className={`px-3 py-2 rounded-md text-xs font-semibold text-left capitalize transition-colors ${activeContexts.includes(key) ? 'bg-secondary text-white' : 'bg-bg-light dark:bg-bg-dark hover:bg-secondary/10 dark:hover:bg-accent/10'}`}>
-                                {key}
+                                {key.replace(/-/g, ' ')}
                             </button>
                         ))}
                     </div>
@@ -487,6 +527,46 @@ Now, fulfill the user's request and generate the JSON output.
                 <button onClick={handleGenerate} disabled={isLoading} className="w-full bg-gradient-to-r from-primary to-secondary text-white font-bold py-2.5 rounded-lg shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2">
                     {isLoading ? <><i className="fa-solid fa-spinner fa-spin"></i> Generating...</> : <><i className="fa-solid fa-wand-magic-sparkles"></i> Generate with Gemini</>}
                 </button>
+
+                <div className="border-t border-border-light dark:border-border-dark pt-4">
+                  <details>
+                      <summary className="font-semibold cursor-pointer text-sm text-text-light dark:text-text-dark hover:text-primary dark:hover:text-accent">
+                          AI Text Message Assistant
+                      </summary>
+                      <div className="mt-3 space-y-3">
+                          <textarea
+                              value={textGenPrompt}
+                              onChange={(e) => setTextGenPrompt(e.target.value)}
+                              placeholder="e.g., Remind Jane Doe about her appointment tomorrow at 2 PM."
+                              className="w-full h-20 p-2 bg-bg-light dark:bg-bg-dark border border-border-light dark:border-border-dark rounded-md text-sm"
+                              disabled={isGeneratingText}
+                          />
+                          <button
+                              onClick={handleGenerateTextMessage}
+                              disabled={isGeneratingText}
+                              className="w-full bg-gradient-to-r from-teal-600 to-teal-500 text-white font-bold py-2 rounded-lg shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-sm"
+                          >
+                              {isGeneratingText ? (
+                                  <><i className="fa-solid fa-spinner fa-spin"></i> Generating...</>
+                              ) : (
+                                  <><i className="fa-solid fa-comment-sms"></i> Generate Text</>
+                              )}
+                          </button>
+                          {generatedTextMessage && (
+                              <div className="relative p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm text-blue-800 dark:text-blue-300">
+                                  <p className="whitespace-pre-wrap">{generatedTextMessage}</p>
+                                  <button
+                                      onClick={handleCopyTextMessage}
+                                      title="Copy Text"
+                                      className="absolute top-2 right-2 px-2 py-1 text-xs bg-card-light dark:bg-card-dark rounded border border-border-light dark:border-border-dark hover:bg-gray-200 dark:hover:bg-gray-700"
+                                  >
+                                      <i className="fa-solid fa-copy"></i> Copy
+                                  </button>
+                              </div>
+                          )}
+                      </div>
+                  </details>
+                </div>
             </div>
             
             {(isLoading || htmlBody) && (
