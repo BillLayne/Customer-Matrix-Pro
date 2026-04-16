@@ -1,22 +1,25 @@
 {
-  "name": "copy-of-matrix-pro-2025-with-task",
+  "name": "matrix-ai-updated-with-compare",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "@google/genai": "^1.21.0"
+    "@google/genai": "^1.45.0",
+    "marked": "^17.0.5",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@types/marked": "^5.0.2",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
+    "typescript": "~5.9.3",
     "vite": "^6.2.0"
   }
 }
