@@ -54,6 +54,17 @@ const PROGRAMS: ProgramEntry[] = [
     targetType: 'web',
   },
   {
+    id: 'sms-command-center',
+    title: 'SMS Command Center',
+    category: 'Operations',
+    description: 'Open the central Twilio text line for sending documents, insurance cards, receipts, images, and customer SMS replies.',
+    target: 'https://agency-sms-command-center.bill-7e3.workers.dev',
+    icon: 'fa-solid fa-comments',
+    accent: 'from-emerald-900 to-teal-500',
+    note: 'Live text line',
+    targetType: 'web',
+  },
+  {
     id: 'html-studio',
     title: 'HTML Studio',
     category: 'Operations',
