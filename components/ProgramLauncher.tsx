@@ -43,6 +43,17 @@ const PROGRAMS: ProgramEntry[] = [
     targetType: 'web',
   },
   {
+    id: 'ai-task-manager',
+    title: 'AI Task Manager',
+    category: 'Operations',
+    description: 'Open your AI-powered task manager for agency follow-ups, reminders, and daily work tracking.',
+    target: 'https://ai-task-manager.bill-7e3.workers.dev',
+    icon: 'fa-solid fa-list-check',
+    accent: 'from-blue-950 to-cyan-500',
+    note: 'Live Workers app',
+    targetType: 'web',
+  },
+  {
     id: 'html-studio',
     title: 'HTML Studio',
     category: 'Operations',
