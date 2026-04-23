@@ -501,39 +501,39 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast }) => {
                     background: 'white',
                     border: '1px solid #e2e8f0',
                     borderRadius: '12px',
-                    padding: '16px',
+                    padding: '14px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
                 }}
             >
                 <label 
-                    className="mb-4 block text-slate-800"
+                    className="mb-3 block text-slate-800"
                     style={{
                         borderLeft: '4px solid #003f87',
-                        paddingLeft: '12px',
+                        paddingLeft: '10px',
                         fontWeight: 700,
                         textTransform: 'uppercase',
-                        fontSize: '14px'
+                        fontSize: '13px'
                     }}
                 >
                     3. Template Builder
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
                     {Object.entries(PROMPT_TEMPLATES)
                         .sort((a, b) => a[1].title.localeCompare(b[1].title))
                         .map(([key, tmpl]) => (
                             <button
                                 key={key}
                                 onClick={() => setPromptDraft(tmpl.prompt)}
-                                className="w-full transition-all text-[9px] font-black uppercase"
+                                className="w-full transition-all text-[10px] font-black uppercase"
                                 style={{
-                                    background: tmpl.bgColor || 'white',
-                                    border: '1px solid #d1d5db',
+                                    background: promptDraft === tmpl.prompt ? '#eff6ff' : (tmpl.bgColor || 'white'),
+                                    border: promptDraft === tmpl.prompt ? '1px solid #003f87' : '1px solid #d1d5db',
                                     borderRadius: '8px',
-                                    padding: '10px 12px',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                    color: '#64748b',
-                                    minHeight: '52px',
-                                    lineHeight: '1.35',
+                                    padding: '8px 10px',
+                                    boxShadow: promptDraft === tmpl.prompt ? '0 0 0 1px rgba(0,63,135,0.08)' : '0 1px 2px rgba(0,0,0,0.05)',
+                                    color: promptDraft === tmpl.prompt ? '#003f87' : '#64748b',
+                                    minHeight: '42px',
+                                    lineHeight: '1.2',
                                 }}
                                 onMouseOver={(e) => {
                                     e.currentTarget.style.borderColor = '#003f87';
