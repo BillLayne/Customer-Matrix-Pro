@@ -498,53 +498,89 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast }) => {
             {/* 3. Template Builder */}
             <div 
                 style={{
-                    background: 'white',
+                    background: '#ffffff',
                     border: '1px solid #e2e8f0',
                     borderRadius: '12px',
-                    padding: '14px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                    padding: '12px'
                 }}
             >
-                <label 
-                    className="mb-3 block text-slate-800"
+                <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                        <label 
+                            className="block text-slate-800"
+                            style={{
+                                borderLeft: '4px solid #003f87',
+                                paddingLeft: '10px',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                fontSize: '12px',
+                                letterSpacing: '0.08em'
+                            }}
+                        >
+                            3. Template Builder
+                        </label>
+                        <p className="mt-2 text-[11px] font-medium text-slate-500">
+                            Tap a template to load it into the prompt draft.
+                        </p>
+                    </div>
+                    <div
+                        className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-black uppercase text-slate-500"
+                        style={{ letterSpacing: '0.08em' }}
+                    >
+                        {Object.keys(PROMPT_TEMPLATES).length} templates
+                    </div>
+                </div>
+                <div
+                    className="grid grid-cols-2 gap-2 overflow-y-auto pr-1"
                     style={{
-                        borderLeft: '4px solid #003f87',
-                        paddingLeft: '10px',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        fontSize: '13px'
+                        maxHeight: '240px'
                     }}
                 >
-                    3. Template Builder
-                </label>
-                <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
                     {Object.entries(PROMPT_TEMPLATES)
                         .sort((a, b) => a[1].title.localeCompare(b[1].title))
                         .map(([key, tmpl]) => (
                             <button
                                 key={key}
                                 onClick={() => setPromptDraft(tmpl.prompt)}
-                                className="w-full transition-all text-[10px] font-black uppercase"
+                                className="w-full text-left transition-all"
                                 style={{
-                                    background: promptDraft === tmpl.prompt ? '#eff6ff' : (tmpl.bgColor || 'white'),
-                                    border: promptDraft === tmpl.prompt ? '1px solid #003f87' : '1px solid #d1d5db',
-                                    borderRadius: '8px',
-                                    padding: '8px 10px',
-                                    boxShadow: promptDraft === tmpl.prompt ? '0 0 0 1px rgba(0,63,135,0.08)' : '0 1px 2px rgba(0,0,0,0.05)',
-                                    color: promptDraft === tmpl.prompt ? '#003f87' : '#64748b',
-                                    minHeight: '42px',
-                                    lineHeight: '1.2',
-                                }}
-                                onMouseOver={(e) => {
-                                    e.currentTarget.style.borderColor = '#003f87';
-                                    e.currentTarget.style.color = '#003f87';
-                                }}
-                                onMouseOut={(e) => {
-                                    e.currentTarget.style.borderColor = '#d1d5db';
-                                    e.currentTarget.style.color = '#64748b';
+                                    background: promptDraft === tmpl.prompt ? '#eaf2ff' : '#f8fafc',
+                                    border: promptDraft === tmpl.prompt ? '1px solid #003f87' : '1px solid #e2e8f0',
+                                    borderRadius: '10px',
+                                    padding: '10px',
+                                    color: '#0f172a',
+                                    minHeight: '60px',
                                 }}
                             >
-                                {tmpl.title}
+                                <div className="flex items-start gap-3">
+                                    <div
+                                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                                        style={{
+                                            background: promptDraft === tmpl.prompt ? '#003f87' : (tmpl.bgColor || '#e2e8f0'),
+                                            color: promptDraft === tmpl.prompt ? '#ffffff' : '#003f87'
+                                        }}
+                                    >
+                                        <i className={`fa-solid ${tmpl.icon} text-sm`}></i>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div
+                                            className="text-[11px] font-black uppercase"
+                                            style={{
+                                                color: promptDraft === tmpl.prompt ? '#003f87' : '#0f172a',
+                                                letterSpacing: '0.06em',
+                                                lineHeight: '1.2'
+                                            }}
+                                        >
+                                            {tmpl.title}
+                                        </div>
+                                        <div
+                                            className="mt-1 text-[10px] font-semibold uppercase text-slate-400"
+                                            style={{ letterSpacing: '0.08em' }}
+                                        >
+                                            {promptDraft === tmpl.prompt ? 'Selected' : 'Load Template'}
+                                        </div>
+                                    </div>
+                                </div>
                             </button>
                         ))}
                 </div>
