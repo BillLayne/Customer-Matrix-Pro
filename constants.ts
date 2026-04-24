@@ -30,16 +30,16 @@ export const SOCIAL_LINKS = {
    CARRIER LOGOS
 ============================================================================ */
 export const CARRIER_LOGOS: Record<string, string> = {
-  'Progressive': 'https://i.imgur.com/SJQzwRU.png',
-  'Nationwide': 'https://i.imgur.com/MjJTKti.png',
-  'Travelers': 'https://i.imgur.com/JNB2wDG.png',
-  'National General': 'https://i.imgur.com/9ZWQsAS.png',
+  'Progressive': 'https://i.imgur.com/7N1vfo0.png',
+  'Nationwide': 'https://i.imgur.com/Mv5V7tV.png',
+  'Travelers': 'https://i.imgur.com/m6wsO1p.png',
+  'National General': 'https://i.imgur.com/HF8oPAF.png',
   'Foremost': 'https://i.imgur.com/rHIo4r5.jpg',
   'Hagerty': 'https://i.imgur.com/0UyINHi.png',
   'Dairyland': 'https://i.imgur.com/1VkIvxv.png',
-  'Plymouth Rock': 'https://i.imgur.com/7N1vfo0.png',
-  'Bristol West': 'https://i.imgur.com/HF8oPAF.png',
-  'Alamance': 'https://i.imgur.com/S8BVnvs.png'
+  'NCJUA': 'https://i.imgur.com/oSJj6ZW.png',
+  'NC Grange Mutual': 'https://i.imgur.com/Fesnkng.png',
+  'Alamance Farmers': 'https://i.imgur.com/S8BVnvs.png'
 };
 
 export const CARRIER_UI_COLORS: Record<string, string> = {
@@ -50,9 +50,9 @@ export const CARRIER_UI_COLORS: Record<string, string> = {
   'Foremost': '#e8f5e9',
   'Hagerty': '#fef9e8',
   'Dairyland': '#e8f5f2',
-  'Plymouth Rock': '#f0e8fd',
-  'Bristol West': '#fde8f4',
-  'Alamance': '#fdf5e8'
+  'NCJUA': '#eef2ff',
+  'NC Grange Mutual': '#e8f5e9',
+  'Alamance Farmers': '#fdf5e8'
 };
 
 export const AGENCY_LOGO = 'https://i.imgur.com/lxu9nfT.png';

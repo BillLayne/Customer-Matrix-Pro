@@ -42,6 +42,11 @@ const isMissingValue = (value?: string) => {
 };
 
 const resolveCarrierLogo = (carrierName?: string, extractedLogoUrl?: string, selectedCarrier?: string) => {
+    const carrierAliases: Record<string, string> = {
+        'nc grange': 'NC Grange Mutual',
+        'alamance': 'Alamance Farmers',
+    };
+
     if (!isMissingValue(extractedLogoUrl)) {
         return extractedLogoUrl!.trim();
     }
@@ -53,6 +58,11 @@ const resolveCarrierLogo = (carrierName?: string, extractedLogoUrl?: string, sel
 
     const normalizedCarrier = carrierName?.trim().toLowerCase();
     if (normalizedCarrier) {
+        const aliasMatch = carrierAliases[normalizedCarrier];
+        if (aliasMatch && CARRIER_LOGOS[aliasMatch]) {
+            return CARRIER_LOGOS[aliasMatch];
+        }
+
         const fuzzyCarrierMatch = Object.entries(CARRIER_LOGOS).find(([name]) => name.toLowerCase() === normalizedCarrier);
         if (fuzzyCarrierMatch) {
             return fuzzyCarrierMatch[1];
@@ -91,7 +101,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast }) => {
         'Progressive': '#00A1E0',
         'Foremost': '#F58220',
         'Alamance Farmers': '#4CAF50',
-        'NC Grange': '#2E7D32',
+        'NC Grange Mutual': '#2E7D32',
         'Travelers': '#E31B23',
         'Hagerty': '#E31837',
         'NCJUA': '#003366',
