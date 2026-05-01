@@ -148,6 +148,18 @@ const PROGRAMS: ProgramEntry[] = [
     targetType: 'web',
   },
   {
+    id: 'photo-guide-creator',
+    title: 'Photo Guide Creator',
+    category: 'Documents & Forms',
+    description: 'Build branded photo guide emails and layouts from the hosted photo guide composer.',
+    target: '/photo-guide-composer.html',
+    hostedTarget: '/photo-guide-composer.html',
+    icon: 'fa-solid fa-images',
+    accent: 'from-fuchsia-700 to-indigo-500',
+    note: 'Hosted in dashboard',
+    targetType: 'web',
+  },
+  {
     id: 'cancellation-form',
     title: 'Cancellation Link Generator',
     category: 'Documents & Forms',
