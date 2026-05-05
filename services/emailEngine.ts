@@ -99,7 +99,7 @@ export const buildEmailWrapper = (state: EmailState, aiContent: string) => {
                         <td width="2%"></td>
                         <!-- 6-Month -->
                         <td width="32%" valign="top">
-                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${primaryBlue}; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,63,135,0.2);">
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${primaryBlue}; border-radius: 12px; border: 1px solid ${primaryBlue};">
                             <tr>
                               <td align="center" style="padding: 16px 8px;">
                                 <div style="font-size: 11px; font-weight: bold; color: #ffffff; opacity: 0.8; text-transform: uppercase; margin-bottom: 4px; font-family: ${fontStack};">6-Month</div>
@@ -153,7 +153,7 @@ export const buildEmailWrapper = (state: EmailState, aiContent: string) => {
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
         <tr>
           <td align="center" style="padding-top: 24px;">
-            <a href="https://m.me/dollarbillagency" style="display: inline-block; padding: 14px 32px; border: 2px solid ${primaryBlue}; background-color: ${cardBg}; color: ${primaryBlue}; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 50px; font-family: ${fontStack};">
+            <a href="https://m.me/dollarbillagency" style="display: inline-block; padding: 14px 32px; border: 2px solid ${primaryBlue}; background-color: ${cardBg}; color: ${primaryBlue}; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 10px; font-family: ${fontStack};">
               Chat with us on Messenger
             </a>
           </td>
@@ -173,6 +173,14 @@ export const buildEmailWrapper = (state: EmailState, aiContent: string) => {
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="x-apple-disable-message-reformatting" />
+  <!--[if mso]>
+  <noscript><xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
+  <![endif]-->
+  <script type="application/ld+json">
+    {"@context":"http://schema.org","@type":"EmailMessage","sender":{"@type":"Organization","name":"Bill Layne Insurance Agency","url":"https://www.BillLayneInsurance.com","telephone":"+13368351993"}}
+  </script>
   <style type="text/css">
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
     body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
@@ -180,9 +188,19 @@ export const buildEmailWrapper = (state: EmailState, aiContent: string) => {
     img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
     table { border-collapse: collapse !important; }
     body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; font-family: ${fontStack}; background-color: ${bgGray}; }
+    @media screen and (max-width: 600px) {
+      .container-600 { width: 100% !important; max-width: 100% !important; }
+      .mobile-pad-hero { padding: 28px 20px !important; }
+      .mobile-pad-card { padding: 20px 16px !important; }
+      .stack { display: block !important; width: 100% !important; max-width: 100% !important; }
+      .stack-right { display: block !important; width: 100% !important; text-align: left !important; padding-top: 14px !important; }
+      .hero-h1 { font-size: 22px !important; line-height: 28px !important; }
+      .amount-xl { font-size: 28px !important; line-height: 32px !important; }
+    }
   </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: ${bgGray};">
+  <div style="display:none;white-space:nowrap;font:15px courier;color:#ffffff;line-height:0;width:600px!important;min-width:600px!important;max-width:600px!important;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
   <div style="display:none;font-size:1px;color:${bgGray};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
     ${preheaderText || 'Important information regarding your insurance policy.'}
   </div>
@@ -192,7 +210,7 @@ export const buildEmailWrapper = (state: EmailState, aiContent: string) => {
         <!--[if (gte mso 9)|(IE)]>
         <table cellpadding="0" cellspacing="0" border="0" width="600" align="center"><tr><td>
         <![endif]-->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: ${cardBg}; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" class="container-600" style="width:600px; max-width:600px; background-color: ${cardBg}; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0;">
           
           <!-- TOP ACCENT BAR -->
           <tr>
@@ -217,7 +235,7 @@ export const buildEmailWrapper = (state: EmailState, aiContent: string) => {
             <td align="center" style="padding: 0 40px 48px 40px;">
               <table role="presentation" border="0" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="border-radius: 50px; background: linear-gradient(135deg, ${green} 0%, #059669 100%); background-color: ${green}; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
+                  <td align="center" style="border-radius: 10px; background: linear-gradient(135deg, ${green} 0%, #059669 100%); background-color: ${green}; border: 2px solid #C8A84E;">
                     <a href="tel:${agencyPhone}" style="padding: 18px 48px; font-size: 16px; color: #ffffff; text-decoration: none; font-weight: bold; display: inline-block; font-family: ${fontStack};">
                       Call Our Elkin Office
                     </a>
@@ -230,73 +248,54 @@ export const buildEmailWrapper = (state: EmailState, aiContent: string) => {
 
           <!-- MASTER FOOTER -->
           <tr>
-            <td bgcolor="#0f172a" style="padding: 48px 40px; text-align: center; background-color: #0f172a;">
-              
-              <!-- Footer Logo -->
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 32px; background: none; background-color: transparent;">
+            <td bgcolor="#fafafa" style="padding: 32px 24px 28px 24px; text-align: center; background-color: #fafafa; border-top: 1px solid #e2e8f0;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto 22px auto;">
+                <tr><td height="3" width="70" bgcolor="#C8A84E" style="height:3px;width:70px;background-color:#C8A84E;font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto 16px auto;">
                 <tr>
-                  <td align="center" style="background: none; background-color: transparent;">
-                    <img src="https://i.imgur.com/lxu9nfT.png" alt="Bill Layne Insurance Agency" width="180" style="display: block; background: none; background-color: transparent;" />
+                  <td bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 18px;">
+                    <img src="https://i.imgur.com/lxu9nfT.png" alt="Bill Layne Insurance Agency" width="120" height="40" style="display:block;width:120px;height:40px;" />
                   </td>
                 </tr>
               </table>
-
-              <!-- Agent Signature -->
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 32px;">
+              <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:${textDark};font-family:${fontStack};">Bill Layne Insurance Agency</p>
+              <p style="margin:0 0 4px 0;font-size:13px;color:${textMuted};font-family:${fontStack};">1283 N Bridge St &bull; Elkin, NC 28621</p>
+              <p style="margin:0 0 4px 0;font-size:13px;color:${textMuted};font-family:${fontStack};">
+                <a href="tel:336-835-1993" style="color:${primaryBlue};text-decoration:none;font-weight:700;">(336) 835-1993</a>
+                &nbsp;&bull;&nbsp;
+                <a href="mailto:Save@BillLayneInsurance.com" style="color:${primaryBlue};text-decoration:none;font-weight:700;">Save@BillLayneInsurance.com</a>
+              </p>
+              <p style="margin:0 0 18px 0;font-size:12px;color:${textMuted};font-family:${fontStack};">
+                <a href="https://www.BillLayneInsurance.com" style="color:${primaryBlue};text-decoration:none;font-weight:700;">www.BillLayneInsurance.com</a>
+                &nbsp;&bull;&nbsp; Est. 2005
+              </p>
+              <p style="margin:0 0 14px 0;font-size:12px;color:${textMuted};font-family:${fontStack};">
+                <a href="https://www.facebook.com/dollarbillagency" style="color:${primaryBlue};text-decoration:none;font-weight:700;">Facebook</a>
+                &nbsp;|&nbsp;
+                <a href="https://www.youtube.com/@ncautoandhome" style="color:${primaryBlue};text-decoration:none;font-weight:700;">YouTube</a>
+                &nbsp;|&nbsp;
+                <a href="https://www.instagram.com/ncautoandhome" style="color:${primaryBlue};text-decoration:none;font-weight:700;">Instagram</a>
+                &nbsp;|&nbsp;
+                <a href="https://x.com/shopsavecompare" style="color:${primaryBlue};text-decoration:none;font-weight:700;">X</a>
+              </p>
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px auto;">
                 <tr>
-                  <td align="center">
-                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="background-color: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); padding: 16px;">
-                      <tr>
-                        <td width="60" height="60" style="width: 60px; height: 60px;">
-                          <img src="https://i.imgur.com/XacnUW4.jpeg" alt="Bill Layne" width="60" height="60" style="display: block; border-radius: 50%;" />
-                        </td>
-                        <td style="padding-left: 16px; text-align: left;">
-                          <p style="margin: 0; font-size: 16px; font-weight: bold; color: #ffffff; font-family: ${fontStack};">Bill Layne</p>
-                          <p style="margin: 2px 0 0 0; font-size: 12px; color: #94a3b8; font-family: ${fontStack};">Licensed Agent &bull; Since 2005</p>
-                        </td>
-                      </tr>
-                    </table>
+                  <td bgcolor="#ffffff" style="background-color:#ffffff;padding:8px 14px;border-radius:20px;border:1px solid #e2e8f0;">
+                    <span style="font-size:11px;color:${textMuted};font-family:${fontStack};font-weight:600;">&#11088; 4.9 Stars on Google &bull; 100+ Reviews</span>
                   </td>
                 </tr>
               </table>
-
-              <!-- Contact Info -->
-              <p style="margin: 0 0 8px 0; font-size: 14px; color: #ffffff; font-weight: bold; font-family: ${fontStack};">Bill Layne Insurance Agency</p>
-              <p style="margin: 0 0 8px 0; font-size: 13px; color: #94a3b8; font-family: ${fontStack};">1283 N Bridge St, Elkin, NC 28621</p>
-              <p style="margin: 0 0 8px 0; font-size: 13px; font-family: ${fontStack};">
-                <a href="tel:336-835-1993" style="color: #ffffff; text-decoration: none;">(336) 835-1993</a>
-                <span style="color: #334155; margin: 0 8px;">|</span>
-                <a href="mailto:Save@BillLayneInsurance.com" style="color: #ffffff; text-decoration: none;">Save@BillLayneInsurance.com</a>
+              <p style="margin:0 0 6px 0;font-size:11px;color:${textMuted};font-family:${fontStack};">
+                Follow us on <a href="https://www.facebook.com/dollarbillagency" style="color:${primaryBlue};text-decoration:none;font-weight:700;">Facebook</a> for insurance tips and local updates.
               </p>
-              <p style="margin: 0 0 24px 0; font-size: 13px; font-family: ${fontStack};">
-                <a href="https://www.BillLayneInsurance.com" style="color: #10b981; font-weight: bold; text-decoration: none;">www.BillLayneInsurance.com</a>
+              <p style="margin:0 0 14px 0;font-size:11px;color:${textMuted};font-family:${fontStack};">
+                Prefer to chat? Reach us on <a href="https://m.me/dollarbillagency" style="color:${primaryBlue};text-decoration:none;font-weight:700;">Facebook Messenger</a>.
               </p>
-
-              <!-- Social Links -->
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin-bottom: 24px;">
-                <tr>
-                  <td style="padding: 0 8px;"><a href="https://facebook.com/dollarbillagency" style="color: #94a3b8; text-decoration: none; font-size: 12px; font-family: ${fontStack};">Facebook</a></td>
-                  <td style="color: #334155;">&bull;</td>
-                  <td style="padding: 0 8px;"><a href="https://youtube.com/@ncautoandhome" style="color: #94a3b8; text-decoration: none; font-size: 12px; font-family: ${fontStack};">YouTube</a></td>
-                  <td style="color: #334155;">&bull;</td>
-                  <td style="padding: 0 8px;"><a href="https://instagram.com/ncautoandhome" style="color: #94a3b8; text-decoration: none; font-size: 12px; font-family: ${fontStack};">Instagram</a></td>
-                </tr>
-              </table>
-
-              <!-- Google Rating -->
-              <p style="margin: 0 0 32px 0; font-size: 12px; color: #facc15; font-family: ${fontStack};">
-                &#9733;&#9733;&#9733;&#9733;&#9733; <span style="color: #94a3b8;">4.9 Google Rating | 100+ Reviews</span>
+              <p style="margin:0;font-size:10px;color:#94a3b8;line-height:1.6;font-family:${fontStack};">
+                You're receiving this because you have an active policy or requested a quote from Bill Layne Insurance Agency.<br>
+                To stop receiving these emails, reply with &quot;unsubscribe&quot; or call (336) 835-1993.
               </p>
-
-              <!-- Legal -->
-              <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px;">
-                <p style="margin: 0 0 4px 0; font-size: 11px; color: #64748b; font-family: ${fontStack};">
-                  To unsubscribe, reply with UNSUBSCRIBE.
-                </p>
-                <p style="margin: 0; font-size: 11px; color: #64748b; font-family: ${fontStack};">
-                  &copy; ${new Date().getFullYear()} Bill Layne Insurance Agency. All rights reserved.
-                </p>
-              </div>
             </td>
           </tr>
         </table>
@@ -438,6 +437,22 @@ export function validateGmailHtml(html: string): ValidationResult {
     });
   }
 
+  if (/XacnUW4/i.test(html)) {
+    issues.push({
+      severity: 'error',
+      rule: 'no-agent-chip-image',
+      message: 'Deprecated agent headshot block detected. The footer should not include the old Bill Layne photo chip.',
+    });
+  }
+
+  if (/Licensed Insurance Agent/i.test(html) || /Owner\s*&amp;\s*Licensed Agent/i.test(html)) {
+    issues.push({
+      severity: 'error',
+      rule: 'no-agent-chip-text',
+      message: 'Deprecated licensed-agent signature text detected. Warmth should live in the body copy, not a footer chip.',
+    });
+  }
+
   if (/cdn-cgi/i.test(html) || /__cf_email__/i.test(html) || /email-protection/i.test(html)) {
     issues.push({
       severity: 'error',
@@ -471,7 +486,7 @@ export function validateGmailHtml(html: string): ValidationResult {
     });
   }
 
-  if (!/width:\s*600px\s*!important/i.test(html)) {
+  if (!/font:15px courier/i.test(html) || !/min-width:600px!important/i.test(html)) {
     issues.push({
       severity: 'warning',
       rule: 'gmail-spacer',
@@ -532,6 +547,30 @@ export function validateGmailHtml(html: string): ValidationResult {
       severity: 'warning',
       rule: 'mobile-media-query',
       message: 'No @media (max-width: 600px) block detected. Mobile layout may not stack correctly.',
+    });
+  }
+
+  if (!/application\/ld\+json/i.test(html)) {
+    issues.push({
+      severity: 'warning',
+      rule: 'json-ld',
+      message: 'Schema.org JSON-LD not found. Gemini inbox summaries may be weaker.',
+    });
+  }
+
+  if (!/x-apple-disable-message-reformatting/i.test(html)) {
+    issues.push({
+      severity: 'warning',
+      rule: 'ios-reformatting',
+      message: 'Missing x-apple-disable-message-reformatting meta tag.',
+    });
+  }
+
+  if (!/role="presentation"/i.test(html)) {
+    issues.push({
+      severity: 'warning',
+      rule: 'presentation-tables',
+      message: 'No role=\"presentation\" tables detected. Layout tables should include accessibility roles.',
     });
   }
 

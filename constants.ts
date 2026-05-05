@@ -146,7 +146,6 @@ export const PROMPT_TEMPLATES = {
   comparison: { title: 'Coverage Comparison', icon: 'fa-scale-balanced', prompt: 'Generate a detailed Coverage Comparison table for Gmail.', bgColor: '#f3e8fd' },
   google_review: { title: 'Google Review Request', icon: 'fa-star', prompt: 'Generate a polite Google Review Request for satisfied clients.', bgColor: '#fce8f0' },
   home_quote: { title: 'Home Insurance Quote', icon: 'fa-house', prompt: 'Generate a luxury Home Insurance Quote proposal for Gmail.', bgColor: '#e8f0fe' },
-  life_quote: { title: 'Life Insurance Quote', icon: 'fa-heart-pulse', prompt: 'Generate a luxury Life Insurance Quote proposal for Gmail.', bgColor: '#e8f0fe' },
   marketing: { title: 'Marketing/Promotional', icon: 'fa-bullhorn', prompt: 'Generate a luxury Marketing/Promotional email for insurance services.', bgColor: '#fce8f0' },
   motorcycle_rv_quote: { title: 'Motorcycle/RV Quote', icon: 'fa-motorcycle', prompt: 'Generate a luxury Motorcycle or RV Insurance Quote proposal for Gmail.', bgColor: '#e8f0fe' },
   needs_analysis: { title: 'Needs Analysis', icon: 'fa-magnifying-glass-chart', prompt: 'Generate an Insurance Needs Analysis questionnaire email.', bgColor: '#f3e8fd' },
