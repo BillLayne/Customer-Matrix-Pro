@@ -486,7 +486,15 @@ export function validateGmailHtml(html: string): ValidationResult {
     });
   }
 
-  if (!/font:15px courier/i.test(html) || !/min-width:600px!important/i.test(html)) {
+  const hasGmailSpacer =
+    /font\s*:\s*15px\s+courier/i.test(html) &&
+    /width\s*:\s*600px\s*!important/i.test(html) &&
+    /min-width\s*:\s*600px\s*!important/i.test(html) &&
+    /max-width\s*:\s*600px\s*!important/i.test(html) &&
+    /white-space\s*:\s*nowrap/i.test(html) &&
+    /display\s*:\s*none/i.test(html);
+
+  if (!hasGmailSpacer) {
     issues.push({
       severity: 'warning',
       rule: 'gmail-spacer',
