@@ -148,6 +148,18 @@ const PROGRAMS: ProgramEntry[] = [
     targetType: 'web',
   },
   {
+    id: 'pdf-quote-creator',
+    title: 'PDF Quote Creator',
+    category: 'Documents & Forms',
+    description: 'Open the live quote image creator for building polished PDF-style quote visuals and exports.',
+    target: 'https://insurance-quote-image-creator.bill-7e3.workers.dev/',
+    hostedTarget: 'https://insurance-quote-image-creator.bill-7e3.workers.dev/',
+    icon: 'fa-solid fa-file-image',
+    accent: 'from-sky-800 to-indigo-500',
+    note: 'Live Workers app',
+    targetType: 'web',
+  },
+  {
     id: 'photo-guide-creator',
     title: 'Photo Guide Creator',
     category: 'Documents & Forms',
