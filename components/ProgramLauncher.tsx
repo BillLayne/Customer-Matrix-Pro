@@ -172,6 +172,18 @@ const PROGRAMS: ProgramEntry[] = [
     targetType: 'web',
   },
   {
+    id: 'dl123-generator',
+    title: 'DL123 Generator',
+    category: 'Documents & Forms',
+    description: 'Open the hosted DL123 maker for North Carolina driver license liability insurance certifications.',
+    target: '/dl123-generator/index.html',
+    hostedTarget: '/dl123-generator/index.html',
+    icon: 'fa-solid fa-file-shield',
+    accent: 'from-blue-900 to-cyan-500',
+    note: 'Hosted in dashboard',
+    targetType: 'web',
+  },
+  {
     id: 'cancellation-form',
     title: 'Cancellation Link Generator',
     category: 'Documents & Forms',
