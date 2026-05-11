@@ -139,22 +139,23 @@ export const NC_COUNTY_GIS_DATA: Record<string, { name: string; url: string; not
    PROMPT TEMPLATES
 ============================================================================ */
 export const PROMPT_TEMPLATES = {
-  auto_quote: { title: 'Auto Insurance Quote', icon: 'fa-car', prompt: 'Generate a luxury Auto Insurance Quote proposal for Gmail.', bgColor: '#e8f0fe' },
+  auto_quote: { title: 'Auto Insurance Quote', icon: 'fa-car', prompt: 'Generate a polished Gmail-safe auto insurance quote email using the full 2026 Bill Layne design system.', bgColor: '#e8f0fe' },
   coi: { title: 'Certificate of Insurance', icon: 'fa-shield-halved', prompt: 'Generate a formal Certificate of Insurance (COI) cover letter and summary.', bgColor: '#fef3cd' },
   claims: { title: 'Claims Filing Notice', icon: 'fa-file-invoice-dollar', prompt: 'Generate a clear Claims Filing Notice with next steps for the client.', bgColor: '#fef7e0' },
-  commercial_quote: { title: 'Commercial Insurance Quote', icon: 'fa-briefcase', prompt: 'Generate a luxury Commercial Insurance Quote proposal for Gmail.', bgColor: '#e8f0fe' },
+  commercial_quote: { title: 'Commercial / BOP Quote', icon: 'fa-briefcase', prompt: 'Generate a polished Gmail-safe commercial insurance or BOP quote email using the Bill Layne 2026 design system.', bgColor: '#e8f0fe' },
   comparison: { title: 'Coverage Comparison', icon: 'fa-scale-balanced', prompt: 'Generate a detailed Coverage Comparison table for Gmail.', bgColor: '#f3e8fd' },
   google_review: { title: 'Google Review Request', icon: 'fa-star', prompt: 'Generate a polite Google Review Request for satisfied clients.', bgColor: '#fce8f0' },
-  home_quote: { title: 'Home Insurance Quote', icon: 'fa-house', prompt: 'Generate a luxury Home Insurance Quote proposal for Gmail.', bgColor: '#e8f0fe' },
+  home_quote: { title: 'Home Insurance Quote', icon: 'fa-house', prompt: 'Generate a polished Gmail-safe home insurance quote email using the full 2026 Bill Layne design system.', bgColor: '#e8f0fe' },
   marketing: { title: 'Marketing/Promotional', icon: 'fa-bullhorn', prompt: 'Generate a luxury Marketing/Promotional email for insurance services.', bgColor: '#fce8f0' },
-  motorcycle_rv_quote: { title: 'Motorcycle/RV Quote', icon: 'fa-motorcycle', prompt: 'Generate a luxury Motorcycle or RV Insurance Quote proposal for Gmail.', bgColor: '#e8f0fe' },
+  motorcycle_quote: { title: 'Motorcycle Insurance Quote', icon: 'fa-motorcycle', prompt: 'Generate a polished Gmail-safe motorcycle insurance quote email using the Bill Layne 2026 design system.', bgColor: '#e8f0fe' },
   needs_analysis: { title: 'Needs Analysis', icon: 'fa-magnifying-glass-chart', prompt: 'Generate an Insurance Needs Analysis questionnaire email.', bgColor: '#f3e8fd' },
-  receipt: { title: 'Payment Receipt', icon: 'fa-receipt', prompt: 'Generate a professional Payment Receipt confirmation email.', bgColor: '#fef7e0' },
+  receipt: { title: 'Payment Receipt', icon: 'fa-receipt', prompt: 'Generate a polished Gmail-safe payment receipt or confirmation email using the Bill Layne 2026 design system.', bgColor: '#fef7e0' },
+  renters_quote: { title: 'Renters Insurance Quote', icon: 'fa-house-user', prompt: 'Generate a polished Gmail-safe renters insurance quote email using the Bill Layne 2026 design system.', bgColor: '#e8f0fe' },
   welcome: { title: 'Policy Confirmation/Welcome', icon: 'fa-handshake', prompt: 'Generate a warm Policy Confirmation and Welcome email for a new client.', bgColor: '#e6f4ea' },
-  review: { title: 'Policy Review Summary', icon: 'fa-clipboard-check', prompt: 'Generate a comprehensive Policy Review Summary email.', bgColor: '#f3e8fd' },
-  poi: { title: 'Proof of Insurance / ID Card', icon: 'fa-id-card', prompt: 'Generate a formal Proof of Insurance / ID Card delivery email.', bgColor: '#e6f4ea' },
+  review: { title: 'Policy Review Summary', icon: 'fa-clipboard-check', prompt: 'Generate a polished Gmail-safe policy review summary email using the Bill Layne 2026 design system.', bgColor: '#f3e8fd' },
+  poi: { title: 'Proof of Insurance / ID Card', icon: 'fa-id-card', prompt: 'Generate a polished Gmail-safe proof of insurance or ID card delivery email using the Bill Layne 2026 design system.', bgColor: '#e6f4ea' },
   referral: { title: 'Referral Thank You', icon: 'fa-gift', prompt: 'Generate a warm Referral Thank You email with a gift mention.', bgColor: '#fce8f0' },
-  renewal: { title: 'Renewal Notice', icon: 'fa-arrows-rotate', prompt: 'Generate a professional Policy Renewal Notice email.', bgColor: '#e6f4ea' },
+  renewal: { title: 'Renewal Notice', icon: 'fa-arrows-rotate', prompt: 'Generate a polished Gmail-safe policy renewal email using the Bill Layne 2026 design system.', bgColor: '#e6f4ea' },
   sr22_quote: { title: 'SR-22 Quote', icon: 'fa-file-contract', prompt: 'Generate a luxury SR-22 Insurance Quote proposal for Gmail.', bgColor: '#e8f0fe' },
   underwriting: { title: 'Underwriting Notice', icon: 'fa-user-shield', prompt: 'Generate a professional Underwriting Notice or request for information.', bgColor: '#e6f4ea' }
 };
