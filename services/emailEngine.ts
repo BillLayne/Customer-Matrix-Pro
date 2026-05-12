@@ -579,6 +579,90 @@ export function printHtml(html: string): boolean {
   return true;
 }
 
+function appendClassesToTag(tag: string, classesToAdd: string[]): string {
+  if (!classesToAdd.length) return tag;
+
+  if (/class=/i.test(tag)) {
+    return tag.replace(/class=(["'])([^"']*)(\1)/i, (_match, quote: string, existing: string) => {
+      const merged = new Set(
+        `${existing} ${classesToAdd.join(' ')}`
+          .split(/\s+/)
+          .map((value) => value.trim())
+          .filter(Boolean)
+      );
+      return `class=${quote}${Array.from(merged).join(' ')}${quote}`;
+    });
+  }
+
+  return tag.replace(/^<td\b/i, `<td class="${classesToAdd.join(' ')}"`);
+}
+
+function normalizeStackClasses(html: string): string {
+  let normalized = html;
+
+  normalized = normalized.replace(/<td\b[^>]*\balign=(["'])right\1[^>]*>/gi, (tag) => {
+    if (/\bstack\b/i.test(tag)) return tag;
+    return appendClassesToTag(tag, ['stack', 'stack-right', 'nowrap-guard']);
+  });
+
+  normalized = normalized.replace(/<td\b[^>]*\bwidth=(["'])(47%|50%|70%)\1[^>]*>/gi, (tag) => {
+    if (/\bstack\b/i.test(tag)) return tag;
+    return appendClassesToTag(tag, ['stack', 'nowrap-guard']);
+  });
+
+  return normalized;
+}
+
+export function normalizeGeneratedEmailHtml(
+  html: string,
+  options?: { preheader?: string }
+): string {
+  if (!html || !html.trim()) return html;
+
+  const preheader = options?.preheader?.trim() || 'Important information from Bill Layne Insurance Agency.';
+  const jsonLdBlock = `<script type="application/ld+json">{"@context":"http://schema.org","@type":"EmailMessage","sender":{"@type":"Organization","name":"Bill Layne Insurance Agency","url":"https://www.BillLayneInsurance.com","telephone":"+13368351993","address":{"@type":"PostalAddress","streetAddress":"1283 N Bridge St","addressLocality":"Elkin","addressRegion":"NC","postalCode":"28621"}}}</script>`;
+
+  let normalized = html.trim().replace(/^\uFEFF/, '').replace(/^<!--\s*Blank HTML\s*-->\s*/i, '');
+
+  if (!/<!doctype/i.test(normalized)) {
+    normalized = `<!DOCTYPE html>\n${normalized}`;
+  }
+
+  if (/<head[\s>]/i.test(normalized) && /<body[\s>]/i.test(normalized) && !/<html[\s>]/i.test(normalized)) {
+    normalized = normalized.replace(/<!DOCTYPE html>\s*/i, '<!DOCTYPE html>\n<html lang="en">\n');
+    if (!/<\/html>\s*$/i.test(normalized)) {
+      normalized = `${normalized}\n</html>`;
+    }
+  }
+
+  if (!/x-apple-disable-message-reformatting/i.test(normalized) && /<\/head>/i.test(normalized)) {
+    normalized = normalized.replace(/<\/head>/i, `  <meta name="x-apple-disable-message-reformatting" />\n</head>`);
+  }
+
+  if (!/application\/ld\+json/i.test(normalized) && /<\/head>/i.test(normalized)) {
+    normalized = normalized.replace(/<\/head>/i, `  ${jsonLdBlock}\n</head>`);
+  }
+
+  if (!/display:none[^>]*overflow:hidden/i.test(normalized) && /<body[^>]*>/i.test(normalized)) {
+    normalized = normalized.replace(
+      /<body([^>]*)>/i,
+      `<body$1>\n<div style="display:none;font-size:1px;color:#f8fafc;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${preheader}&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;</div>`
+    );
+  } else {
+    normalized = normalized.replace(
+      /(<div[^>]*display:none[^>]*overflow:hidden[^>]*>)([\s\S]*?)(<\/div>)/i,
+      (_match, openTag: string, inner: string, closeTag: string) => {
+        if (/&#847;/.test(inner)) return `${openTag}${inner}${closeTag}`;
+        return `${openTag}${inner}&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;${closeTag}`;
+      }
+    );
+  }
+
+  normalized = normalizeStackClasses(normalized);
+
+  return normalized;
+}
+
 // ============================================================
 // validateGmailHtml
 // Runs 2026 design-system compliance checks.

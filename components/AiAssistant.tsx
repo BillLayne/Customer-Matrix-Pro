@@ -8,6 +8,7 @@ import {
 import {
     downloadAsHtmlFile,
     handOffToGmail,
+    normalizeGeneratedEmailHtml,
     printHtml,
     validateGmailHtml,
     type ValidationResult,
@@ -221,7 +222,11 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast }) => {
                 });
 
                 subject = result.subject || "Insurance Update - Bill Layne Agency";
-                finalHtml = result.htmlBody || '';
+                finalHtml = normalizeGeneratedEmailHtml(result.htmlBody || '', { preheader: result.preheader || '' });
+            }
+
+            if (isPoi) {
+                finalHtml = normalizeGeneratedEmailHtml(finalHtml);
             }
 
             setInnerAiHtml(finalHtml);
@@ -250,12 +255,13 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast }) => {
 
             const refinedHtml = refined.htmlBody || '';
             const refinedSubject = refined.subject || generatedSubject;
+            const normalizedHtml = normalizeGeneratedEmailHtml(refinedHtml, { preheader: refined.preheader || '' });
 
-            setInnerAiHtml(refinedHtml);
+            setInnerAiHtml(normalizedHtml);
             setGeneratedSubject(refinedSubject);
-            setPreviewHtml(refinedHtml);
+            setPreviewHtml(normalizedHtml);
             setRefinementInstruction('');
-            reportValidation(validateGmailHtml(refinedHtml), 'Email refined successfully!');
+            reportValidation(validateGmailHtml(normalizedHtml), 'Email refined successfully!');
         } catch (error) {
             console.error(error);
             addToast(`Refinement failed: ${getErrorMessage(error)}`, 'danger');
@@ -266,18 +272,20 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast }) => {
 
     const handleDownloadHtml = () => {
         if (!previewHtml) return;
-        downloadAsHtmlFile(previewHtml, generatedSubject || 'email_template');
+        downloadAsHtmlFile(normalizeGeneratedEmailHtml(previewHtml), generatedSubject || 'email_template');
         addToast('Template downloaded.', 'success');
     };
 
     const handleSyncToGmail = async () => {
         if (!previewHtml) return;
+        const normalizedHtml = normalizeGeneratedEmailHtml(previewHtml);
         const result = await handOffToGmail({
             subject: generatedSubject || "Insurance Update - Bill Layne Agency",
-            htmlBody: previewHtml,
+            htmlBody: normalizedHtml,
             to: recipientEmail.trim() || undefined,
         });
 
+        setPreviewHtml(normalizedHtml);
         setValidationResult(result.validation);
 
         if (result.validation.errorCount > 0 || result.validation.warningCount > 0) {
