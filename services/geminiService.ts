@@ -525,10 +525,21 @@ PROPERTY QUOTE MODULE
 - Annual premium as the BIG number, gold label "ANNUAL PREMIUM"
 - Monthly escrow estimate as sub-line when applicable
 - Property-at-a-glance card, itemized coverage breakdown, discounts card
+- Required order:
+  1. Header + annual-premium hero
+  2. Opening summary card with named insured, property address, occupancy/use, effective date, deductible
+  3. Property-at-a-glance card with year built, construction type, roof age, square footage if known
+  4. TIV / property values card
+  5. Itemized coverage breakdown card
+  6. Discounts / protection features card
+  7. Inspection or underwriting requirements card only if actually provided
+  8. CTA + footer
 - TIV section: ALWAYS itemize coverage limits alongside combined total
   Approved labels: "Combined Coverage Value" | "Combined Insurable Value" | "Total Property Protection"
   NEVER include Coverage D/E/F in TIV total
 - Include inspection/underwriting requirements only if provided
+- Coverage breakdown must make Coverage A/B/C/D/E/F and special deductibles easy to scan on mobile
+- If surplus lines / landlord / specialty dwelling context exists, add the applicable disclosure in its own muted compliance card
 
 ========================================================================
 WELCOME MODULE
@@ -536,6 +547,15 @@ WELCOME MODULE
 - Green gradient hero (#059669) for confirmed/bound policies
 - "✅ Coverage Confirmed — [CARRIER]" badge
 - Confirm carrier, policy number, effective date, key next steps
+- Required order:
+  1. Header + welcome hero
+  2. Policy-at-a-glance card
+  3. ID cards / portal access card
+  4. Drivers or insureds card
+  5. Vehicles or property covered card
+  6. "Three things to do today" activation card
+  7. Claims / service contact card
+  8. CTA + footer
 - Auto welcomes: ID cards section, portal access, save-our-number step
 - Drivers card: clean stacked rows (no circles)
 - Vehicles card: stacked row pattern
@@ -549,6 +569,15 @@ RENEWAL MODULE
 - Rate delta line: "+$X.XX/mo from prior term" or "same as prior term"
 - What changed card + continuity card (unchanged coverages)
 - Payment options, reply-bait, CTA
+- Required order:
+  1. Header + renewal hero
+  2. Renewal snapshot card (carrier, policy number, renewal term, amount due)
+  3. What changed card
+  4. What stayed the same / continuity card
+  5. Payment options card
+  6. CTA + footer
+- If the premium increased materially, explain why if the source material gives a reason
+- If no action is required, say that clearly without creating panic
 
 ========================================================================
 RECEIPT MODULE
@@ -596,6 +625,14 @@ POLICY CHANGE MODULE
 - Updated premium if changed
 - Cite G.S. § 58-41-15 for carrier-initiated changes where applicable
 - No "Reply YES" CTA
+- Required order:
+  1. Header + hero
+  2. Effective-date confirmation card
+  3. What changed card (before / after)
+  4. What stayed the same / continuity card
+  5. Updated premium / billing impact card if changed
+  6. CTA + footer
+- Be precise about added or removed drivers, vehicles, lienholders, deductibles, and addresses
 
 ========================================================================
 CANCELLATION MODULE
@@ -605,6 +642,15 @@ CANCELLATION MODULE
 - Reinstatement cure path if applicable
 - Cite G.S. § 58-41-15 where applicable
 - NC G.S. 58-35-85 language if premium finance involved
+- Required order:
+  1. Header + urgency hero
+  2. Notice summary card with reason, policy number, effective date/time
+  3. Cure / reinstatement path card if applicable
+  4. Replacement / next-step card when appropriate
+  5. Compliance / legal note card
+  6. CTA + footer
+- Never blur the effective cancellation date
+- Never promise reinstatement unless the carrier notice supports it
 
 ========================================================================
 PROOF OF INSURANCE MODULE
@@ -612,6 +658,13 @@ PROOF OF INSURANCE MODULE
 - Solid navy hero (#003f87)
 - Insured name, policy number, vehicle/property, coverage dates
 - Compact and document-forward layout
+- Required order:
+  1. Header + solid navy hero
+  2. Verification summary card
+  3. Insured / vehicle / property detail card
+  4. Coverage dates / holder / lienholder note card if applicable
+  5. Compact footer
+- Keep this template document-forward, not salesy
 
 ========================================================================
 CLAIMS MODULE
@@ -619,6 +672,13 @@ CLAIMS MODULE
 - Solid navy hero
 - Claims Steps Card: Step 1 = "Call Our Office First — (336) 835-1993"
 - Do not promise coverage. Include adjuster info only if supplied.
+- Required order:
+  1. Header + hero
+  2. Claim acknowledgment card
+  3. Claims steps card
+  4. Contact / adjuster info card only if supplied
+  5. Documentation / what to gather card if relevant
+  6. Footer
 
 ========================================================================
 PHOTO REQUEST / SENDBILLDOCS MODULE
@@ -628,6 +688,13 @@ PHOTO REQUEST / SENDBILLDOCS MODULE
   (pre-fill with client data if available)
 - Green "how it works" callout box
 - Scannable bullet list of required photos/documents
+- Required order:
+  1. Header + hero
+  2. Why we need these photos/documents card
+  3. Exact requested-items bullet list
+  4. How-it-works callout card
+  5. Primary CTA using the prefilled SendBillDocs link
+  6. Footer
 
 ========================================================================
 GOOGLE REVIEW MODULE
@@ -636,6 +703,8 @@ GOOGLE REVIEW MODULE
 - ONE primary CTA only
 - CTA href MUST be EXACTLY: https://g.page/r/CXGq9B7-jzu7EBM/review
 - NEVER use a placeholder, homepage, or "#" for the review CTA
+- Keep this template short, warm, and single-purpose
+- Do not add unrelated sales CTAs above the review ask
 
 ========================================================================
 MOTORCYCLE QUOTE MODULE
@@ -645,6 +714,7 @@ MOTORCYCLE QUOTE MODULE
 - Bike type chip in meta row
 - Lay-up endorsement note if applicable (seasonal use / storage)
 - Hagerty or Dairyland most common carriers
+- Use the same quote rigor as auto: bike details, deductible, term dates, coverage card, and clear CTA
 
 ========================================================================
 RENTERS QUOTE MODULE
@@ -654,6 +724,28 @@ RENTERS QUOTE MODULE
 - Personal property limit prominently displayed
 - Liability and loss-of-use as supporting lines
 - Emphasize low price / high value messaging
+- Required order:
+  1. Header + hero
+  2. Coverage snapshot card
+  3. Itemized renters coverage card
+  4. Occupancy / address card
+  5. CTA + footer
+- Make personal property, liability, deductible, and loss-of-use visible in under 5 seconds
+
+========================================================================
+COMMERCIAL MODULE
+========================================================================
+- Use a formal, less promotional tone than personal-lines quote emails
+- If no logo is available for the market, use the text-pill carrier fallback
+- Required order:
+  1. Header + hero
+  2. Account summary card with named insured, entity, operations, effective date
+  3. Coverage schedule card (BOP / GL / property / inland marine / workers comp as applicable)
+  4. Premium and billing summary card
+  5. Underwriting requirements / subjectivities card if applicable
+  6. CTA + footer
+- Distinguish estimated quote terms from bound coverage clearly
+- Avoid consumer-style "cheap" language in commercial emails
 
 ========================================================================
 FINAL OUTPUT RULES
@@ -664,6 +756,13 @@ FINAL OUTPUT RULES
 - NEVER output markdown fences in the htmlBody field.
 - ZERO circle avatars, ZERO border-radius:50%, ZERO box-shadow.
 - Every email gets the footer sequence exactly as specified — no exceptions.
+- Do not return a draft until you have checked:
+  1. head contains viewport, x-apple-disable-message-reformatting, color-scheme metas, Inter import, MSO block, JSON-LD
+  2. body contains spacer div, hidden preheader, and 600px main wrapper
+  3. all 2-column rows use .stack and right columns use .stack-right
+  4. transactional templates use a direct useful CTA, not a generic homepage link
+  5. carrier names are correct for the context and no facts are invented
+- If data is missing, use a graceful labeled placeholder such as "[Policy number pending]" rather than inventing facts.
 `;
 
 export interface EmailGenerationOptions {

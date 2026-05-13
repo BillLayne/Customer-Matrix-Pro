@@ -393,6 +393,8 @@ export const buildEmailWrapper = (state: EmailState, aiContent: string) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="x-apple-disable-message-reformatting" />
+  <meta name="color-scheme" content="light" />
+  <meta name="supported-color-schemes" content="light" />
   <title>Bill Layne Insurance Agency</title>
   <!--[if mso]>
   <noscript><xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
@@ -637,6 +639,10 @@ export function normalizeGeneratedEmailHtml(
 
   if (!/x-apple-disable-message-reformatting/i.test(normalized) && /<\/head>/i.test(normalized)) {
     normalized = normalized.replace(/<\/head>/i, `  <meta name="x-apple-disable-message-reformatting" />\n</head>`);
+  }
+
+  if (!/name=["']color-scheme["']/i.test(normalized) && /<\/head>/i.test(normalized)) {
+    normalized = normalized.replace(/<\/head>/i, `  <meta name="color-scheme" content="light" />\n  <meta name="supported-color-schemes" content="light" />\n</head>`);
   }
 
   if (!/application\/ld\+json/i.test(normalized) && /<\/head>/i.test(normalized)) {
