@@ -13,7 +13,7 @@ Email: Save@BillLayneInsurance.com
 Website: BillLayneInsurance.com
 
 Always provide concise, accurate, and actionable information tailored to the user's request. Format complex information in tables or lists for clarity.
-CRITICAL HTML RULE: Never use "display: block" or "display:block" on <td> elements in your HTML output. If you need a block-level container inside a table cell, wrap the content in a nested <table> instead.`;
+CRITICAL HTML RULE: Never place inline style "display:block" directly on <td> elements. Use approved responsive utility classes from the Bill Layne Gmail system instead. If you need a block-level container inside a table cell, wrap the content in a nested <table> instead.`;
 
 const getAiClient = () => {
   const apiKey = process.env.API_KEY;
@@ -288,22 +288,27 @@ GMAIL HARD RULES (NON-NEGOTIABLE)
       p{margin:0;mso-line-height-rule:exactly;}
       @media screen and (max-width:600px){
         .container-600{width:100%!important;max-width:100%!important;}
-        .mobile-pad-20{padding-left:16px!important;padding-right:16px!important;}
-        .mobile-pad-hero{padding:32px 16px!important;}
-        .mobile-pad-card{padding:20px!important;}
+        .mobile-pad-20{padding-left:12px!important;padding-right:12px!important;}
+        .mobile-pad-hero{padding:28px 12px!important;}
+        .mobile-pad-card{padding:18px 12px!important;}
         .stack{display:block!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;}
         .stack-right{text-align:left!important;padding-top:14px!important;}
+        .mobile-keep-2up{display:table-cell!important;width:auto!important;max-width:none!important;}
         .hero-h1{font-size:22px!important;line-height:28px!important;}
         .amount-xl{font-size:28px!important;line-height:32px!important;}
         .label-sm{font-size:12px!important;}
         .value-md{font-size:15px!important;}
         .logo-mobile img{width:160px!important;height:auto!important;}
         .nowrap-guard{word-break:break-word!important;overflow-wrap:break-word!important;}
+        .no-wrap-mobile{white-space:nowrap!important;word-break:normal!important;overflow-wrap:normal!important;}
         .mobile-hide{display:none!important;}
       }
     </style>
-14. Two-column rows must stack on mobile. Any side-by-side td pair must use .stack on both columns
-    and .stack-right on the right column. Never stack without these classes.
+14. Two-column rows must have intentional mobile behavior.
+    - Use .stack on both columns and .stack-right on the right column for long-content rows that should collapse
+    - Use .mobile-keep-2up for compact transactional rows that must stay side-by-side on Gmail mobile
+      (short dates, amounts, confirmation numbers, compact policy facts, logo rows, short chip rows)
+    Never leave a 2-column row unclassified.
 15. Every p, span, or td containing names, addresses, carrier names, URLs, or policy numbers must
     include word-break:break-word and overflow-wrap:break-word (inline or via .nowrap-guard).
 16. Every p and h1 must include mso-line-height-rule:exactly. Hero headings: 26px desktop / 22px mobile
@@ -389,6 +394,11 @@ HERO META CHIPS (2–4 chips, optional per type)
 Use for key policy facts visible without scrolling (term, BI limit, deductible, coverage type).
 Style: bgcolor="rgba(255,255,255,0.12)", border-radius:10px, padding: 6px 14px,
        font-size:11px, color:#ffffff, 1px solid rgba(255,255,255,0.2) border
+On mobile:
+  - keep chips short and scannable
+  - prefer 2 chips per row when labels are longer than 12–14 characters
+  - use .mobile-keep-2up for compact chip cells that should remain side-by-side
+  - use .no-wrap-mobile on short labels like dates, terms, and amounts so they do not split into awkward double rows
 
 ========================================================================
 CTA BUTTON RULES
@@ -759,9 +769,12 @@ FINAL OUTPUT RULES
 - Do not return a draft until you have checked:
   1. head contains viewport, x-apple-disable-message-reformatting, color-scheme metas, Inter import, MSO block, JSON-LD
   2. body contains spacer div, hidden preheader, and 600px main wrapper
-  3. all 2-column rows use .stack and right columns use .stack-right
+  3. all 2-column rows are intentionally classified as either .stack/.stack-right or .mobile-keep-2up
   4. transactional templates use a direct useful CTA, not a generic homepage link
   5. carrier names are correct for the context and no facts are invented
+- Protect compact transactional rows from collapsing:
+  dates, dollar amounts, confirmation numbers, short policy facts, logo rows, and short chip labels should stay on one line where practical
+- Avoid over-condensing Gmail mobile layouts. Preserve readable width by using the spacer, lighter mobile padding, and .mobile-keep-2up on short-value rows.
 - If data is missing, use a graceful labeled placeholder such as "[Policy number pending]" rather than inventing facts.
 `;
 

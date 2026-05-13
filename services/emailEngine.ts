@@ -411,17 +411,19 @@ export const buildEmailWrapper = (state: EmailState, aiContent: string) => {
     p{margin:0;mso-line-height-rule:exactly;}
     @media screen and (max-width:600px){
       .container-600{width:100%!important;max-width:100%!important;}
-      .mobile-pad-20{padding-left:16px!important;padding-right:16px!important;}
-      .mobile-pad-hero{padding:32px 16px!important;}
-      .mobile-pad-card{padding:20px 16px!important;}
+      .mobile-pad-20{padding-left:12px!important;padding-right:12px!important;}
+      .mobile-pad-hero{padding:28px 12px!important;}
+      .mobile-pad-card{padding:18px 12px!important;}
       .stack{display:block!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;}
       .stack-right{text-align:left!important;padding-top:14px!important;}
+      .mobile-keep-2up{display:table-cell!important;width:auto!important;max-width:none!important;}
       .hero-h1{font-size:22px!important;line-height:28px!important;}
       .amount-xl{font-size:28px!important;line-height:32px!important;}
       .label-sm{font-size:12px!important;}
       .value-md{font-size:15px!important;}
       .logo-mobile img{width:140px!important;height:auto!important;}
       .nowrap-guard{word-break:break-word!important;overflow-wrap:break-word!important;}
+      .no-wrap-mobile{white-space:nowrap!important;word-break:normal!important;overflow-wrap:normal!important;}
       .mobile-hide{display:none!important;width:0!important;max-width:0!important;overflow:hidden!important;}
     }
   </style>
@@ -603,13 +605,13 @@ function normalizeStackClasses(html: string): string {
   let normalized = html;
 
   normalized = normalized.replace(/<td\b[^>]*\balign=(["'])right\1[^>]*>/gi, (tag) => {
-    if (/\bstack\b/i.test(tag)) return tag;
-    return appendClassesToTag(tag, ['stack', 'stack-right', 'nowrap-guard']);
+    if (/\bstack\b/i.test(tag) || /\bmobile-keep-2up\b/i.test(tag)) return tag;
+    return appendClassesToTag(tag, ['mobile-keep-2up', 'no-wrap-mobile', 'nowrap-guard']);
   });
 
   normalized = normalized.replace(/<td\b[^>]*\bwidth=(["'])(47%|50%|70%)\1[^>]*>/gi, (tag) => {
-    if (/\bstack\b/i.test(tag)) return tag;
-    return appendClassesToTag(tag, ['stack', 'nowrap-guard']);
+    if (/\bstack\b/i.test(tag) || /\bmobile-keep-2up\b/i.test(tag)) return tag;
+    return appendClassesToTag(tag, ['mobile-keep-2up', 'nowrap-guard']);
   });
 
   return normalized;
@@ -837,11 +839,11 @@ export function validateGmailHtml(html: string): ValidationResult {
     });
   }
 
-  if (!/class="[^"]*\bstack\b/i.test(html) && /<td[^>]*align="right"/i.test(html)) {
+  if (!/class="[^"]*\b(stack|mobile-keep-2up)\b/i.test(html) && /<td[^>]*align="right"/i.test(html)) {
     issues.push({
       severity: 'warning',
       rule: 'stack-class',
-      message: 'Right-aligned cells found without .stack class. Two-column rows may not restack on mobile.',
+      message: 'Right-aligned cells found without .stack or .mobile-keep-2up class. Two-column rows need explicit mobile behavior.',
     });
   }
 
