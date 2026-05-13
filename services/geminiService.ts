@@ -308,6 +308,9 @@ GMAIL HARD RULES (NON-NEGOTIABLE)
     include word-break:break-word and overflow-wrap:break-word (inline or via .nowrap-guard).
 16. Every p and h1 must include mso-line-height-rule:exactly. Hero headings: 26px desktop / 22px mobile
     via .hero-h1. Premium amounts: 32px+ desktop / 28px mobile via .amount-xl.
+17. Include these dark-mode guard meta tags in <head> on every template:
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
 
 ========================================================================
 PERSON / DRIVER ROWS (CLEAN STACKED PATTERN — MANDATORY)
@@ -403,7 +406,7 @@ REPLY-BAIT CLOSING COPY
 ========================================================================
 Include this 13px italic block above the primary CTA on all client-facing templates:
   "Questions about your rate or coverage options? Just reply to this email —
-   I review every message personally and will get back to you within the hour."
+   I review every message personally."
   — Bill Layne
 
 ========================================================================
@@ -551,10 +554,39 @@ RENEWAL MODULE
 RECEIPT MODULE
 ========================================================================
 - Solid green hero (#059669)
-- Agency-only header (no carrier logo required)
-- Payment amount, date, method, policy number, carrier, next payment
-- NC 11 NCAC 04.0121 compliant layout
-- No Messenger opt-in button (use inline text link)
+- Use full legal carrier name everywhere in the body and disclaimer cards
+  Good: "Integon Preferred Insurance Company"
+  Bad: "Integon Preferred"
+- If a carrier logo is available, use the dual-logo header; otherwise agency-only header is acceptable
+- Transaction Details card is mandatory and must include these 8 rows in order:
+  1. Payment Amount
+  2. Payment Date & Time
+  3. Payment Method
+  4. Confirmation Number
+  5. Carrier (full legal name)
+  6. Policy Number
+  7. Coverage Type
+  8. Coverage Period
+- Zebra stripe the transaction rows using alternating #ffffff and #f8fafc backgrounds
+- Coverage Period is mandatory on every receipt — show exact start and end dates
+- If installment payment:
+  add a "Next Payment Due" card with next due date, next due amount, payments remaining, and remaining balance
+- If paid in full:
+  replace installment card with a green "12 Months • Fully Paid" style retention card
+- Add one retention card based on payment type:
+  • Paid in full → Google review ask
+  • First payment / inception → ID cards + carrier portal link
+  • Standard installment → soft Messenger inline retention prompt
+- Add a dedicated compliance disclaimer card near the end using this exact structure:
+  "This receipt confirms payment received by Bill Layne Insurance Agency on behalf of [FULL LEGAL CARRIER NAME]. Coverage is subject to the terms and conditions of your policy. This receipt is issued in compliance with 11 NCAC 04.0121. Keep this email for your records."
+- Use Invoice JSON-LD in <head> for receipts with paymentStatus "PaymentComplete", confirmationNumber,
+  payment amount, policy/account reference, and ISO payment timestamp
+- Do not promise a response time anywhere in the receipt
+- Close with a personalized thank-you sign-off:
+  "Thanks for trusting us with your coverage, [FIRST NAME]."
+  "— Bill Layne"
+- No Messenger opt-in button on receipts; if used, it must be a soft inline text link only
+- Footer on receipts must still include the white logo wrapper, Established 2005 line, and linked social/footer items with payment-receipt UTM tracking when campaign context is available
 
 ========================================================================
 POLICY CHANGE MODULE

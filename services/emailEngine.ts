@@ -288,7 +288,7 @@ export const buildEmailWrapper = (state: EmailState, aiContent: string) => {
     <!-- ══ CTA ══ -->
     <tr>
       <td bgcolor="${cardWhite}" align="center" style="background-color:${cardWhite};padding:8px 32px 40px 32px;">
-        ${isSales ? `<p style="margin:0 0 16px 0;font-size:13px;font-style:italic;color:${textMuted};font-family:${fontStack};mso-line-height-rule:exactly;">Questions about your rate or coverage options? Just reply to this email — I review every message personally and will get back to you within the hour. &mdash; Bill Layne</p>` : ''}
+        ${isSales ? `<p style="margin:0 0 16px 0;font-size:13px;font-style:italic;color:${textMuted};font-family:${fontStack};mso-line-height-rule:exactly;">Questions about your rate or coverage options? Just reply to this email — I review every message personally. &mdash; Bill Layne</p>` : ''}
         ${isQuote ? `<p style="margin:0 0 16px 0;font-size:12px;color:#f59e0b;font-weight:700;font-family:${fontStack};mso-line-height-rule:exactly;">⚡ Coverage begins on your selected effective date</p>` : ''}
         <table role="presentation" border="0" cellpadding="0" cellspacing="0">
           <tr>
