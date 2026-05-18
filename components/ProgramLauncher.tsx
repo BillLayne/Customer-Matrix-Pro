@@ -136,6 +136,18 @@ const PROGRAMS: ProgramEntry[] = [
     targetType: 'web',
   },
   {
+    id: 'nc-grange-down-payment',
+    title: 'NC Grange Down Payment',
+    category: 'Documents & Forms',
+    description: 'Calculate NC Grange Mutual down payments and payment plan breakdowns for home insurance quotes.',
+    target: '/nc-grange-down-payment-calculator.html',
+    hostedTarget: '/nc-grange-down-payment-calculator.html',
+    icon: 'fa-solid fa-calculator',
+    accent: 'from-blue-900 to-emerald-500',
+    note: 'Hosted in dashboard',
+    targetType: 'web',
+  },
+  {
     id: 'quote-template-studio',
     title: 'Quote Template Studio',
     category: 'Documents & Forms',
