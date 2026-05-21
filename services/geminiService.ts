@@ -998,11 +998,11 @@ export const extractPoiEmailData = async (options: {
   const contents = options.file
     ? {
         parts: [
-          { text: `Extract the following information from the attached document or instructions to generate a Proof of Insurance / ID Card email.\nInstructions: ${options.instructions}\nIf information is missing, use placeholders like "[Missing]".` },
+          { text: `Extract the following information from the attached document or instructions to generate a Proof of Insurance email.\nInstructions: ${options.instructions}\nIf information is missing, use placeholders like "[Missing]".` },
           { inlineData: { mimeType: options.file.mimeType, data: options.file.data } },
         ],
       }
-    : `Extract the following information to generate a Proof of Insurance / ID Card email.\nInstructions: ${options.instructions}\nIf information is missing, use placeholders like "[Missing]".`;
+    : `Extract the following information to generate a Proof of Insurance email.\nInstructions: ${options.instructions}\nIf information is missing, use placeholders like "[Missing]".`;
 
   const response = await generateWithFallback(ai, {
     contents,

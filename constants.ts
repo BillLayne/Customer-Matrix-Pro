@@ -153,7 +153,7 @@ export const PROMPT_TEMPLATES = {
   renters_quote: { title: 'Renters Insurance Quote', icon: 'fa-house-user', prompt: 'Generate a polished Gmail-safe renters insurance quote email using the Bill Layne 2026 design system.', bgColor: '#e8f0fe' },
   welcome: { title: 'Policy Confirmation/Welcome', icon: 'fa-handshake', prompt: 'Generate a polished Gmail-safe policy confirmation and welcome email using the Bill Layne 2026 design system.', bgColor: '#e6f4ea' },
   review: { title: 'Policy Review Summary', icon: 'fa-clipboard-check', prompt: 'Generate a polished Gmail-safe policy review summary email using the Bill Layne 2026 design system.', bgColor: '#f3e8fd' },
-  poi: { title: 'Proof of Insurance / ID Card', icon: 'fa-id-card', prompt: 'Generate a polished Gmail-safe proof of insurance or ID card delivery email using the Bill Layne 2026 design system.', bgColor: '#e6f4ea' },
+  poi: { title: 'Proof of Insurance', icon: 'fa-id-card', prompt: 'Generate a polished Gmail-safe proof of insurance delivery email using the Bill Layne 2026 design system.', bgColor: '#e6f4ea' },
   referral: { title: 'Referral Thank You', icon: 'fa-gift', prompt: 'Generate a polished Gmail-safe referral thank-you email using the Bill Layne 2026 design system.', bgColor: '#fce8f0' },
   renewal: { title: 'Renewal Notice', icon: 'fa-arrows-rotate', prompt: 'Generate a polished Gmail-safe policy renewal email using the Bill Layne 2026 design system.', bgColor: '#e6f4ea' },
   sr22_quote: { title: 'SR-22 Quote', icon: 'fa-file-contract', prompt: 'Generate a polished Gmail-safe SR-22 insurance quote email using the Bill Layne 2026 design system.', bgColor: '#e8f0fe' },
