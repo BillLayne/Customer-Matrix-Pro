@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface ProgramLauncherProps {
   addToast: (message: string, type?: 'success' | 'warning' | 'danger' | 'info') => void;
@@ -17,6 +18,16 @@ interface ProgramEntry {
   accent: string;
   note: string;
   targetType: 'local' | 'web';
+}
+
+interface LauncherCollection {
+  id: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  icon: string;
+  accent: string;
+  programIds: string[];
 }
 
 const PROGRAMS: ProgramEntry[] = [
@@ -286,6 +297,35 @@ const CATEGORY_ICONS: Record<ProgramCategory, string> = {
   'Property & Coverage': 'fa-solid fa-house-circle-check',
 };
 
+const CATEGORY_DESCRIPTIONS: Record<ProgramCategory, string> = {
+  Operations: 'Communication, delivery, and daily workflow tools.',
+  'Documents & Forms': 'Issue forms, proof, cards, quotes, and customer-facing paperwork.',
+  'Property & Coverage': 'Address-first research, rebuild help, and coverage estimate tools.',
+};
+
+const FEATURED_COLLECTIONS: LauncherCollection[] = [
+  {
+    id: 'most-used',
+    eyebrow: 'Most Used',
+    title: 'Start with the tools people reach for first',
+    description: 'These are the fastest paths for customer communication, certificates, proof, and quote delivery.',
+    icon: 'fa-solid fa-star',
+    accent: 'from-[#003f87] via-[#0076d3] to-cyan-400',
+    programIds: ['send-docs', 'sms-command-center', 'certificate-generator', 'poi-generator', 'insurance-cards', 'pdf-quote-creator'],
+  },
+  {
+    id: 'coverage-lane',
+    eyebrow: 'Coverage Lane',
+    title: 'When the next question starts with an address or dwelling',
+    description: 'Property lookup, rebuild cost help, and condo coverage tools grouped into one path.',
+    icon: 'fa-solid fa-house-circle-check',
+    accent: 'from-emerald-800 via-teal-700 to-cyan-500',
+    programIds: ['nc-tools-property', 'home-rebuild', 'condo-coverage', 'home-inventory', 'nc-grange-down-payment'],
+  },
+];
+
+const RECENT_PROGRAMS_KEY = 'matrix-pro-recent-programs';
+
 const toFileUrl = (windowsPath: string) => encodeURI(`file:///${windowsPath.replace(/\\/g, '/')}`);
 
 const displayPath = (windowsPath: string) =>
@@ -300,12 +340,38 @@ const groupedPrograms = CATEGORY_ORDER.map((category) => ({
 
 const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
   const isHostedDashboard = window.location.protocol.startsWith('http') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+  const [recentProgramIds, setRecentProgramIds] = useLocalStorage<string[]>(RECENT_PROGRAMS_KEY, []);
   const [isMobileView, setIsMobileView] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Record<ProgramCategory, boolean>>({
     Operations: true,
     'Documents & Forms': false,
     'Property & Coverage': false,
   });
+
+  const programMap = useMemo(
+    () => Object.fromEntries(PROGRAMS.map((program) => [program.id, program])),
+    []
+  );
+
+  const featuredCollections = useMemo(
+    () =>
+      FEATURED_COLLECTIONS.map((collection) => ({
+        ...collection,
+        items: collection.programIds
+          .map((programId) => programMap[programId])
+          .filter((program): program is ProgramEntry => Boolean(program)),
+      })),
+    [programMap]
+  );
+
+  const recentPrograms = useMemo(
+    () =>
+      recentProgramIds
+        .map((programId) => programMap[programId])
+        .filter((program): program is ProgramEntry => Boolean(program))
+        .slice(0, 6),
+    [programMap, recentProgramIds]
+  );
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 767px)');
@@ -336,6 +402,7 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
         : toFileUrl(program.target);
     const newWindow = window.open(destination, '_blank', 'noopener,noreferrer');
     if (newWindow) {
+      setRecentProgramIds((prev) => [program.id, ...prev.filter((item) => item !== program.id)].slice(0, 8));
       addToast(`Opening ${program.title}...`, 'info');
       return;
     }
@@ -348,18 +415,114 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
       <div className="mb-4 flex flex-col gap-2 lg:mb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.35em] text-[#0076d3] dark:text-cyan-300">
-            Local Program Boxes
+            Guided Tool Launchers
           </p>
           <h2 className="mt-1 font-outfit text-xl font-black tracking-tight text-slate-900 sm:text-2xl dark:text-white">
-            Launch the other agency tools from one page
+            Open the right agency tool without hunting for it
           </h2>
         </div>
         <p className="max-w-xl text-xs leading-5 text-slate-500 dark:text-slate-300">
-          Quick-launch boxes tied to the local entry files already in your `Playground` folder.
+          Featured tools come first, recent tools stay visible, and the full launcher wall still lives underneath.
         </p>
       </div>
 
       <div className="space-y-3 sm:space-y-5">
+        {featuredCollections.map((collection) => (
+          <section
+            key={collection.id}
+            className="overflow-hidden rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-white/5"
+          >
+            <div className={`h-2 bg-gradient-to-r ${collection.accent}`}></div>
+            <div className="p-4 sm:p-5">
+              <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] bg-gradient-to-br ${collection.accent} text-white shadow-lg`}>
+                    <i className={`${collection.icon} text-base`}></i>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-400">
+                      {collection.eyebrow}
+                    </p>
+                    <h3 className="mt-1 font-outfit text-lg font-black tracking-tight text-slate-900 dark:text-white">
+                      {collection.title}
+                    </h3>
+                    <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-300">
+                      {collection.description}
+                    </p>
+                  </div>
+                </div>
+                <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                  {collection.items.length} shortcuts
+                </span>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {collection.items.map((program) => (
+                  <button
+                    key={program.id}
+                    onClick={() => openProgram(program)}
+                    className="group rounded-[1.1rem] border border-slate-200/80 bg-white/90 p-4 text-left shadow-[0_16px_40px_-36px_rgba(15,23,42,0.8)] transition hover:-translate-y-1 hover:border-[#0076d3]/40 hover:shadow-xl dark:border-white/10 dark:bg-[#0b1727]/80"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.95rem] bg-gradient-to-br ${program.accent} text-white shadow-lg`}>
+                        <i className={`${program.icon} text-sm`}></i>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/10 dark:text-slate-300">
+                        {program.note}
+                      </span>
+                    </div>
+                    <h4 className="mt-4 font-outfit text-lg font-black tracking-tight text-slate-900 dark:text-white">
+                      {program.title}
+                    </h4>
+                    <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-300">
+                      {program.description}
+                    </p>
+                    <div className="mt-4 inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#003f87] transition group-hover:text-[#0076d3] dark:text-cyan-300">
+                      <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                      Open now
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        ))}
+
+        <section className="rounded-[1.2rem] border border-slate-200/80 bg-white/90 p-4 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.4)] dark:border-white/10 dark:bg-[#0b1727]/80">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-400">
+                Recent Tools
+              </p>
+              <h3 className="mt-1 font-outfit text-lg font-black tracking-tight text-slate-900 dark:text-white">
+                Jump back into what you opened last
+              </h3>
+            </div>
+            <p className="max-w-xl text-xs leading-5 text-slate-500 dark:text-slate-300">
+              This keeps the launcher friendlier for repeat work, especially when someone uses the same 3 to 5 tools all day.
+            </p>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {recentPrograms.length > 0 ? (
+              recentPrograms.map((program) => (
+                <button
+                  key={program.id}
+                  onClick={() => openProgram(program)}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-600 transition hover:border-[#0076d3]/40 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+                >
+                  <i className={program.icon}></i>
+                  {program.title}
+                </button>
+              ))
+            ) : (
+              <div className="rounded-full border border-dashed border-slate-200 bg-slate-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
+                Open a tool and it will show here
+              </div>
+            )}
+          </div>
+        </section>
+
         {groupedPrograms.map((group) => (
           <section key={group.category}>
             <div className="mb-3">
@@ -377,7 +540,7 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
                       {group.category}
                     </h3>
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
-                      {group.items.length} tools ready to open
+                      {CATEGORY_DESCRIPTIONS[group.category]}
                     </p>
                   </div>
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
@@ -386,9 +549,14 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
                 </button>
               ) : (
                 <div className="flex items-center justify-between gap-4">
-                  <h3 className="text-xs font-black uppercase tracking-[0.24em] text-slate-500 dark:text-slate-300">
-                    {group.category}
-                  </h3>
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-[0.24em] text-slate-500 dark:text-slate-300">
+                      {group.category}
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                      {CATEGORY_DESCRIPTIONS[group.category]}
+                    </p>
+                  </div>
                   <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                     {group.items.length} tools
                   </span>
