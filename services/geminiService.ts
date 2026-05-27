@@ -316,6 +316,11 @@ GMAIL HARD RULES (NON-NEGOTIABLE)
 17. Include these dark-mode guard meta tags in <head> on every template:
     <meta name="color-scheme" content="light">
     <meta name="supported-color-schemes" content="light">
+18. Never duplicate the outer shell. There must only be ONE official top branding sequence total:
+    - one dual-logo header max
+    - one hero band max
+    - never repeat the agency logo/carrier logo block again immediately under the first header
+    If the draft already includes a branded header/hero, do not generate a second one.
 
 ========================================================================
 PERSON / DRIVER ROWS (CLEAN STACKED PATTERN — MANDATORY)

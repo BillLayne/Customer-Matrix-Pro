@@ -617,9 +617,294 @@ function normalizeStackClasses(html: string): string {
   return normalized;
 }
 
+interface NormalizeEmailOptions {
+  preheader?: string;
+  carrierLogoUrl?: string;
+  carrierName?: string;
+}
+
+function buildDualLogoHeader(carrierLogoUrl: string, carrierName?: string): string {
+  const safeCarrierName = carrierName?.trim() || 'Carrier';
+
+  return `<!-- Agency Logo -->
+        <tr>
+          <td align="center" style="padding:20px 0;background-color:#ffffff;" class="mobile-pad-card">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="90%" style="width:90%;">
+              <tr>
+                <td align="left" valign="top" style="padding:10px; border: 1px solid #e2e8f0; border-radius:8px; background-color: #ffffff;" class="mobile-pad-card">
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding-right:10px;"><img src="https://i.imgur.com/lxu9nfT.png" width="100" style="display:block;width:100px;max-width:100px;height:auto;" alt="Bill Layne Insurance Agency Logo"></td>
+                      <td><p style="font-size:12px;color:#64748b;text-transform:uppercase;font-weight:700;">Your Independent Agency</p></td>
+                    </tr>
+                  </table>
+                </td>
+                <td width="1" class="mobile-hide" style="width:1px;background-color:#e2e8f0;"></td>
+                <td align="right" valign="top" style="padding:10px; border: 1px solid #e2e8f0; border-radius:8px; background-color: #ffffff;" class="mobile-pad-card">
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding-right:10px;"><img src="${carrierLogoUrl}" width="100" style="display:block;width:100px;max-width:100px;height:auto;" alt="${safeCarrierName} Logo"></td>
+                      <td><p style="font-size:12px;color:#64748b;text-transform:uppercase;font-weight:700;">Your Quoted Carrier</p></td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>`;
+}
+
+// Canonical carrier-logo Imgur URLs (must stay in sync with constants.ts CARRIER_LOGOS).
+// Listed as bare imgur paths so we can match any historical/wrong URL the AI emits and force-rewrite.
+const CANONICAL_CARRIER_LOGOS: Record<string, string> = {
+  'progressive': 'https://i.imgur.com/7N1vfo0.png',
+  'nationwide': 'https://i.imgur.com/Mv5V7tV.png',
+  'travelers': 'https://i.imgur.com/m6wsO1p.png',
+  'national general': 'https://i.imgur.com/HF8oPAF.png',
+  // NatGen underwrites BLI's policies through these subsidiary entities; PDFs
+  // often show the subsidiary name even though the agent-facing brand is NatGen.
+  'natgen': 'https://i.imgur.com/HF8oPAF.png',
+  'integon': 'https://i.imgur.com/HF8oPAF.png',
+  'foremost': 'https://i.imgur.com/rHIo4r5.jpg',
+  'hagerty': 'https://i.imgur.com/0UyINHi.png',
+  'dairyland': 'https://i.imgur.com/1VkIvxv.png',
+  'ncjua': 'https://i.imgur.com/oSJj6ZW.png',
+  'nc grange mutual': 'https://i.imgur.com/Fesnkng.png',
+  'nc grange': 'https://i.imgur.com/Fesnkng.png',
+  'alamance farmers': 'https://i.imgur.com/S8BVnvs.png',
+  'alamance': 'https://i.imgur.com/S8BVnvs.png',
+};
+
+const CARRIER_HEADER_LABEL = /Your\s+Quoted\s+Carrier/i;
+
+// Force-overwrite the first <img> src inside a matched block, regardless of quote style.
+function overwriteFirstImgSrc(block: string, newSrc: string): string {
+  return block.replace(
+    /(<img\b[^>]*?\bsrc=)(["'])([^"']*)(\2)/i,
+    `$1"${newSrc}"`
+  );
+}
+
+const AGENCY_HEADER_LABEL = /Your\s+Independent\s+Agency/i;
+const AGENCY_LOGO_URL = 'https://i.imgur.com/lxu9nfT.png';
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function hasExistingDualLogoStructure(html: string, carrierLogoUrl: string): boolean {
+  const normalizedCarrierUrl = carrierLogoUrl.trim();
+  if (!normalizedCarrierUrl) return false;
+
+  const agencyLogoPattern = new RegExp(escapeRegex(AGENCY_LOGO_URL), 'i');
+  const carrierLogoPattern = new RegExp(escapeRegex(normalizedCarrierUrl), 'i');
+
+  if (!agencyLogoPattern.test(html) || !carrierLogoPattern.test(html)) {
+    return false;
+  }
+
+  const firstH1Index = html.search(/<h1\b/i);
+  const leadingSlice = firstH1Index >= 0 ? html.slice(0, firstH1Index) : html.slice(0, 12000);
+  return agencyLogoPattern.test(leadingSlice) && carrierLogoPattern.test(leadingSlice);
+}
+
+function dedupeLeadingDualLogoHeader(html: string, carrierLogoUrl: string): string {
+  if (!hasExistingDualLogoStructure(html, carrierLogoUrl)) return html;
+
+  const agencyLogoPattern = new RegExp(escapeRegex(AGENCY_LOGO_URL), 'i');
+  const carrierLogoPattern = new RegExp(escapeRegex(carrierLogoUrl.trim()), 'i');
+  const rowRegex = /<tr\b[\s\S]*?<\/tr>/gi;
+  const keptRows: string[] = [];
+  let duplicateDropped = false;
+  let rowMatch: RegExpExecArray | null;
+
+  while ((rowMatch = rowRegex.exec(html)) !== null) {
+    const row = rowMatch[0];
+    const isDualLogoRow = agencyLogoPattern.test(row) && carrierLogoPattern.test(row);
+
+    if (isDualLogoRow) {
+      if (!duplicateDropped) {
+        duplicateDropped = true;
+        keptRows.push(row);
+      }
+      continue;
+    }
+
+    keptRows.push(row);
+  }
+
+  if (!duplicateDropped) return html;
+
+  let rebuilt = html;
+  const firstRowIndex = html.search(/<tr\b/i);
+  const lastRowClose = html.lastIndexOf('</tr>');
+  if (firstRowIndex >= 0 && lastRowClose > firstRowIndex) {
+    rebuilt = html.slice(0, firstRowIndex) + keptRows.join('\n') + html.slice(lastRowClose + 5);
+  }
+
+  return rebuilt;
+}
+
+// Find every `<td>...</td>` slot that contains the carrier-header label.
+// Returns the SMALLEST enclosing slot that contains an <img> but does NOT
+// also contain "Your Independent Agency". That guarantees we target the
+// carrier cell and never accidentally clobber the agency logo when both
+// logos share a common wrapper <td>. If no enclosing slot has an <img>,
+// returns the smallest slot that excludes the agency label so we can
+// inject an <img> there.
+function findCarrierSlots(html: string): Array<{ start: number; end: number; block: string }> {
+  const slots: Array<{ start: number; end: number; block: string }> = [];
+  const labelRegex = new RegExp(CARRIER_HEADER_LABEL.source, 'gi');
+  const consumedEnds = new Set<number>();
+  let labelMatch: RegExpExecArray | null;
+
+  while ((labelMatch = labelRegex.exec(html)) !== null) {
+    const labelIdx = labelMatch.index;
+
+    // Collect every <td...> open tag start before the label.
+    const openTagRegex = /<td\b[^>]*>/gi;
+    const opens: number[] = [];
+    let openMatch: RegExpExecArray | null;
+    while ((openMatch = openTagRegex.exec(html)) !== null) {
+      if (openMatch.index >= labelIdx) break;
+      opens.push(openMatch.index);
+    }
+
+    // Closes split into before-label and after-label.
+    const closeRegex = /<\/td\s*>/gi;
+    const closesBefore: number[] = [];
+    const closesAfter: number[] = [];
+    let closeMatch: RegExpExecArray | null;
+    while ((closeMatch = closeRegex.exec(html)) !== null) {
+      const closeEnd = closeMatch.index + closeMatch[0].length;
+      if (closeMatch.index < labelIdx) closesBefore.push(closeEnd);
+      else closesAfter.push(closeEnd);
+    }
+
+    const depth = opens.length - closesBefore.length;
+    if (depth <= 0) continue;
+
+    // Build candidates innermost → outermost.
+    const candidates: Array<{ start: number; end: number; block: string }> = [];
+    for (let d = 1; d <= depth; d += 1) {
+      const openStart = opens[opens.length - d];
+      const closeEnd = closesAfter[d - 1];
+      if (closeEnd === undefined) continue;
+      candidates.push({ start: openStart, end: closeEnd, block: html.slice(openStart, closeEnd) });
+    }
+
+    // Prefer the smallest slot that has an <img> AND excludes the agency label.
+    let chosen = candidates.find(
+      (c) => /<img\b/i.test(c.block) && !AGENCY_HEADER_LABEL.test(c.block)
+    );
+
+    // If no slot has an img on the carrier side, pick the smallest slot that
+    // at least excludes the agency label — we'll inject an <img> there.
+    if (!chosen) {
+      chosen = candidates.find((c) => !AGENCY_HEADER_LABEL.test(c.block));
+    }
+
+    if (!chosen) continue;
+    if (consumedEnds.has(chosen.end)) continue;
+    consumedEnds.add(chosen.end);
+    slots.push(chosen);
+  }
+
+  return slots;
+}
+
+function normalizeCarrierHeader(html: string, options?: NormalizeEmailOptions): string {
+  const carrierLogoUrl = options?.carrierLogoUrl?.trim();
+  if (!carrierLogoUrl) return html;
+
+  const safeCarrierName = options?.carrierName?.trim() || 'Carrier';
+  let normalized = dedupeLeadingDualLogoHeader(html, carrierLogoUrl);
+
+  // ── Pass 1 ────────────────────────────────────────────────────────
+  // Find the OUTERMOST <td>...</td> slot that contains the "Your Quoted Carrier"
+  // label and FORCE its first <img src> to the canonical carrierLogoUrl.
+  // Walking to the outermost (not innermost) slot is critical: the AI often
+  // puts the carrier <img> in a sibling <td> next to the label cell. Only the
+  // outer wrapping <td> contains both. Quote-style agnostic.
+  const carrierTdMatches = findCarrierSlots(normalized);
+
+  if (carrierTdMatches.length > 0) {
+    // Replace in reverse so indices stay valid.
+    for (let i = carrierTdMatches.length - 1; i >= 0; i -= 1) {
+      const { start, end, block } = carrierTdMatches[i];
+      let rewritten = block;
+      if (/<img\b/i.test(rewritten)) {
+        rewritten = overwriteFirstImgSrc(rewritten, carrierLogoUrl);
+      } else {
+        // No img in the carrier slot — strip any text-pill placeholder paragraph
+        // (a <p> that's NOT the "Your Quoted Carrier" label) and inject a fresh
+        // <img> just before the label. This produces a clean carrier cell
+        // even when the upstream template rendered the carrier name as a text pill.
+        rewritten = rewritten.replace(
+          /<p\b[^>]*>([\s\S]*?)<\/p>/gi,
+          (match, content: string) => (CARRIER_HEADER_LABEL.test(content) ? match : '')
+        );
+        rewritten = rewritten.replace(
+          CARRIER_HEADER_LABEL,
+          `<img src="${carrierLogoUrl}" width="150" style="display:block;width:150px;max-width:100%;height:auto;margin:0 auto;" alt="${safeCarrierName} Logo" /><br />Your Quoted Carrier`
+        );
+      }
+      normalized = normalized.slice(0, start) + rewritten + normalized.slice(end);
+    }
+    return normalized;
+  }
+
+  // ── Pass 2 ────────────────────────────────────────────────────────
+  // No "Your Quoted Carrier" label anywhere. Try the older comment-anchored
+  // template (legacy fallback).
+  if (/<!--\s*Agency Logo\s*-->/i.test(normalized) && /<!--\s*HERO SECTION\s*-->/i.test(normalized)) {
+    normalized = normalized.replace(
+      /(<!--\s*Agency Logo\s*-->)[\s\S]*?(<!--\s*HERO SECTION\s*-->)/i,
+      `${buildDualLogoHeader(carrierLogoUrl, safeCarrierName)}\n        $2`
+    );
+    return normalized;
+  }
+
+  // ── Pass 3 ────────────────────────────────────────────────────────
+  // Last resort: prepend the full dual-logo header inside the 600px container.
+  if (hasExistingDualLogoStructure(normalized, carrierLogoUrl)) {
+    return normalized;
+  }
+
+  const containerMatch = normalized.match(
+    /(<table\b[^>]*\bclass=(["'])[^"']*\bcontainer-600\b[^"']*\2[^>]*>)/i
+  );
+  if (containerMatch) {
+    const insertAt = (containerMatch.index ?? 0) + containerMatch[0].length;
+    normalized = `${normalized.slice(0, insertAt)}\n${buildDualLogoHeader(carrierLogoUrl, safeCarrierName)}${normalized.slice(insertAt)}`;
+  }
+
+  return normalized;
+}
+
+// Optional helper for callers/tests — exposes the canonical lookup so other
+// code (e.g. AiAssistant.tsx) can rewrite an AI-supplied carrier URL to the
+// known-good one before passing it into the engine.
+// Uses substring matching so long carrier names extracted from PDFs
+// (e.g. "PROGRESSIVE CASUALTY INSURANCE COMPANY") resolve to the canonical
+// Progressive URL. Longer keys are checked first so "nc grange mutual" wins
+// over "nc grange" when both would match.
+export function canonicalCarrierLogoFor(carrierName?: string): string | undefined {
+  if (!carrierName) return undefined;
+  const haystack = carrierName.trim().toLowerCase();
+  if (!haystack) return undefined;
+  const direct = CANONICAL_CARRIER_LOGOS[haystack];
+  if (direct) return direct;
+  const keysBySpecificity = Object.keys(CANONICAL_CARRIER_LOGOS).sort((a, b) => b.length - a.length);
+  for (const key of keysBySpecificity) {
+    if (haystack.includes(key)) return CANONICAL_CARRIER_LOGOS[key];
+  }
+  return undefined;
+}
+
 export function normalizeGeneratedEmailHtml(
   html: string,
-  options?: { preheader?: string }
+  options?: NormalizeEmailOptions
 ): string {
   if (!html || !html.trim()) return html;
 
@@ -667,6 +952,7 @@ export function normalizeGeneratedEmailHtml(
   }
 
   normalized = normalizeStackClasses(normalized);
+  normalized = normalizeCarrierHeader(normalized, options);
 
   return normalized;
 }
