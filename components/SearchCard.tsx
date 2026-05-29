@@ -5,6 +5,7 @@ import { MODE_META, NC_COUNTY_GIS_DATA, DEFAULT_INSURANCE_PORTALS } from '../con
 import Modal from './Modal';
 import { generateContent } from '../services/geminiService';
 import { GoogleGenAI } from "@google/genai";
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface SearchCardProps {
   addToast: (message: string, type?: 'success' | 'warning' | 'danger' | 'info') => void;
@@ -56,6 +57,8 @@ const parseJsonFromText = <T,>(text: string): T => {
 const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch }) => {
   const [mode, setMode] = useState<SearchMode>('agency');
   const [query, setQuery] = useState('');
+  const [searchHistory, setSearchHistory] = useLocalStorage<string[]>('matrix-pro-search-history', []);
+  const [showCarrierGateway, setShowCarrierGateway] = useLocalStorage<boolean>('matrix-pro-show-carrier-gateway', false);
   const [isGisModalOpen, setIsGisModalOpen] = useState(false);
   const [gisInfo, setGisInfo] = useState<{ county: string; url: string; note?: string } | null>(null);
   const [isGisSearching, setIsGisSearching] = useState(false);
@@ -81,6 +84,36 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
   const [isProcessingNotesFile, setIsProcessingNotesFile] = useState(false);
   const [stagedNotesFile, setStagedNotesFile] = useState<{ data: string, mimeType: string, name: string } | null>(null);
   const notesFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleHistoryClick = (historicQuery: string) => {
+    setQuery(historicQuery);
+    setTimeout(() => {
+      onSearch();
+      let url = '';
+      switch (mode) {
+        case 'agency': {
+          const selection = /\d+/.test(historicQuery) ? "Address" : "Name";
+          url = `https://agents.agencymatrix.com/#/customer/search?selection=${selection}&query=${encodeURIComponent(historicQuery)}`;
+          break;
+        }
+        case 'web':
+          url = `https://www.google.com/search?q=${encodeURIComponent(historicQuery)}`;
+          break;
+        case 'realestate':
+          url = `https://www.zillow.com/homes/${encodeURIComponent(historicQuery)}_rb/`;
+          break;
+        case 'people':
+          url = `https://www.truepeoplesearch.com/results?name=${encodeURIComponent(historicQuery)}`;
+          break;
+        case 'onedrive': {
+          url = `https://drive.google.com/drive/u/1/search?q=${encodeURIComponent(historicQuery.trim())}`;
+          break;
+        }
+      }
+      window.open(url, '_blank');
+      addToast(`Searching ${mode}...`, 'info');
+    }, 50);
+  };
 
   const GOOGLE_DRIVE_CONSTANTS = {
       agencyEmail: 'docs@billlayneinsurance.com',
@@ -139,6 +172,11 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
       inputRef.current?.focus();
       return;
     }
+    const trimmedQuery = query.trim();
+    setSearchHistory((prev) => {
+      const filtered = prev.filter((q) => q.toLowerCase() !== trimmedQuery.toLowerCase());
+      return [trimmedQuery, ...filtered].slice(0, 6);
+    });
     onSearch();
     let url = '';
     switch (mode) {
@@ -621,9 +659,38 @@ Return ONLY a JSON object in this exact shape:
                 >
                   <i className={`fa-solid ${btn.icon} ${mode === btn.mode ? '' : 'text-slate-300 group-hover:text-primary dark:group-hover:text-white transition-colors'}`}></i> 
                   {btn.label}
+                  <kbd className={`hidden md:inline-block px-1.5 py-0.5 rounded font-mono text-[9px] font-black uppercase tracking-normal ${
+                    mode === btn.mode
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                  }`}>
+                    {btn.shortcut.replace('Alt + ', '⌥').replace('Ctrl + ', '⌃')}
+                  </kbd>
                 </button>
               ))}
           </div>
+
+          {/* Recent Searches History */}
+          {searchHistory.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 animate-fade-in pl-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 mr-1">Recent:</span>
+              {searchHistory.map((historicQuery, idx) => (
+                <button
+                  key={`${historicQuery}-${idx}`}
+                  onClick={() => handleHistoryClick(historicQuery)}
+                  className="rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:border-primary/50 dark:hover:border-accent/50 hover:bg-white dark:hover:bg-white/10 hover:shadow-sm transition-all"
+                >
+                  {historicQuery}
+                </button>
+              ))}
+              <button
+                onClick={() => setSearchHistory([])}
+                className="text-[10px] font-black uppercase tracking-wider text-rose-500/80 hover:text-rose-600 pl-2 transition-colors font-outfit font-black"
+              >
+                Clear
+              </button>
+            </div>
+          )}
         </div>
         
         <div className={`relative z-10 grid grid-cols-2 gap-3 md:grid-cols-4 ${mode === 'realestate' ? 'lg:grid-cols-6' : 'lg:grid-cols-5'}`}>
@@ -679,53 +746,64 @@ Return ONLY a JSON object in this exact shape:
         </div>
 
 
-        <div className="mt-8 pt-5 border-t border-slate-100 dark:border-white/10">
-            <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-300 uppercase tracking-[2px] mb-4 pl-1">Master Carrier Gateway</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-                {DEFAULT_INSURANCE_PORTALS.map(portal => (
-                    <a 
-                        key={portal.id} 
-                        href={portal.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="relative flex flex-col items-center justify-center p-3 rounded-xl border border-transparent hover:shadow-glow transition-all duration-300 group/portal text-center min-h-24 overflow-hidden backdrop-blur-md bg-white/5"
-                        style={{ 
-                            backgroundColor: portal.color ? `${portal.color}1A` : undefined,
-                            borderColor: portal.color ? `${portal.color}33` : undefined
-                        }}
-                    >
+        <div className="mt-6 border-t border-slate-100 pt-4 dark:border-white/10">
+            <button
+                type="button"
+                onClick={() => setShowCarrierGateway((prev) => !prev)}
+                className="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-left transition hover:border-primary/40 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+            >
+                <span>
+                    <span className="block text-[10px] font-black uppercase tracking-[2px] text-slate-400 dark:text-slate-300">
+                        Master Carrier Gateway
+                    </span>
+                    <span className="mt-1 block text-xs font-semibold text-slate-500 dark:text-slate-300">
+                        {showCarrierGateway ? 'Carrier shortcuts are open.' : 'Carrier shortcuts are tucked away to keep Search compact.'}
+                    </span>
+                </span>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-200">
+                    <i className={`fa-solid ${showCarrierGateway ? 'fa-chevron-up' : 'fa-chevron-down'} text-sm`}></i>
+                </span>
+            </button>
 
-                        {/* Hover Background Fill */}
-                        <div 
-                            className="absolute inset-0 opacity-0 group-hover/portal:opacity-100 transition-opacity duration-300"
-                            style={{ backgroundColor: portal.color }}
-                        ></div>
-
-                        {/* Icon / Image Container */}
-                        <div className="relative z-10 mb-3 transition-transform duration-300 group-hover/portal:scale-110 flex items-center justify-center h-12 w-full">
-                            {portal.image ? (
-                                <img 
-                                    src={portal.image} 
-                                    alt={portal.name} 
-                                    className="h-full w-auto object-contain group-hover/portal:brightness-0 group-hover/portal:invert transition-all duration-300" 
-                                />
-                            ) : (
-                                <i 
-                                    className={`${portal.icon} text-2xl transition-colors duration-300 group-hover/portal:text-white`}
-                                    style={{ color: !portal.image ? (portal.color || '#94a3b8') : undefined }}
-                                ></i>
-                            )}
-                        </div>
-
-                        {/* Text */}
-                        <span 
-                            className="relative z-10 text-[9px] font-black uppercase tracking-widest leading-tight transition-colors duration-300 text-slate-600 dark:text-slate-400 group-hover/portal:text-white"
+            {showCarrierGateway && (
+                <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-7">
+                    {DEFAULT_INSURANCE_PORTALS.map(portal => (
+                        <a
+                            key={portal.id}
+                            href={portal.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="relative flex min-h-20 flex-col items-center justify-center overflow-hidden rounded-xl border border-transparent bg-white/5 p-3 text-center backdrop-blur-md transition-all duration-300 hover:shadow-glow group/portal"
+                            style={{
+                                backgroundColor: portal.color ? `${portal.color}1A` : undefined,
+                                borderColor: portal.color ? `${portal.color}33` : undefined
+                            }}
                         >
-                            {portal.name}
-                        </span>
-                    </a>
-                ))}
-            </div>
+                            <div
+                                className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover/portal:opacity-100"
+                                style={{ backgroundColor: portal.color }}
+                            ></div>
+                            <div className="relative z-10 mb-2 flex h-10 w-full items-center justify-center transition-transform duration-300 group-hover/portal:scale-110">
+                                {portal.image ? (
+                                    <img
+                                        src={portal.image}
+                                        alt={portal.name}
+                                        className="h-full w-auto object-contain transition-all duration-300 group-hover/portal:brightness-0 group-hover/portal:invert"
+                                    />
+                                ) : (
+                                    <i
+                                        className={`${portal.icon} text-xl transition-colors duration-300 group-hover/portal:text-white`}
+                                        style={{ color: !portal.image ? (portal.color || '#94a3b8') : undefined }}
+                                    ></i>
+                                )}
+                            </div>
+                            <span className="relative z-10 text-[9px] font-black uppercase leading-tight tracking-widest text-slate-600 transition-colors duration-300 group-hover/portal:text-white dark:text-slate-400">
+                                {portal.name}
+                            </span>
+                        </a>
+                    ))}
+                </div>
+            )}
         </div>
       </div>
 
@@ -738,7 +816,7 @@ Return ONLY a JSON object in this exact shape:
           )}
       </Modal>
 
-      <Modal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} title={reportSubject || 'Engineering Risk Intel...'}>
+      <Modal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} title={reportSubject || 'Engineering Risk Intel...'} maxWidthClass="max-w-5xl">
         {isGeneratingReport && !reportHtml ? (
             <div className="flex flex-col items-center justify-center h-96 text-text-secondary-light">
                 <div className="relative w-28 h-28 mb-8">
@@ -764,7 +842,7 @@ Return ONLY a JSON object in this exact shape:
       </Modal>
 
       {isNotesModalOpen && !isNotesMinimized && (
-        <Modal isOpen={true} onClose={handleNotesClose} title="Audit-Safe Compliance Memo">
+        <Modal isOpen={true} onClose={handleNotesClose} title="Audit-Safe Compliance Memo" maxWidthClass="max-w-2xl">
             <div className="space-y-5">
                 <div className="flex items-center justify-between mb-2">
                     <button onClick={() => setIsNotesMinimized(true)} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#2080a0] transition-colors flex items-center gap-2"><i className="fa-solid fa-window-minimize"></i> Minimize Studio</button>

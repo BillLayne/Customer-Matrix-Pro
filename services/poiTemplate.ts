@@ -44,8 +44,8 @@ const buildCoverageRows = (coverages: PoiData['COVERAGES'], fontStack: string) =
 
 export const generatePoiEmail = (data: PoiData): string => {
   const fontStack = "'Inter', Arial, 'Helvetica Neue', Helvetica, sans-serif";
-  const carrierLogo =
-    data.CARRIER_LOGO_URL?.trim() || 'https://i.imgur.com/lxu9nfT.png';
+  const carrierLogoRaw = data.CARRIER_LOGO_URL?.trim() || '';
+  const hasCarrierLogo = carrierLogoRaw.length > 0;
   const insuredName = escapeHtml(data.INSURED_NAME);
   const firstName = escapeHtml(data.FIRST_NAME);
   const policyNumber = escapeHtml(data.POLICY_NUMBER);
@@ -138,8 +138,12 @@ export const generatePoiEmail = (data: PoiData): string => {
                   </td>
                   <td class="mobile-divider" width="1" style="width:1px; background-color:#e2e8f0;">&nbsp;</td>
                   <td class="stack logo-mobile mobile-center" width="50%" valign="middle" align="center" bgcolor="#ffffff" style="width:50%; padding:22px 12px; background-color:#ffffff;">
-                    <img src="${carrierLogo}" alt="${carrier}" width="150" style="display:block; width:150px; max-width:100%; height:auto; margin:0 auto;" />
-                    <p style="margin:8px 0 0 0; font-family:${fontStack}; font-size:10px; line-height:14px; color:#64748b; font-weight:600; letter-spacing:0.5px; text-transform:uppercase;">${carrierBadge}</p>
+                    ${
+                      hasCarrierLogo
+                        ? `<img src="${carrierLogoRaw}" alt="${carrier}" width="150" style="display:block; width:150px; max-width:100%; height:auto; margin:0 auto;" />`
+                        : `<p style="margin:0; padding:10px 14px; display:inline-block; font-family:${fontStack}; font-size:13px; line-height:18px; color:#003f87; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; border:1px solid #e2e8f0; border-radius:8px; background-color:#ffffff;">${carrier}</p>`
+                    }
+                    <p style="margin:8px 0 0 0; font-family:${fontStack}; font-size:10px; line-height:14px; color:#64748b; font-weight:600; letter-spacing:0.5px; text-transform:uppercase;">Your Quoted Carrier &middot; ${carrierBadge}</p>
                   </td>
                 </tr>
               </table>
