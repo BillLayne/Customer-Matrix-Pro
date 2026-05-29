@@ -139,7 +139,7 @@ const workflowGuides = [
     actions: [
       { label: 'Certificates', type: 'link' as const, href: 'https://coi-certificates-certguard-ai.pages.dev/' },
       { label: 'POI Generator', type: 'link' as const, href: 'https://bill-layne-insurance-poi-generator.pages.dev' },
-      { label: 'Insurance Cards', type: 'link' as const, href: 'https://insurance-card-generator-2026.pages.dev' },
+      { label: 'Insurance Cards', type: 'link' as const, href: 'https://insurance-card-generator-2026-color-edition.pages.dev/' },
     ],
   },
   {
