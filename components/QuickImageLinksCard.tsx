@@ -15,7 +15,7 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const recentUploads = useMemo(() => history.slice(0, 6), [history]);
+  const recentUploads = useMemo(() => history, [history]);
 
   const copyLink = async (link: string) => {
     await navigator.clipboard.writeText(link);
@@ -156,11 +156,15 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
               Recent Uploads
             </h3>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:bg-white/10 dark:text-slate-300">
-              {history.length} saved
+              {recentUploads.length} saved
             </span>
           </div>
 
-          <div className="max-h-[26rem] space-y-3 overflow-y-auto pr-1">
+          <div
+            aria-label="Recent uploaded image links"
+            data-testid="quick-image-recent-uploads-scroll"
+            className="max-h-[26rem] min-h-0 space-y-3 overflow-y-auto overscroll-contain pr-1 touch-pan-y custom-scrollbar"
+          >
             {recentUploads.length > 0 ? (
               recentUploads.map((item) => (
                 <div

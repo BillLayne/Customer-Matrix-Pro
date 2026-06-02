@@ -28,6 +28,24 @@ const quickActions = [
     href: 'https://agents.agencymatrix.com/#/reports',
     icon: 'fa-solid fa-chart-column',
   },
+  {
+    label: 'Carrier Contacts',
+    description: 'Open carrier and agency contact pages.',
+    href: 'https://insurance-card-generator-2026-color-edition.pages.dev/contact-page-index',
+    icon: 'fa-solid fa-address-book',
+  },
+  {
+    label: 'Customer Reference',
+    description: 'Build the insurance customer reference card.',
+    href: 'https://insurance-card-generator-2026-color-edition.pages.dev/?builder=policy-reference&agency=1',
+    icon: 'fa-solid fa-clipboard-list',
+  },
+  {
+    label: 'Renewal Gmail',
+    description: 'Open the renewal Gmail program.',
+    href: 'https://renewal-gmail-program.pages.dev/',
+    icon: 'fa-solid fa-envelope-circle-check',
+  },
 ];
 
 type WorkspaceTab = 'search' | 'gmail' | 'tools';
@@ -134,6 +152,7 @@ const workflowGuides = [
       { label: 'Send Docs', type: 'link' as const, href: 'https://www.sendbilldocs.com/agent.html' },
       { label: 'SMS Center', type: 'link' as const, href: 'https://agency-sms-command-center.bill-7e3.workers.dev' },
       { label: 'Gmail Studio', type: 'section' as const, panel: 'email' as const },
+      { label: 'Renewal Gmail', type: 'link' as const, href: 'https://renewal-gmail-program.pages.dev/' },
     ],
   },
   {
@@ -147,6 +166,8 @@ const workflowGuides = [
       { label: 'Certificates', type: 'link' as const, href: 'https://coi-certificates-certguard-ai.pages.dev/' },
       { label: 'POI Generator', type: 'link' as const, href: 'https://bill-layne-insurance-poi-generator.pages.dev' },
       { label: 'Insurance Cards', type: 'link' as const, href: 'https://insurance-card-generator-2026-color-edition.pages.dev/' },
+      { label: 'Carrier Contacts', type: 'link' as const, href: 'https://insurance-card-generator-2026-color-edition.pages.dev/contact-page-index' },
+      { label: 'Reference Card', type: 'link' as const, href: 'https://insurance-card-generator-2026-color-edition.pages.dev/?builder=policy-reference&agency=1' },
     ],
   },
   {
