@@ -347,7 +347,7 @@ const FEATURED_COLLECTIONS: LauncherCollection[] = [
     description: 'These are the fastest paths for customer communication, certificates, proof, and quote delivery.',
     icon: 'fa-solid fa-star',
     accent: 'from-[#003f87] via-[#0076d3] to-cyan-400',
-    programIds: ['send-docs', 'sms-command-center', 'certificate-generator', 'poi-generator', 'insurance-cards', 'pdf-quote-creator'],
+    programIds: ['send-docs', 'sms-command-center', 'certificate-generator', 'poi-generator', 'insurance-cards', 'pdf-quote-creator', 'no-loss'],
   },
   {
     id: 'coverage-lane',
@@ -361,11 +361,11 @@ const FEATURED_COLLECTIONS: LauncherCollection[] = [
   {
     id: 'customer-shortcuts',
     eyebrow: 'Customer Shortcuts',
-    title: 'Reference, contacts, and renewal email links',
-    description: 'Fast access to the customer reference card, carrier contact pages, and renewal Gmail program.',
+    title: 'Reference, contacts, no-loss, and renewal links',
+    description: 'Fast access to the customer reference card, carrier contact pages, no-loss forms, and renewal Gmail program.',
     icon: 'fa-solid fa-link',
     accent: 'from-slate-900 via-blue-800 to-cyan-500',
-    programIds: ['carrier-contact-pages', 'customer-reference-card', 'renewal-gmail-program'],
+    programIds: ['carrier-contact-pages', 'customer-reference-card', 'no-loss', 'renewal-gmail-program'],
   },
 ];
 

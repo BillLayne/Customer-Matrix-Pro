@@ -46,6 +46,12 @@ const quickActions = [
     href: 'https://renewal-gmail-program.pages.dev/',
     icon: 'fa-solid fa-envelope-circle-check',
   },
+  {
+    label: 'No Loss Forms',
+    description: 'Open the no-loss form agent portal.',
+    href: 'https://mynolossform.com/agent-portal.html',
+    icon: 'fa-solid fa-file-signature',
+  },
 ];
 
 type WorkspaceTab = 'search' | 'gmail' | 'tools';
