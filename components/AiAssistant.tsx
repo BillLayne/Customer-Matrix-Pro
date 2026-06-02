@@ -686,13 +686,13 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                     letterSpacing: compact ? '0.08em' : undefined
                 }}
             >
-                4. Prompt Draft
+                {compact ? 'Prompt Draft' : '4. Prompt Draft'}
             </label>
             <textarea
                 value={promptDraft}
                 onChange={(e) => setPromptDraft(e.target.value)}
                 placeholder="Describe the goal of this email (e.g. 'Generate a Quote Proposal for John Smith, Progressive auto policy')..."
-                className={`w-full ${compact ? 'h-48' : 'h-28'} text-sm font-medium outline-none transition-all resize-none placeholder:text-slate-400 text-slate-800 ${compact ? 'mb-3' : 'mb-3'}`}
+                className={`w-full ${compact ? 'h-40' : 'h-28'} text-sm font-medium outline-none transition-all resize-none placeholder:text-slate-400 text-slate-800 ${compact ? 'mb-3' : 'mb-3'}`}
                 style={{
                     border: '1px solid #d1d5db',
                     borderRadius: '8px',
@@ -795,10 +795,10 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                 </div>
             </div>
 
-            {/* Grid layout for inputs: 3 columns on desktop in Gmail mode, otherwise stacked */}
-            <div className={layoutMode === 'gmail' ? "grid grid-cols-1 lg:grid-cols-[1.05fr_0.9fr_1.05fr_1.15fr] gap-4 items-start" : "space-y-6"}>
+            {/* Gmail mode uses two roomy work lanes so the template and prompt panels stay usable. */}
+            <div className={layoutMode === 'gmail' ? "grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.82fr)_minmax(680px,1.55fr)] xl:items-start" : "space-y-6"}>
                 {/* Column 1: Brand Identity System */}
-                <div className="order-2 space-y-6 lg:order-1">
+                <div className={layoutMode === 'gmail' ? "order-2 space-y-4 xl:col-start-1 xl:row-start-1" : "order-2 space-y-6 lg:order-1"}>
 
                     {/* 1. Brand Identity System */}
             <div 
@@ -820,7 +820,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                         fontSize: '14px'
                     }}
                 >
-                    1. Brand Identity System
+                    {layoutMode === 'gmail' ? 'Brand Identity System' : '1. Brand Identity System'}
                 </label>
                 <div className={layoutMode === 'gmail' ? "grid grid-cols-2 gap-2 mb-3" : "grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3"}>
                     {Object.keys(CARRIER_LOGOS)
@@ -923,7 +923,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                 </div> {/* Closes Column 1 wrapper */}
 
             {/* Column 2: Intelligence Feed & Options */}
-            <div className="order-3 space-y-6 lg:order-2">
+            <div className={layoutMode === 'gmail' ? "order-3 space-y-4 xl:col-start-1 xl:row-start-2" : "order-3 space-y-6 lg:order-2"}>
                 {/* 2. Intelligence Feed */}
                 <div 
                     style={{
@@ -944,7 +944,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                             fontSize: '14px'
                         }}
                     >
-                        2. Intelligence Feed
+                        {layoutMode === 'gmail' ? 'Intelligence Feed' : '2. Intelligence Feed'}
                     </label>
                     <div 
                         onClick={() => fileInputRef.current?.click()}
@@ -994,7 +994,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
             </div> {/* Closes Column 2 wrapper */}
 
             {/* Column 3: Template Builder */}
-            <div className="order-4 space-y-6 lg:order-3">
+            <div className={layoutMode === 'gmail' ? "order-4 space-y-4 xl:col-start-2 xl:row-start-2" : "order-4 space-y-6 lg:order-3"}>
 
             {/* 3. Template Builder */}
             <div 
@@ -1018,7 +1018,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                                 letterSpacing: '0.08em'
                             }}
                         >
-                            3. Template Builder
+                            {layoutMode === 'gmail' ? 'Template Builder' : '3. Template Builder'}
                         </label>
                         <p className="mt-2 text-[11px] font-medium text-slate-500">
                             Tap a template to load it into the prompt draft.
@@ -1039,7 +1039,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                             Frequently Used (Favorites)
                         </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {/* POI Template */}
                         {(() => {
                             const tmpl = PROMPT_TEMPLATES.poi;
@@ -1195,7 +1195,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                 </div>
 
                 <div
-                    className="grid grid-cols-2 gap-2 overflow-y-auto pr-1"
+                    className="grid grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 2xl:grid-cols-3"
                     style={{
                         maxHeight: '200px'
                     }}
@@ -1271,7 +1271,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                 </div> {/* Closes Column 3 wrapper */}
 
                 {layoutMode === 'gmail' && (
-                    <div className="order-1 lg:sticky lg:top-44 lg:order-4">
+                    <div className="order-1 xl:col-start-2 xl:row-start-1">
                         {renderPromptDraftPanel(true)}
                     </div>
                 )}
