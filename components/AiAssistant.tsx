@@ -142,6 +142,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
     const [customLogoUrl, setCustomLogoUrl] = useState('');
     
     const [promptDraft, setPromptDraft] = useState('');
+    const [selectedTemplateKey, setSelectedTemplateKey] = useState<keyof typeof PROMPT_TEMPLATES | ''>('');
     const [templateSearch, setTemplateSearch] = useState('');
     const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
     const [recipientEmail, setRecipientEmail] = useState('');
@@ -178,6 +179,14 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
         }
 
         return context.join('\n\n');
+    };
+
+    const selectTemplate = (key: keyof typeof PROMPT_TEMPLATES) => {
+        const template = PROMPT_TEMPLATES[key];
+        if (!template) return;
+        setSelectedTemplateKey(key);
+        setPromptDraft(template.prompt);
+        addToast(`Loaded "${template.title}" template.`, 'success');
     };
 
     const reportValidation = (validation: ValidationResult, successMessage: string) => {
@@ -223,7 +232,14 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
         setValidationResult(null);
 
         try {
-            const isPoi = promptDraft.toLowerCase().includes('proof of insurance') || promptDraft.toLowerCase().includes('verification of insurance');
+            const activeTemplate =
+                (selectedTemplateKey && PROMPT_TEMPLATES[selectedTemplateKey]) ||
+                Object.values(PROMPT_TEMPLATES).find((template) => template.prompt === promptDraft);
+            const fallbackPoiTextMatch =
+                !selectedTemplateKey &&
+                (promptDraft.toLowerCase().includes('proof of insurance') ||
+                    promptDraft.toLowerCase().includes('verification of insurance'));
+            const isPoi = selectedTemplateKey === 'poi' || fallbackPoiTextMatch;
             const fileData = attachedFile
                 ? { mimeType: attachedFile.mimeType, data: attachedFile.base64 }
                 : undefined;
@@ -274,10 +290,12 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                 subject = parsed.subject || "Your Proof of Insurance";
                 finalHtml = generatePoiEmail(poiData);
             } else {
-                const activeTemplate = Object.values(PROMPT_TEMPLATES).find((template) => template.prompt === promptDraft);
                 const result = await generateEmailTemplate({
+                    templateKey: activeTemplate?.key || (selectedTemplateKey as string) || '',
+                    templateType: activeTemplate?.templateType || 'general',
                     templateTitle: activeTemplate?.title,
                     templateInstructions: activeTemplate?.prompt,
+                    contract: activeTemplate,
                     userData: promptDraft || "Summarize the attached document and provide a clear overview of coverage.",
                     file: fileData,
                     supplementalInstructions: buildStudioContext() || undefined,
@@ -409,6 +427,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
         setActiveCarrierName('');
         setActiveCarrierLogoUrl('');
         setPromptDraft('');
+        setSelectedTemplateKey('');
         setAttachedFile(null);
         setSelectedCarrier('');
         setCustomBrandName('');
@@ -667,7 +686,9 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
 
     const templateEntries = Object.entries(PROMPT_TEMPLATES)
         .sort((a, b) => a[1].title.localeCompare(b[1].title));
-    const activeTemplateEntry = templateEntries.find(([, tmpl]) => tmpl.prompt === promptDraft);
+    const activeTemplateEntry = selectedTemplateKey
+        ? templateEntries.find(([key]) => key === selectedTemplateKey)
+        : templateEntries.find(([, tmpl]) => tmpl.prompt === promptDraft);
     const selectedBrandLabel = customBrandName.trim() || selectedCarrier || 'No brand selected';
 
     const renderPromptDraftPanel = (compact = false) => (
@@ -1062,10 +1083,11 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                     <select
                         value={activeTemplateEntry?.[0] || ''}
                         onChange={(e) => {
-                            const entry = templateEntries.find(([key]) => key === e.target.value);
-                            if (!entry) return;
-                            setPromptDraft(entry[1].prompt);
-                            addToast(`Loaded "${entry[1].title}" template.`, 'success');
+                            if (!e.target.value) {
+                                setSelectedTemplateKey('');
+                                return;
+                            }
+                            selectTemplate(e.target.value as keyof typeof PROMPT_TEMPLATES);
                         }}
                         className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-black text-slate-800 outline-none transition focus:border-primary focus:bg-white"
                     >
@@ -1103,10 +1125,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                             <button
                                 key={key as string}
                                 type="button"
-                                onClick={() => {
-                                    setPromptDraft(template.prompt);
-                                    addToast(`Loaded "${template.title}" template.`, 'success');
-                                }}
+                                onClick={() => selectTemplate(key as keyof typeof PROMPT_TEMPLATES)}
                                 className={`rounded-xl border px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.1em] transition ${
                                     isSelected
                                         ? 'border-primary bg-blue-50 text-primary'
@@ -1145,10 +1164,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                                     <button
                                         key={key}
                                         type="button"
-                                        onClick={() => {
-                                            setPromptDraft(tmpl.prompt);
-                                            addToast(`Loaded "${tmpl.title}" template.`, 'success');
-                                        }}
+                                        onClick={() => selectTemplate(key as keyof typeof PROMPT_TEMPLATES)}
                                         className={`flex min-h-[52px] items-center gap-3 rounded-xl border px-3 py-2 text-left transition ${
                                             activeTemplateEntry?.[0] === key
                                                 ? 'border-primary bg-blue-50'
