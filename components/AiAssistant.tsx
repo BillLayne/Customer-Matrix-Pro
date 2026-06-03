@@ -143,7 +143,6 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
     
     const [promptDraft, setPromptDraft] = useState('');
     const [selectedTemplateKey, setSelectedTemplateKey] = useState<keyof typeof PROMPT_TEMPLATES | ''>('');
-    const [templateSearch, setTemplateSearch] = useState('');
     const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
     const [recipientEmail, setRecipientEmail] = useState('');
     const [refinementInstruction, setRefinementInstruction] = useState('');
@@ -675,15 +674,6 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
         );
     };;
 
-    const filteredOtherTemplates = Object.entries(PROMPT_TEMPLATES)
-        .filter(([key]) => key !== 'poi' && key !== 'receipt')
-        .filter(([, tmpl]) => {
-            const normalizedQuery = templateSearch.trim().toLowerCase();
-            if (!normalizedQuery) return true;
-            return `${tmpl.title} ${tmpl.prompt}`.toLowerCase().includes(normalizedQuery);
-        })
-        .sort((a, b) => a[1].title.localeCompare(b[1].title));
-
     const templateEntries = Object.entries(PROMPT_TEMPLATES)
         .sort((a, b) => a[1].title.localeCompare(b[1].title));
     const activeTemplateEntry = selectedTemplateKey
@@ -748,41 +738,184 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
         </div>
     );
 
-    const renderStickyGmailActions = () => {
-        if (layoutMode !== 'gmail') return null;
-
-        return (
-            <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-18px_45px_-32px_rgba(15,23,42,0.7)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/95">
-                <div className="mx-auto flex max-w-7xl items-center gap-3">
-                    <div className="hidden min-w-0 flex-1 sm:block">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary dark:text-cyan-300">
-                            Gmail Engineering
-                        </p>
-                        <p className="truncate text-xs font-semibold text-slate-500 dark:text-slate-300">
-                            Prompt ready: {promptDraft.trim() ? 'yes' : 'add instructions or choose a template'}
-                        </p>
-                    </div>
-                    <button
-                        onClick={handleGenerate}
-                        disabled={isLoading}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-button-gradient px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-white shadow-button-glow transition hover:scale-[1.01] active:scale-95 disabled:opacity-60 sm:flex-none sm:min-w-[240px]"
-                    >
-                        {isLoading ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-wand-magic-sparkles text-amber-300"></i>}
-                        {isLoading ? 'Engineering...' : 'Generate Email'}
-                    </button>
-                    {previewHtml && (
-                        <button
-                            onClick={handleSyncToGmail}
-                            className="hidden items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-primary shadow-sm transition hover:bg-slate-50 sm:flex dark:border-white/10 dark:bg-white/5 dark:text-cyan-300"
+    const renderGmailControlStrip = () => (
+        <div
+            className="grid gap-3 xl:grid-cols-[minmax(260px,0.78fr)_minmax(420px,1.22fr)]"
+        >
+            <details
+                className="group"
+                style={{
+                    background: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '12px',
+                    boxShadow: '0 1px 3px rgba(15,23,42,0.06)'
+                }}
+            >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-slate-800 [&::-webkit-details-marker]:hidden">
+                    <span className="min-w-0">
+                        <span
+                            className="block"
+                            style={{
+                                borderLeft: '4px solid #003f87',
+                                paddingLeft: '10px',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                fontSize: '12px',
+                                letterSpacing: '0.08em'
+                            }}
                         >
-                            <i className="fa-brands fa-google"></i>
-                            Sync
-                        </button>
-                    )}
+                            Setup & Brand
+                        </span>
+                        <span className="mt-1 block truncate pl-3 text-[11px] font-semibold text-slate-500">
+                            {selectedBrandLabel}
+                        </span>
+                    </span>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500 transition group-open:rotate-180">
+                        <i className="fa-solid fa-chevron-down text-xs"></i>
+                    </span>
+                </summary>
+
+                <div className="mt-3">
+                    <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4 2xl:grid-cols-5">
+                        {Object.keys(CARRIER_LOGOS)
+                            .sort((a, b) => a.localeCompare(b))
+                            .map((name) => (
+                                <button
+                                    key={name}
+                                    onClick={() => {
+                                        if (selectedCarrier === name) {
+                                            setSelectedCarrier("");
+                                        } else {
+                                            setSelectedCarrier(name);
+                                            setCustomBrandName('');
+                                            setCustomLogoUrl('');
+                                        }
+                                    }}
+                                    className={`relative flex h-9 items-center justify-center overflow-hidden transition-all ${
+                                        selectedCarrier === name ? "scale-[1.02] shadow-sm" : "hover:shadow-sm"
+                                    }`}
+                                    style={{
+                                        border: selectedCarrier === name ? `2px solid ${CARRIER_COLORS[name] || '#003f87'}` : '1px solid #e2e8f0',
+                                        borderRadius: '8px',
+                                        padding: '7px',
+                                        background: CARRIER_UI_COLORS[name] || 'white'
+                                    }}
+                                    title={name}
+                                >
+                                    {selectedCarrier === name && (
+                                        <div
+                                            className="absolute right-1 top-1 z-20 flex h-4 w-4 items-center justify-center rounded-full text-[8px] text-white shadow-sm"
+                                            style={{ backgroundColor: CARRIER_COLORS[name] || '#10b981' }}
+                                        >
+                                            <i className="fa-solid fa-check"></i>
+                                        </div>
+                                    )}
+                                    <img
+                                        src={CARRIER_LOGOS[name]}
+                                        alt={name}
+                                        className={`relative z-10 h-5 max-w-[86px] object-contain transition-all ${
+                                            selectedCarrier === name
+                                                ? 'opacity-100 grayscale-0'
+                                                : 'opacity-70 grayscale hover:opacity-100 hover:grayscale-0'
+                                        }`}
+                                        referrerPolicy="no-referrer"
+                                    />
+                                </button>
+                            ))}
+                    </div>
+
+                    <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="relative group">
+                            <i className="fa-solid fa-building absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 group-focus-within:text-primary"></i>
+                            <input
+                                type="text"
+                                placeholder="Custom company"
+                                value={customBrandName}
+                                onChange={(e) => {
+                                    setCustomBrandName(e.target.value);
+                                    if (e.target.value) setSelectedCarrier('');
+                                }}
+                                className="w-full pl-9 text-xs font-bold text-slate-800 outline-none placeholder:font-normal"
+                                style={{
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '8px',
+                                    padding: '9px',
+                                    background: 'white'
+                                }}
+                            />
+                        </div>
+                        <div className="relative group">
+                            <i className="fa-solid fa-image absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 group-focus-within:text-primary"></i>
+                            <input
+                                type="text"
+                                placeholder="Custom image URL"
+                                value={customLogoUrl}
+                                onChange={(e) => {
+                                    setCustomLogoUrl(e.target.value);
+                                    if (e.target.value) setSelectedCarrier('');
+                                }}
+                                className="w-full pl-9 text-xs font-bold text-slate-800 outline-none placeholder:font-normal"
+                                style={{
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '8px',
+                                    padding: '9px',
+                                    background: 'white'
+                                }}
+                            />
+                        </div>
+                    </div>
                 </div>
+            </details>
+
+            <div
+                style={{
+                    background: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '12px',
+                    boxShadow: '0 1px 3px rgba(15,23,42,0.06)'
+                }}
+            >
+                <div className="mb-2 flex items-center justify-between gap-3">
+                    <label
+                        className="block text-slate-800"
+                        style={{
+                            borderLeft: '4px solid #003f87',
+                            paddingLeft: '10px',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            fontSize: '12px',
+                            letterSpacing: '0.08em'
+                        }}
+                    >
+                        Template
+                    </label>
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-slate-500">
+                        Gmail V4.2
+                    </span>
+                </div>
+                <select
+                    value={activeTemplateEntry?.[0] || ''}
+                    onChange={(e) => {
+                        if (!e.target.value) {
+                            setSelectedTemplateKey('');
+                            return;
+                        }
+                        selectTemplate(e.target.value as keyof typeof PROMPT_TEMPLATES);
+                    }}
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-black text-slate-800 outline-none transition focus:border-primary focus:bg-white"
+                >
+                    <option value="">Choose a template...</option>
+                    {templateEntries.map(([key, tmpl]) => (
+                        <option key={key} value={key}>
+                            {tmpl.title}
+                        </option>
+                    ))}
+                </select>
             </div>
-        );
-    };
+        </div>
+    );
 
     return (
         <div 
@@ -796,7 +929,8 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
             }}
         >
             {/* Main Header Card */}
-            <div 
+            {layoutMode !== 'gmail' && (
+            <div
                 className="flex flex-col gap-3 p-3 md:flex-row md:items-center md:justify-between md:p-4"
                 style={{
                     background: '#f8fafc',
@@ -820,12 +954,13 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                     </span>
                 </div>
             </div>
+            )}
 
             {/* Gmail mode uses two roomy work lanes so the template and prompt panels stay usable. */}
-            <div className={layoutMode === 'gmail' ? "grid grid-cols-1 gap-3 xl:grid-cols-[minmax(300px,0.72fr)_minmax(700px,1.65fr)] xl:items-start" : "space-y-6"}>
+            <div className={layoutMode === 'gmail' ? "grid grid-cols-1 gap-3 xl:grid-cols-[minmax(280px,0.48fr)_minmax(760px,1.72fr)] xl:items-start" : "space-y-6"}>
                 <div className={layoutMode === 'gmail' ? "order-2 space-y-3 xl:order-1" : "contents"}>
                 {/* Column 1: Brand Identity System */}
-                <div className={layoutMode === 'gmail' ? "order-2 space-y-4 xl:col-start-1 xl:row-start-1" : "order-2 space-y-6 lg:order-1"}>
+                <div className={layoutMode === 'gmail' ? "hidden" : "order-2 space-y-6 lg:order-1"}>
 
                     {/* 1. Brand Identity System */}
             <details
@@ -1038,9 +1173,10 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                 </div>
 
                 <div className={layoutMode === 'gmail' ? "order-1 space-y-3 xl:order-2" : "contents"}>
+                {layoutMode === 'gmail' && renderGmailControlStrip()}
                 {layoutMode === 'gmail' && renderPromptDraftPanel(true)}
             {/* Column 3: Template Builder */}
-            <div className={layoutMode === 'gmail' ? "order-4 space-y-4 xl:col-start-2 xl:row-start-2" : "order-4 space-y-6 lg:order-3"}>
+            <div className={layoutMode === 'gmail' ? "hidden" : "order-4 space-y-6 lg:order-3"}>
 
             {/* 3. Template Builder */}
             <div 
@@ -1079,7 +1215,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                     </div>
                 </div>
 
-                <div className="grid gap-2 lg:grid-cols-[1fr_auto]">
+                <div>
                     <select
                         value={activeTemplateEntry?.[0] || ''}
                         onChange={(e) => {
@@ -1098,106 +1234,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                             </option>
                         ))}
                     </select>
-                    <button
-                        type="button"
-                        disabled={!activeTemplateEntry}
-                        onClick={() => {
-                            if (!activeTemplateEntry) return;
-                            navigator.clipboard.writeText(activeTemplateEntry[1].prompt);
-                            addToast(`Copied "${activeTemplateEntry[1].title}" template prompt.`, 'success');
-                        }}
-                        className="flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-[10px] font-black uppercase tracking-[0.14em] text-primary shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        <i className="fa-solid fa-copy"></i>
-                        Copy
-                    </button>
                 </div>
-
-                <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                    {[
-                        ['poi', PROMPT_TEMPLATES.poi],
-                        ['receipt', PROMPT_TEMPLATES.receipt],
-                        ['auto_quote', PROMPT_TEMPLATES.auto_quote],
-                    ].map(([key, tmpl]) => {
-                        const template = tmpl as typeof PROMPT_TEMPLATES.poi;
-                        const isSelected = activeTemplateEntry?.[0] === key;
-                        return (
-                            <button
-                                key={key as string}
-                                type="button"
-                                onClick={() => selectTemplate(key as keyof typeof PROMPT_TEMPLATES)}
-                                className={`rounded-xl border px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.1em] transition ${
-                                    isSelected
-                                        ? 'border-primary bg-blue-50 text-primary'
-                                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-primary/40 hover:bg-white'
-                                }`}
-                            >
-                                {template.title}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                <details className="group mt-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-600 [&::-webkit-details-marker]:hidden">
-                        Browse template list
-                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm transition group-open:rotate-180">
-                            <i className="fa-solid fa-chevron-down text-[10px]"></i>
-                        </span>
-                    </summary>
-
-                    <div className="mt-3">
-                        <div className="relative mb-2">
-                            <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400"></i>
-                            <input
-                                type="search"
-                                value={templateSearch}
-                                onChange={(e) => setTemplateSearch(e.target.value)}
-                                placeholder="Filter templates..."
-                                className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs font-bold text-slate-800 outline-none transition focus:border-primary"
-                            />
-                        </div>
-
-                        <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 2xl:grid-cols-3">
-                            {filteredOtherTemplates.length > 0 ? (
-                                filteredOtherTemplates.map(([key, tmpl]) => (
-                                    <button
-                                        key={key}
-                                        type="button"
-                                        onClick={() => selectTemplate(key as keyof typeof PROMPT_TEMPLATES)}
-                                        className={`flex min-h-[52px] items-center gap-3 rounded-xl border px-3 py-2 text-left transition ${
-                                            activeTemplateEntry?.[0] === key
-                                                ? 'border-primary bg-blue-50'
-                                                : 'border-slate-200 bg-white hover:border-primary/40'
-                                        }`}
-                                    >
-                                        <span
-                                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-                                            style={{
-                                                background: activeTemplateEntry?.[0] === key ? '#003f87' : (tmpl.bgColor || '#e2e8f0'),
-                                                color: activeTemplateEntry?.[0] === key ? '#ffffff' : '#003f87'
-                                            }}
-                                        >
-                                            <i className={`fa-solid ${tmpl.icon} text-xs`}></i>
-                                        </span>
-                                        <span className="min-w-0">
-                                            <span className="block truncate text-[11px] font-black uppercase tracking-[0.08em] text-slate-800">
-                                                {tmpl.title}
-                                            </span>
-                                            <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
-                                                Load template
-                                            </span>
-                                        </span>
-                                    </button>
-                                ))
-                            ) : (
-                                <div className="col-span-2 rounded-xl border border-dashed border-slate-200 bg-white p-4 text-center text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                                    No matching templates
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </details>
             </div>
 
                 </div> {/* Closes Column 3 wrapper */}
@@ -1207,7 +1244,6 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
             {/* 4. Prompt Draft */}
             {layoutMode !== 'gmail' && renderPromptDraftPanel(false)}
 
-            {renderStickyGmailActions()}
             {renderOverlay()}
         </div>
     );
