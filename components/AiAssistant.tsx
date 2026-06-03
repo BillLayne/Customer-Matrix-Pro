@@ -665,6 +665,11 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
         })
         .sort((a, b) => a[1].title.localeCompare(b[1].title));
 
+    const templateEntries = Object.entries(PROMPT_TEMPLATES)
+        .sort((a, b) => a[1].title.localeCompare(b[1].title));
+    const activeTemplateEntry = templateEntries.find(([, tmpl]) => tmpl.prompt === promptDraft);
+    const selectedBrandLabel = customBrandName.trim() || selectedCarrier || 'No brand selected';
+
     const renderPromptDraftPanel = (compact = false) => (
         <div
             style={{
@@ -802,7 +807,9 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                 <div className={layoutMode === 'gmail' ? "order-2 space-y-4 xl:col-start-1 xl:row-start-1" : "order-2 space-y-6 lg:order-1"}>
 
                     {/* 1. Brand Identity System */}
-            <div 
+            <details
+                open={layoutMode !== 'gmail'}
+                className="group"
                 style={{
                     background: 'white',
                     border: '1px solid #e2e8f0',
@@ -811,19 +818,30 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                     boxShadow: '0 1px 3px rgba(15,23,42,0.06)'
                 }}
             >
-                <label 
-                    className="mb-4 block text-slate-800"
-                    style={{
-                        borderLeft: '4px solid #003f87',
-                        paddingLeft: '12px',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                    fontSize: '12px',
-                    letterSpacing: '0.08em'
-                }}
-                >
-                    {layoutMode === 'gmail' ? 'Brand Identity System' : '1. Brand Identity System'}
-                </label>
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-slate-800 [&::-webkit-details-marker]:hidden">
+                    <span>
+                        <span
+                            className="block"
+                            style={{
+                                borderLeft: '4px solid #003f87',
+                                paddingLeft: '12px',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                fontSize: '12px',
+                                letterSpacing: '0.08em'
+                            }}
+                        >
+                            Setup & Brand
+                        </span>
+                        <span className="mt-1 block pl-4 text-[11px] font-semibold text-slate-500">
+                            {selectedBrandLabel}
+                        </span>
+                    </span>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500 transition group-open:rotate-180">
+                        <i className="fa-solid fa-chevron-down text-xs"></i>
+                    </span>
+                </summary>
+                <div className="mt-3">
                 <div className={layoutMode === 'gmail' ? "grid grid-cols-2 gap-2 mb-3" : "grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3"}>
                     {Object.keys(CARRIER_LOGOS)
                         .sort((a, b) => a.localeCompare(b))
@@ -920,7 +938,8 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                         />
                     </div>
                 </div>
-            </div>
+                </div>
+            </details>
 
                 </div> {/* Closes Column 1 wrapper */}
 
@@ -1014,7 +1033,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
             >
                 <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
-                        <label 
+                        <label
                             className="block text-slate-800"
                             style={{
                                 borderLeft: '4px solid #003f87',
@@ -1025,254 +1044,144 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                                 letterSpacing: '0.08em'
                             }}
                         >
-                            {layoutMode === 'gmail' ? 'Template Builder' : '3. Template Builder'}
+                            Template Picker
                         </label>
                         <p className="mt-2 text-[11px] font-medium text-slate-500">
-                            Tap a template to load it into the prompt draft.
+                            Choose a saved prompt only when you need a starting point.
                         </p>
                     </div>
                     <div
                         className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-black uppercase text-slate-500"
                         style={{ letterSpacing: '0.08em' }}
                     >
-                        {Object.keys(PROMPT_TEMPLATES).length} templates
-                    </div>
-                </div>
-                {/* Favorites Grid */}
-                <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <i className="fa-solid fa-star text-amber-500 text-xs"></i>
-                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
-                            Frequently Used (Favorites)
-                        </span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        {/* POI Template */}
-                        {(() => {
-                            const tmpl = PROMPT_TEMPLATES.poi;
-                            const isSelected = promptDraft === tmpl.prompt;
-                            return (
-                                <button
-                                    onClick={() => setPromptDraft(tmpl.prompt)}
-                                    className="w-full text-left transition-all hover:scale-[1.01]"
-                                    style={{
-                                        background: isSelected ? '#ecfdf5' : '#f0fdf4',
-                                        border: isSelected ? '2px solid #10b981' : '1px solid #d1fae5',
-                                        borderRadius: '10px',
-                                        padding: '10px',
-                                        color: '#065f46',
-                                        minHeight: '64px',
-                                        boxShadow: isSelected ? '0 0 8px rgba(16, 185, 129, 0.2)' : 'none',
-                                    }}
-                                >
-                                    <div className="flex items-start gap-3">
-                                        <div
-                                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                                            style={{
-                                                background: '#10b981',
-                                                color: '#ffffff'
-                                            }}
-                                        >
-                                            <i className="fa-solid fa-id-card text-sm"></i>
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div
-                                                className="text-[11px] font-black uppercase truncate"
-                                                style={{
-                                                    color: '#065f46',
-                                                    letterSpacing: '0.06em',
-                                                    lineHeight: '1.2'
-                                                }}
-                                                title="Verification of Insurance"
-                                            >
-                                                Verification of Insurance
-                                            </div>
-                                            <div className="mt-1 flex items-center justify-between gap-2">
-                                                <span
-                                                    className="text-[9px] font-semibold uppercase text-emerald-600/70"
-                                                    style={{ letterSpacing: '0.08em' }}
-                                                >
-                                                    {isSelected ? 'Selected' : 'Load Template'}
-                                                </span>
-                                                <span
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        navigator.clipboard.writeText(tmpl.prompt);
-                                                        addToast('Copied "Verification of Insurance" template prompt.', 'success');
-                                                    }}
-                                                    className="p-1 text-emerald-600 hover:text-emerald-900 hover:bg-emerald-100/50 rounded cursor-pointer transition-colors flex items-center justify-center shrink-0"
-                                                    title="Copy template prompt text"
-                                                >
-                                                    <i className="fa-solid fa-copy text-[10px]"></i>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </button>
-                            );
-                        })()}
-
-                        {/* Payment Receipt Template */}
-                        {(() => {
-                            const tmpl = PROMPT_TEMPLATES.receipt;
-                            const isSelected = promptDraft === tmpl.prompt;
-                            return (
-                                <button
-                                    onClick={() => setPromptDraft(tmpl.prompt)}
-                                    className="w-full text-left transition-all hover:scale-[1.01]"
-                                    style={{
-                                        background: isSelected ? '#fffbeb' : '#fffdf0',
-                                        border: isSelected ? '2px solid #eab308' : '1px solid #fef3c7',
-                                        borderRadius: '10px',
-                                        padding: '10px',
-                                        color: '#78350f',
-                                        minHeight: '64px',
-                                        boxShadow: isSelected ? '0 0 8px rgba(234, 179, 8, 0.2)' : 'none',
-                                    }}
-                                >
-                                    <div className="flex items-start gap-3">
-                                        <div
-                                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                                            style={{
-                                                background: '#eab308',
-                                                color: '#ffffff'
-                                            }}
-                                        >
-                                            <i className="fa-solid fa-receipt text-sm"></i>
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div
-                                                className="text-[11px] font-black uppercase truncate"
-                                                style={{
-                                                    color: '#78350f',
-                                                    letterSpacing: '0.06em',
-                                                    lineHeight: '1.2'
-                                                }}
-                                                title="Payment Receipt"
-                                            >
-                                                Payment Receipt
-                                            </div>
-                                            <div className="mt-1 flex items-center justify-between gap-2">
-                                                <span
-                                                    className="text-[9px] font-semibold uppercase text-amber-700/70"
-                                                    style={{ letterSpacing: '0.08em' }}
-                                                >
-                                                    {isSelected ? 'Selected' : 'Load Template'}
-                                                </span>
-                                                <span
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        navigator.clipboard.writeText(tmpl.prompt);
-                                                        addToast('Copied "Payment Receipt" template prompt.', 'success');
-                                                    }}
-                                                    className="p-1 text-amber-700 hover:text-amber-900 hover:bg-amber-100/50 rounded cursor-pointer transition-colors flex items-center justify-center shrink-0"
-                                                    title="Copy template prompt text"
-                                                >
-                                                    <i className="fa-solid fa-copy text-[10px]"></i>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </button>
-                            );
-                        })()}
+                        {templateEntries.length} templates
                     </div>
                 </div>
 
-                <div className="border-t border-slate-100 my-3"></div>
-
-                <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
-                        Other Templates
-                    </span>
-                    <span className="shrink-0 text-[9px] font-bold text-slate-400">
-                        {filteredOtherTemplates.length} shown
-                    </span>
+                <div className="grid gap-2 lg:grid-cols-[1fr_auto]">
+                    <select
+                        value={activeTemplateEntry?.[0] || ''}
+                        onChange={(e) => {
+                            const entry = templateEntries.find(([key]) => key === e.target.value);
+                            if (!entry) return;
+                            setPromptDraft(entry[1].prompt);
+                            addToast(`Loaded "${entry[1].title}" template.`, 'success');
+                        }}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-black text-slate-800 outline-none transition focus:border-primary focus:bg-white"
+                    >
+                        <option value="">Choose a template...</option>
+                        {templateEntries.map(([key, tmpl]) => (
+                            <option key={key} value={key}>
+                                {tmpl.title}
+                            </option>
+                        ))}
+                    </select>
+                    <button
+                        type="button"
+                        disabled={!activeTemplateEntry}
+                        onClick={() => {
+                            if (!activeTemplateEntry) return;
+                            navigator.clipboard.writeText(activeTemplateEntry[1].prompt);
+                            addToast(`Copied "${activeTemplateEntry[1].title}" template prompt.`, 'success');
+                        }}
+                        className="flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-[10px] font-black uppercase tracking-[0.14em] text-primary shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <i className="fa-solid fa-copy"></i>
+                        Copy
+                    </button>
                 </div>
 
-                <div className="relative mb-2">
-                    <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400"></i>
-                    <input
-                        type="search"
-                        value={templateSearch}
-                        onChange={(e) => setTemplateSearch(e.target.value)}
-                        placeholder="Filter templates..."
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs font-bold text-slate-800 outline-none transition focus:border-primary focus:bg-white"
-                    />
-                </div>
-
-                <div
-                    className="grid grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 2xl:grid-cols-3"
-                    style={{
-                        maxHeight: layoutMode === 'gmail' ? '260px' : '200px'
-                    }}
-                >
-                    {filteredOtherTemplates.length > 0 ? (
-                        filteredOtherTemplates.map(([key, tmpl]) => (
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    {[
+                        ['poi', PROMPT_TEMPLATES.poi],
+                        ['receipt', PROMPT_TEMPLATES.receipt],
+                        ['auto_quote', PROMPT_TEMPLATES.auto_quote],
+                    ].map(([key, tmpl]) => {
+                        const template = tmpl as typeof PROMPT_TEMPLATES.poi;
+                        const isSelected = activeTemplateEntry?.[0] === key;
+                        return (
                             <button
-                                key={key}
-                                onClick={() => setPromptDraft(tmpl.prompt)}
-                                className="w-full text-left transition-all"
-                                style={{
-                                    background: promptDraft === tmpl.prompt ? '#eaf2ff' : '#f8fafc',
-                                    border: promptDraft === tmpl.prompt ? '1px solid #003f87' : '1px solid #e2e8f0',
-                                    borderRadius: '10px',
-                                    padding: '10px',
-                                    color: '#0f172a',
-                                    minHeight: '60px',
+                                key={key as string}
+                                type="button"
+                                onClick={() => {
+                                    setPromptDraft(template.prompt);
+                                    addToast(`Loaded "${template.title}" template.`, 'success');
                                 }}
+                                className={`rounded-xl border px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.1em] transition ${
+                                    isSelected
+                                        ? 'border-primary bg-blue-50 text-primary'
+                                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-primary/40 hover:bg-white'
+                                }`}
                             >
-                                <div className="flex items-start gap-3">
-                                    <div
-                                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                                        style={{
-                                            background: promptDraft === tmpl.prompt ? '#003f87' : (tmpl.bgColor || '#e2e8f0'),
-                                            color: promptDraft === tmpl.prompt ? '#ffffff' : '#003f87'
-                                        }}
-                                    >
-                                        <i className={`fa-solid ${tmpl.icon} text-sm`}></i>
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div
-                                            className="text-[11px] font-black uppercase truncate"
-                                            style={{
-                                                color: promptDraft === tmpl.prompt ? '#003f87' : '#0f172a',
-                                                letterSpacing: '0.06em',
-                                                lineHeight: '1.2'
-                                            }}
-                                            title={tmpl.title}
-                                        >
-                                            {tmpl.title}
-                                        </div>
-                                        <div className="mt-1 flex items-center justify-between gap-2">
-                                            <span
-                                                className="text-[10px] font-semibold uppercase text-slate-400"
-                                                style={{ letterSpacing: '0.08em' }}
-                                            >
-                                                {promptDraft === tmpl.prompt ? 'Selected' : 'Load Template'}
-                                            </span>
-                                            <span
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    navigator.clipboard.writeText(tmpl.prompt);
-                                                    addToast(`Copied "${tmpl.title}" template prompt.`, 'success');
-                                                }}
-                                                className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/10 rounded cursor-pointer transition-colors flex items-center justify-center shrink-0"
-                                                title="Copy template prompt text"
-                                            >
-                                                <i className="fa-solid fa-copy text-[10px]"></i>
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
+                                {template.title}
                             </button>
-                        ))
-                    ) : (
-                        <div className="col-span-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                            No matching templates
-                        </div>
-                    )}
+                        );
+                    })}
                 </div>
+
+                <details className="group mt-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-600 [&::-webkit-details-marker]:hidden">
+                        Browse template list
+                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm transition group-open:rotate-180">
+                            <i className="fa-solid fa-chevron-down text-[10px]"></i>
+                        </span>
+                    </summary>
+
+                    <div className="mt-3">
+                        <div className="relative mb-2">
+                            <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400"></i>
+                            <input
+                                type="search"
+                                value={templateSearch}
+                                onChange={(e) => setTemplateSearch(e.target.value)}
+                                placeholder="Filter templates..."
+                                className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs font-bold text-slate-800 outline-none transition focus:border-primary"
+                            />
+                        </div>
+
+                        <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 2xl:grid-cols-3">
+                            {filteredOtherTemplates.length > 0 ? (
+                                filteredOtherTemplates.map(([key, tmpl]) => (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => {
+                                            setPromptDraft(tmpl.prompt);
+                                            addToast(`Loaded "${tmpl.title}" template.`, 'success');
+                                        }}
+                                        className={`flex min-h-[52px] items-center gap-3 rounded-xl border px-3 py-2 text-left transition ${
+                                            activeTemplateEntry?.[0] === key
+                                                ? 'border-primary bg-blue-50'
+                                                : 'border-slate-200 bg-white hover:border-primary/40'
+                                        }`}
+                                    >
+                                        <span
+                                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                                            style={{
+                                                background: activeTemplateEntry?.[0] === key ? '#003f87' : (tmpl.bgColor || '#e2e8f0'),
+                                                color: activeTemplateEntry?.[0] === key ? '#ffffff' : '#003f87'
+                                            }}
+                                        >
+                                            <i className={`fa-solid ${tmpl.icon} text-xs`}></i>
+                                        </span>
+                                        <span className="min-w-0">
+                                            <span className="block truncate text-[11px] font-black uppercase tracking-[0.08em] text-slate-800">
+                                                {tmpl.title}
+                                            </span>
+                                            <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
+                                                Load template
+                                            </span>
+                                        </span>
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="col-span-2 rounded-xl border border-dashed border-slate-200 bg-white p-4 text-center text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                                    No matching templates
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </details>
             </div>
 
                 </div> {/* Closes Column 3 wrapper */}
