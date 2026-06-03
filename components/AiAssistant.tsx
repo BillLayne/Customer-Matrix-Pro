@@ -670,9 +670,9 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
             style={{
                 background: 'white',
                 border: '1px solid #e2e8f0',
-                borderRadius: '12px',
+                borderRadius: '14px',
                 padding: compact ? '14px' : '16px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                boxShadow: '0 1px 3px rgba(15,23,42,0.06)'
             }}
         >
             <label
@@ -692,11 +692,11 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                 value={promptDraft}
                 onChange={(e) => setPromptDraft(e.target.value)}
                 placeholder="Describe the goal of this email (e.g. 'Generate a Quote Proposal for John Smith, Progressive auto policy')..."
-                className={`w-full ${compact ? 'h-40' : 'h-28'} text-sm font-medium outline-none transition-all resize-none placeholder:text-slate-400 text-slate-800 ${compact ? 'mb-3' : 'mb-3'}`}
+                className={`w-full ${compact ? 'h-36' : 'h-28'} text-sm font-semibold outline-none transition-all resize-none placeholder:text-slate-400 text-slate-800 ${compact ? 'mb-3' : 'mb-3'}`}
                 style={{
                     border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    padding: '10px',
+                    borderRadius: '10px',
+                    padding: '12px',
                     background: 'white'
                 }}
             />
@@ -705,15 +705,15 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                 <button
                     onClick={handleGenerate}
                     disabled={isLoading}
-                    className={`w-full bg-button-gradient text-white font-black ${compact ? 'py-4 rounded-2xl text-xs' : 'py-5 rounded-3xl text-sm'} shadow-button-glow hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-[2px]`}
+                    className={`w-full bg-button-gradient text-white font-black ${compact ? 'py-3.5 rounded-xl text-xs' : 'py-5 rounded-3xl text-sm'} shadow-sm hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-[0.16em]`}
                 >
                     {isLoading ? <i className="fa-solid fa-spinner fa-spin text-lg"></i> : <i className="fa-solid fa-wand-magic-sparkles text-lg text-amber-300"></i>}
-                    {isLoading ? 'Engineering...' : 'Generate Luxury Email'}
+                    {isLoading ? 'Engineering...' : 'Generate Email'}
                 </button>
                 {previewHtml && (
                     <button
                         onClick={handleSyncToGmail}
-                        className={`w-full bg-slate-50 text-primary border border-slate-200 font-black ${compact ? 'py-4 rounded-2xl text-xs' : 'py-5 rounded-3xl text-sm'} shadow-sm hover:bg-slate-100 transition-all flex items-center justify-center gap-3 uppercase tracking-[2px] group`}
+                        className={`w-full bg-slate-50 text-primary border border-slate-200 font-black ${compact ? 'py-3.5 rounded-xl text-xs' : 'py-5 rounded-3xl text-sm'} shadow-sm hover:bg-slate-100 transition-all flex items-center justify-center gap-3 uppercase tracking-[0.16em] group`}
                     >
                         <i className="fa-brands fa-google text-lg text-slate-400 group-hover:text-red-500 transition-colors"></i> Sync to Gmail
                     </button>
@@ -760,43 +760,44 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
 
     return (
         <div 
-            className={layoutMode === 'gmail' ? 'animate-fade-in space-y-4' : 'animate-fade-in space-y-6'}
+            className={layoutMode === 'gmail' ? 'animate-fade-in space-y-3' : 'animate-fade-in space-y-6'}
             style={{
                 background: 'white',
                 border: '1px solid #e2e8f0',
                 borderRadius: '16px',
-                padding: layoutMode === 'gmail' ? '22px' : '24px',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.08)'
+                padding: layoutMode === 'gmail' ? '16px' : '24px',
+                boxShadow: '0 1px 3px rgba(15,23,42,0.08)'
             }}
         >
             {/* Main Header Card */}
             <div 
-                className="flex items-center justify-between gap-4 p-4 md:p-5"
+                className="flex flex-col gap-3 p-3 md:flex-row md:items-center md:justify-between md:p-4"
                 style={{
                     background: '#f8fafc',
                     border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                    borderRadius: '14px',
+                    boxShadow: 'none'
                 }}
             >
                 <div>
-                    <h3 className="text-lg md:text-2xl font-black flex items-center gap-3 text-slate-900 tracking-tight font-outfit uppercase">
-                        <span className="w-11 h-11 rounded-2xl bg-button-gradient flex items-center justify-center text-white shadow-button-glow">
-                            <i className="fa-solid fa-envelope-open-text text-xl"></i>
+                    <h3 className="text-lg md:text-xl font-black flex items-center gap-3 text-slate-900 tracking-tight font-outfit uppercase">
+                        <span className="w-10 h-10 rounded-xl bg-button-gradient flex items-center justify-center text-white shadow-sm">
+                            <i className="fa-solid fa-envelope-open-text text-base"></i>
                         </span>
-                        Gmail Engineering Studio
+                        Gmail Engineering
                     </h3>
-                    <p className="text-[11px] text-slate-500 mt-1 font-bold uppercase tracking-widest pl-1 md:pl-14">Create bulletproof, spam-safe HTML emails.</p>
+                    <p className="text-[11px] text-slate-500 mt-1 font-bold uppercase tracking-[0.18em] pl-1 md:pl-[52px]">Generate and refine Gmail-optimized insurance emails.</p>
                 </div>
                 <div className="flex gap-2">
-                    <span className="text-[10px] font-black uppercase bg-white text-primary px-4 py-2 rounded-xl border border-[#e2e8f0] tracking-[2px] shadow-sm">
+                    <span className="text-[10px] font-black uppercase bg-white text-primary px-3 py-2 rounded-xl border border-[#e2e8f0] tracking-[0.14em] shadow-sm">
                         <i className="fa-brands fa-google mr-2"></i>Gmail V4.2 (Gemini 3 Flash)
                     </span>
                 </div>
             </div>
 
             {/* Gmail mode uses two roomy work lanes so the template and prompt panels stay usable. */}
-            <div className={layoutMode === 'gmail' ? "grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.82fr)_minmax(680px,1.55fr)] xl:items-start" : "space-y-6"}>
+            <div className={layoutMode === 'gmail' ? "grid grid-cols-1 gap-3 xl:grid-cols-[minmax(300px,0.72fr)_minmax(700px,1.65fr)] xl:items-start" : "space-y-6"}>
+                <div className={layoutMode === 'gmail' ? "order-2 space-y-3 xl:order-1" : "contents"}>
                 {/* Column 1: Brand Identity System */}
                 <div className={layoutMode === 'gmail' ? "order-2 space-y-4 xl:col-start-1 xl:row-start-1" : "order-2 space-y-6 lg:order-1"}>
 
@@ -805,9 +806,9 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                 style={{
                     background: 'white',
                     border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                    borderRadius: '14px',
+                    padding: '14px',
+                    boxShadow: '0 1px 3px rgba(15,23,42,0.06)'
                 }}
             >
                 <label 
@@ -817,8 +818,9 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                         paddingLeft: '12px',
                         fontWeight: 700,
                         textTransform: 'uppercase',
-                        fontSize: '14px'
-                    }}
+                    fontSize: '12px',
+                    letterSpacing: '0.08em'
+                }}
                 >
                     {layoutMode === 'gmail' ? 'Brand Identity System' : '1. Brand Identity System'}
                 </label>
@@ -927,12 +929,12 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                 {/* 2. Intelligence Feed */}
                 <div 
                     style={{
-                        background: 'white',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '12px',
-                        padding: '16px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-                    }}
+                    background: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '14px',
+                    boxShadow: '0 1px 3px rgba(15,23,42,0.06)'
+                }}
                 >
                     <label 
                         className="mb-4 block text-slate-800"
@@ -941,7 +943,8 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                             paddingLeft: '12px',
                             fontWeight: 700,
                             textTransform: 'uppercase',
-                            fontSize: '14px'
+                            fontSize: '12px',
+                            letterSpacing: '0.08em'
                         }}
                     >
                         {layoutMode === 'gmail' ? 'Intelligence Feed' : '2. Intelligence Feed'}
@@ -953,8 +956,8 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                             border: '2px dashed #94a3b8',
                             borderRadius: '12px',
                             background: '#f8fafc',
-                            padding: '16px',
-                            minHeight: '80px'
+                            padding: '14px',
+                            minHeight: '72px'
                         }}
                         onMouseOver={(e) => e.currentTarget.style.borderColor = '#003f87'}
                         onMouseOut={(e) => e.currentTarget.style.borderColor = '#94a3b8'}
@@ -992,7 +995,10 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                     </div>
                 </div>
             </div> {/* Closes Column 2 wrapper */}
+                </div>
 
+                <div className={layoutMode === 'gmail' ? "order-1 space-y-3 xl:order-2" : "contents"}>
+                {layoutMode === 'gmail' && renderPromptDraftPanel(true)}
             {/* Column 3: Template Builder */}
             <div className={layoutMode === 'gmail' ? "order-4 space-y-4 xl:col-start-2 xl:row-start-2" : "order-4 space-y-6 lg:order-3"}>
 
@@ -1001,8 +1007,9 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                 style={{
                     background: '#ffffff',
                     border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    padding: '12px'
+                    borderRadius: '14px',
+                    padding: '14px',
+                    boxShadow: '0 1px 3px rgba(15,23,42,0.06)'
                 }}
             >
                 <div className="mb-3 flex items-start justify-between gap-3">
@@ -1197,7 +1204,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
                 <div
                     className="grid grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 2xl:grid-cols-3"
                     style={{
-                        maxHeight: '200px'
+                        maxHeight: layoutMode === 'gmail' ? '260px' : '200px'
                     }}
                 >
                     {filteredOtherTemplates.length > 0 ? (
@@ -1269,12 +1276,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ addToast, layoutMode = 'split
             </div>
 
                 </div> {/* Closes Column 3 wrapper */}
-
-                {layoutMode === 'gmail' && (
-                    <div className="order-1 xl:col-start-2 xl:row-start-1">
-                        {renderPromptDraftPanel(true)}
-                    </div>
-                )}
+                </div>
             </div> {/* Closes Grid Layout Container */}
 
             {/* 4. Prompt Draft */}

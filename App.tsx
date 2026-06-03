@@ -321,29 +321,23 @@ export default function App() {
   }, [addToast]);
 
   return (
-    <div className="min-h-screen bg-[#f3f7fb] text-slate-900 transition-colors duration-500 dark:bg-[#07111f] dark:text-slate-100">
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_top,rgba(0,118,211,0.14),transparent_58%)]"></div>
-        <div className="absolute -left-24 top-40 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl dark:bg-cyan-400/15"></div>
-        <div className="absolute right-0 top-24 h-96 w-96 rounded-full bg-blue-700/10 blur-3xl dark:bg-blue-500/15"></div>
-        <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-amber-300/10 blur-3xl dark:bg-amber-300/10"></div>
-      </div>
+    <div className="min-h-screen bg-[#eef4f9] text-slate-900 transition-colors duration-300 dark:bg-[#07111f] dark:text-slate-100">
 
       <div className="relative z-10">
-        <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-[#07111f]/70">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/92 backdrop-blur-xl dark:border-white/10 dark:bg-[#07111f]/90">
+          <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3 px-4 py-2.5 sm:gap-4 sm:px-5 lg:px-6">
             <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] bg-gradient-to-br from-slate-950 via-[#003f87] to-[#0076d3] text-white shadow-xl shadow-blue-900/20 sm:h-11 sm:w-11 sm:rounded-[1.1rem]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white shadow-sm sm:h-10 sm:w-10">
                 <i className="fa-solid fa-table-columns text-base"></i>
               </div>
               <div className="min-w-0">
-                <p className="truncate text-[10px] font-black uppercase tracking-[0.26em] text-[#0076d3] dark:text-cyan-300 sm:text-[11px] sm:tracking-[0.35em]">
+                <p className="truncate text-[10px] font-black uppercase tracking-[0.22em] text-[#0069bd] dark:text-cyan-300">
                   Bill Layne Insurance
                 </p>
-                <h1 className="truncate font-outfit text-lg font-black tracking-tight text-slate-900 dark:text-white sm:text-xl">
+                <h1 className="truncate font-outfit text-base font-black tracking-tight text-slate-900 dark:text-white sm:text-lg">
                   Agency Command Center
                 </h1>
-                <p className="hidden text-xs text-slate-500 dark:text-slate-300 sm:block">
+                <p className="hidden text-[11px] text-slate-500 dark:text-slate-300 sm:block">
                   Unified Agency Matrix search first, local launch boxes underneath.
                 </p>
               </div>
@@ -370,21 +364,21 @@ export default function App() {
 
               <button
                 onClick={() => setShowQuickSearch(true)}
-                className="hidden rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] text-slate-600 shadow-sm transition hover:border-[#0076d3]/40 hover:text-[#003f87] sm:flex dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+                className="hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-600 shadow-sm transition hover:border-[#0076d3]/40 hover:text-[#003f87] sm:flex dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
               >
                 <i className="fa-solid fa-bolt mr-2"></i>
                 Quick Search
               </button>
               <button
                 onClick={() => setShowShortcutModal(true)}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#0076d3]/40 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#0076d3]/40 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
                 title="Keyboard Shortcuts Help"
               >
                 <i className="fa-solid fa-circle-question"></i>
               </button>
               <button
                 onClick={toggleTheme}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#0076d3]/40 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#0076d3]/40 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
                 title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
@@ -393,8 +387,8 @@ export default function App() {
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl px-4 pb-24 pt-4 sm:px-6 sm:pb-10 sm:pt-5 lg:px-8">
-          <nav className="sticky top-[68px] z-40 mb-4 rounded-[1.25rem] border border-slate-200/80 bg-white/85 p-2 shadow-[0_18px_50px_-38px_rgba(15,23,42,0.55)] backdrop-blur-xl dark:border-white/10 dark:bg-[#07111f]/85 sm:top-[77px]">
+        <main className="mx-auto max-w-[1500px] px-4 pb-24 pt-3 sm:px-5 sm:pb-10 lg:px-6">
+          <nav className="sticky top-[61px] z-40 mb-3 rounded-2xl border border-slate-200 bg-white/92 p-1.5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-[#07111f]/90 sm:top-[66px]">
             <div className="grid grid-cols-3 gap-2">
               {workspaceTabs.map((tab) => {
                 const isActive = currentTab === tab.id;
@@ -403,14 +397,14 @@ export default function App() {
                     key={tab.id}
                     type="button"
                     onClick={() => switchWorkspaceTab(tab.id, tab.label)}
-                    className={`flex min-h-[3.75rem] items-center justify-center gap-2 rounded-[1rem] px-2 py-3 text-center transition sm:min-h-[4.25rem] sm:justify-start sm:gap-3 sm:px-4 sm:text-left ${
+                    className={`flex min-h-[3rem] items-center justify-center gap-2 rounded-xl px-2 py-2 text-center transition sm:min-h-[3.25rem] sm:justify-start sm:gap-3 sm:px-3 sm:text-left ${
                       isActive
                         ? 'bg-slate-950 text-white shadow-xl shadow-blue-950/20 dark:bg-white dark:text-slate-950'
                         : 'bg-slate-50 text-slate-600 hover:bg-white hover:text-[#003f87] dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white'
                     }`}
                     aria-pressed={isActive}
                   >
-                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isActive ? 'bg-[#0076d3] text-white' : 'bg-white text-slate-400 shadow-sm dark:bg-white/10 dark:text-slate-300'}`}>
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isActive ? 'bg-[#0076d3] text-white' : 'bg-white text-slate-400 shadow-sm dark:bg-white/10 dark:text-slate-300'}`}>
                       <i className={`${tab.icon} text-sm`}></i>
                     </span>
                     <span className="min-w-0">
@@ -434,13 +428,13 @@ export default function App() {
                 <SearchCard addToast={addToast} searchCount={searchCount} onSearch={handleSearchIncrement} />
               </section>
 
-              <section className="overflow-hidden rounded-[1.45rem] border border-slate-200/70 bg-white/80 p-4 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.45)] backdrop-blur-xl dark:border-white/10 dark:bg-white/5 sm:p-5">
+              <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-white/5 sm:p-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#0076d3] dark:text-cyan-300">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#0076d3] dark:text-cyan-300">
                       Search Workspace
                     </p>
-                    <h2 className="mt-1 font-outfit text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+                    <h2 className="mt-1 font-outfit text-lg font-black tracking-tight text-slate-900 dark:text-white sm:text-xl">
                       Agency Matrix dashboard
                     </h2>
                   </div>
@@ -450,9 +444,9 @@ export default function App() {
                       <button
                         key={action.label}
                         onClick={() => openExternalLink(action.label, action.href)}
-                        className="flex items-center gap-3 rounded-[1rem] border border-slate-200/80 bg-slate-50/80 px-3 py-3 text-left transition hover:border-[#0076d3]/40 hover:bg-white hover:shadow-lg dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+                        className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition hover:border-[#0076d3]/40 hover:bg-white hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
                       >
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white dark:bg-[#0076d3]">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-[#0076d3]">
                           <i className={action.icon}></i>
                         </span>
                         <span className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-700 dark:text-slate-100">

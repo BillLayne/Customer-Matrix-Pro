@@ -563,36 +563,35 @@ Return ONLY a JSON object in this exact shape:
 
   return (
     <>
-      <div className="bg-white/90 dark:bg-white/5 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-[26px] p-4 shadow-2xl transition-all duration-300 hover:translate-y-[-2px] hover:shadow-button-glow/20 sm:rounded-[32px] sm:p-6 md:p-7 relative overflow-hidden group">
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 dark:border-white/10 dark:bg-white/5 sm:p-5">
         
         {/* Dynamic Background Mesh */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#003f87] via-[#0076d3] to-[#35a7ff]"></div>
         
-        <div className="relative z-10 mb-5 flex flex-col gap-3 sm:mb-7 md:flex-row md:items-end md:justify-between md:gap-4">
+        <div className="relative z-10 mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
             <div>
-                <h2 className="font-outfit text-[1.65rem] font-black tracking-tight text-slate-800 dark:text-text-dark sm:text-3xl md:text-4xl flex items-center gap-3 sm:gap-4">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl shadow-black/20 dark:from-white dark:to-slate-200 dark:text-slate-900 dark:shadow-white/10 sm:h-12 sm:w-12 sm:rounded-[16px]">
-                        <i className="fa-solid fa-magnifying-glass-dollar text-lg sm:text-xl md:text-2xl"></i>
+                <h2 className="flex items-center gap-3 font-outfit text-2xl font-black tracking-tight text-slate-900 dark:text-text-dark sm:text-3xl">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-900">
+                        <i className="fa-solid fa-magnifying-glass text-base"></i>
                     </span>
                     Unified Search
                 </h2>
-                <p className="mt-2 max-w-xl pl-1 text-[13px] font-medium leading-5 text-slate-500 dark:text-slate-300 sm:mt-3 sm:text-sm">
+                <p className="mt-1 max-w-xl pl-1 text-[13px] font-semibold leading-5 text-slate-500 dark:text-slate-300">
                     Access policies, property records, and document twins instantly.
                 </p>
             </div>
             <div className="flex items-center gap-3">
-                 <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 dark:border-white/10 dark:bg-white/5">
+                 <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 dark:border-white/10 dark:bg-white/5">
                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-300">System Online</span>
                  </div>
             </div>
         </div>
 
-        <div className="relative z-10 mb-6 sm:mb-8">
-          <div className="relative group/input transform hover:scale-[1.01] transition-transform duration-300">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-4 sm:pl-6 pointer-events-none">
-                <i className={`fa-solid fa-magnifying-glass text-xl transition-colors duration-300 sm:text-2xl ${query ? 'text-primary dark:text-accent' : 'text-slate-300 dark:text-slate-600'}`}></i>
+        <div className="relative z-10 mb-4">
+          <div className="relative group/input">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                <i className={`fa-solid fa-magnifying-glass text-lg transition-colors duration-300 ${query ? 'text-primary dark:text-accent' : 'text-slate-300 dark:text-slate-600'}`}></i>
               </div>
               <input
                 ref={inputRef}
@@ -601,12 +600,12 @@ Return ONLY a JSON object in this exact shape:
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder={MODE_META[mode].placeholder}
-                className="w-full rounded-[24px] border-4 border-slate-100 bg-white py-4 pl-12 pr-16 text-lg font-black text-slate-800 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] outline-none transition-all placeholder:text-slate-300 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-700 dark:shadow-black/50 sm:rounded-[28px] sm:py-5 sm:pl-16 sm:pr-20 sm:text-xl md:text-2xl focus:border-primary/50 dark:focus:border-accent/50 backdrop-blur-xl"
+                className="w-full rounded-2xl border-2 border-slate-200 bg-white py-3.5 pl-11 pr-16 text-base font-black text-slate-800 shadow-inner outline-none transition-all placeholder:text-slate-300 focus:border-primary/60 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-700 dark:focus:border-accent/50 sm:text-lg"
               />
-              <div className="absolute inset-y-0 right-2 flex items-center sm:right-3">
+              <div className="absolute inset-y-0 right-2 flex items-center">
                   <button 
                     onClick={handleSearch}
-                    className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-gradient-to-br from-primary to-primary-light text-white shadow-lg transition-all hover:scale-105 hover:shadow-primary/40 active:scale-95 sm:h-12 sm:w-12"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-light text-white shadow-sm transition-all hover:scale-105 hover:shadow-primary/30 active:scale-95"
                   >
                       <i className="fa-solid fa-arrow-right text-base"></i>
                   </button>
@@ -617,7 +616,7 @@ Return ONLY a JSON object in this exact shape:
           {/* REAL ESTATE MODE: Additional File Upload UI */}
           {mode === 'realestate' && (
               <div className="mt-4 animate-slide-down">
-                  <div className="flex flex-wrap items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-[24px] border border-slate-200 dark:border-white/10 shadow-sm backdrop-blur-lg">
+                  <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-white/10 dark:bg-white/5">
                       <div className="flex-1">
                           <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-300 block mb-3 tracking-[2px]">Optional: Attach Evidence (Inspection/Appraisal/Photos)</label>
                           <div className="flex gap-3 items-center">
@@ -646,15 +645,15 @@ Return ONLY a JSON object in this exact shape:
               </div>
           )}
           
-          <div className="mt-5 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
              {modeButtons.map(btn => (
                 <button 
                   key={btn.mode}
                   onClick={() => setMode(btn.mode)}
-                  className={`shrink-0 rounded-xl border-2 px-4 py-3 text-[11px] font-bold uppercase tracking-[2px] transition-all duration-300 flex items-center gap-2 whitespace-nowrap relative overflow-hidden group ${
+                  className={`relative flex shrink-0 items-center gap-2 overflow-hidden whitespace-nowrap rounded-xl border px-3.5 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] transition-all duration-200 group ${
                     mode === btn.mode 
-                      ? 'bg-slate-900 dark:bg-primary border-slate-900 dark:border-primary text-white shadow-glow scale-105' 
-                      : 'bg-transparent border-slate-200 dark:border-white/10 text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-primary dark:hover:text-white'
+                      ? 'bg-slate-950 dark:bg-primary border-slate-950 dark:border-primary text-white shadow-sm'
+                      : 'bg-white border-slate-200 dark:border-white/10 text-slate-500 hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-white'
                   }`}
                 >
                   <i className={`fa-solid ${btn.icon} ${mode === btn.mode ? '' : 'text-slate-300 group-hover:text-primary dark:group-hover:text-white transition-colors'}`}></i> 
@@ -672,7 +671,7 @@ Return ONLY a JSON object in this exact shape:
 
           {/* Recent Searches History */}
           {searchHistory.length > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-2 animate-fade-in pl-1">
+            <div className="mt-2 flex flex-wrap items-center gap-2 animate-fade-in pl-1">
               <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 mr-1">Recent:</span>
               {searchHistory.map((historicQuery, idx) => (
                 <button
@@ -693,64 +692,64 @@ Return ONLY a JSON object in this exact shape:
           )}
         </div>
         
-        <div className={`relative z-10 grid grid-cols-2 gap-3 md:grid-cols-4 ${mode === 'realestate' ? 'lg:grid-cols-6' : 'lg:grid-cols-5'}`}>
-          <button onClick={handleSearch} className="col-span-2 w-full rounded-[22px] bg-gradient-to-br from-slate-900 to-slate-800 py-4 text-white shadow-2xl transition-all hover:scale-[1.01] hover:shadow-button-glow active:scale-95 dark:from-primary dark:to-primary-light md:col-span-4 lg:col-span-1 font-black flex flex-col items-center justify-center gap-2 group min-h-[86px] sm:min-h-24">
-              <i className="fa-solid fa-bolt text-xl group-hover:animate-pulse text-amber-300"></i>
-              <span className="text-xs uppercase tracking-[2px]">Execute</span>
+        <div className={`relative z-10 grid grid-cols-2 gap-2 md:grid-cols-4 ${mode === 'realestate' ? 'lg:grid-cols-6' : 'lg:grid-cols-5'}`}>
+          <button onClick={handleSearch} className="col-span-2 flex min-h-[58px] w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 py-3 text-white shadow-sm transition-all hover:shadow-md active:scale-95 dark:from-primary dark:to-primary-light md:col-span-4 lg:col-span-1 font-black group">
+              <i className="fa-solid fa-bolt text-base text-amber-300"></i>
+              <span className="text-[11px] uppercase tracking-[0.16em]">Execute</span>
           </button>
           
-          <button onClick={() => window.open("https://agents.agencymatrix.com/#/", "_blank")} className="bg-white dark:bg-white/5 border-2 border-slate-100 dark:border-white/10 p-3 rounded-[22px] hover:border-primary/50 dark:hover:border-accent/50 hover:shadow-xl transition-all flex flex-col items-center justify-center gap-2 group text-center min-h-[86px] sm:min-h-24 backdrop-blur-md">
-              <div className="w-9 h-9 rounded-xl bg-slate-50 dark:bg-white/5 flex items-center justify-center group-hover:bg-primary/10 dark:group-hover:bg-accent/10 transition-colors">
+          <button onClick={() => window.open("https://agents.agencymatrix.com/#/", "_blank")} className="flex min-h-[58px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-center transition-all hover:border-primary/50 hover:bg-slate-50 hover:shadow-sm dark:border-white/10 dark:bg-white/5 dark:hover:border-accent/50">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 transition-colors group-hover:bg-primary/10 dark:bg-white/5 dark:group-hover:bg-accent/10">
                 <i className="fa-solid fa-building-shield text-slate-400 group-hover:text-primary dark:group-hover:text-accent text-lg"></i>
               </div>
-              <span className="text-[10px] font-black uppercase tracking-[2px] text-slate-500 dark:text-slate-300 group-hover:text-primary dark:group-hover:text-accent">Matrix Home</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">Matrix Home</span>
           </button>
 
-          <button onClick={() => window.open("https://agents.agencymatrix.com/customerEdit.php?id=0", "_blank")} className="bg-white dark:bg-white/5 border-2 border-slate-100 dark:border-white/10 p-3 rounded-[22px] hover:border-primary/50 dark:hover:border-accent/50 hover:shadow-xl transition-all flex flex-col items-center justify-center gap-2 group text-center min-h-[86px] sm:min-h-24 backdrop-blur-md">
-              <div className="w-9 h-9 rounded-xl bg-slate-50 dark:bg-white/5 flex items-center justify-center group-hover:bg-primary/10 dark:group-hover:bg-accent/10 transition-colors">
+          <button onClick={() => window.open("https://agents.agencymatrix.com/customerEdit.php?id=0", "_blank")} className="flex min-h-[58px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-center transition-all hover:border-primary/50 hover:bg-slate-50 hover:shadow-sm dark:border-white/10 dark:bg-white/5 dark:hover:border-accent/50">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 transition-colors group-hover:bg-primary/10 dark:bg-white/5 dark:group-hover:bg-accent/10">
                 <i className="fa-solid fa-user-plus text-slate-400 group-hover:text-primary dark:group-hover:text-accent text-lg"></i>
               </div>
-              <span className="text-[10px] font-black uppercase tracking-[2px] text-slate-500 dark:text-slate-300 group-hover:text-primary dark:group-hover:text-accent">New Prospect</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">New Prospect</span>
           </button>
 
-          <button onClick={handleNewFolder} className="bg-white dark:bg-white/5 border-2 border-slate-100 dark:border-white/10 p-3 rounded-[22px] hover:border-primary/50 dark:hover:border-accent/50 hover:shadow-xl transition-all flex flex-col items-center justify-center gap-2 group text-center min-h-[86px] sm:min-h-24 backdrop-blur-md">
-              <div className="w-9 h-9 rounded-xl bg-slate-50 dark:bg-white/5 flex items-center justify-center group-hover:bg-primary/10 dark:group-hover:bg-accent/10 transition-colors">
+          <button onClick={handleNewFolder} className="flex min-h-[58px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-center transition-all hover:border-primary/50 hover:bg-slate-50 hover:shadow-sm dark:border-white/10 dark:bg-white/5 dark:hover:border-accent/50">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 transition-colors group-hover:bg-primary/10 dark:bg-white/5 dark:group-hover:bg-accent/10">
                 <i className="fa-brands fa-google-drive text-slate-400 group-hover:text-primary dark:group-hover:text-accent text-lg"></i>
               </div>
-              <span className="text-[10px] font-black uppercase tracking-[2px] text-slate-500 dark:text-slate-300 group-hover:text-primary dark:group-hover:text-accent">Cloud Folder</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">Cloud Folder</span>
           </button>
 
-          <button onClick={handleNotesOpen} className="bg-gradient-to-br from-orange-50 to-white dark:from-white/5 dark:to-white/10 border-2 border-orange-100 dark:border-white/10 p-3 rounded-[22px] hover:border-orange-300 hover:shadow-xl hover:shadow-orange-500/10 transition-all flex flex-col items-center justify-center gap-2 group text-center min-h-[86px] sm:min-h-24 backdrop-blur-md">
-              <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <button onClick={handleNotesOpen} className="flex min-h-[58px] items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 p-2.5 text-center transition-all hover:border-orange-300 hover:bg-white hover:shadow-sm dark:border-white/10 dark:bg-white/5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 transition-transform group-hover:scale-105 dark:bg-orange-900/30">
                 <i className="fa-solid fa-note-sticky text-orange-500 text-lg"></i>
               </div>
-              <span className="text-[10px] font-black uppercase tracking-[2px] text-orange-600/70 dark:text-orange-400">Audit Memo</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-orange-600/80 dark:text-orange-400">Audit Memo</span>
           </button>
 
           {mode === 'realestate' && (
               <>
-                <button onClick={handleGisSearch} disabled={isGisSearching} className="bg-white dark:bg-white/5 border-2 border-slate-100 dark:border-white/10 p-3 rounded-[22px] hover:border-green-400/50 hover:shadow-xl transition-all flex flex-col items-center justify-center gap-2 group text-center min-h-[86px] sm:min-h-24 backdrop-blur-md">
-                    <div className="w-9 h-9 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center group-hover:bg-green-100 transition-colors">
+                <button onClick={handleGisSearch} disabled={isGisSearching} className="flex min-h-[58px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-center transition-all hover:border-green-400/50 hover:bg-slate-50 hover:shadow-sm dark:border-white/10 dark:bg-white/5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 transition-colors group-hover:bg-green-100 dark:bg-green-900/20">
                         {isGisSearching ? <i className="fa-solid fa-spinner fa-spin text-green-500"></i> : <i className="fa-solid fa-map-location-dot text-green-500 text-lg"></i>}
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-[2px] text-slate-500 dark:text-slate-300 group-hover:text-green-600">Tax GIS</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">Tax GIS</span>
                 </button>
-                <button onClick={handleGenerateReport} disabled={isGeneratingReport || !query.trim()} className="bg-white dark:bg-white/5 border-2 border-slate-100 dark:border-white/10 p-3 rounded-[22px] hover:border-purple-400/50 hover:shadow-xl transition-all flex flex-col items-center justify-center gap-2 group text-center min-h-[86px] sm:min-h-24 backdrop-blur-md">
-                    <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+                <button onClick={handleGenerateReport} disabled={isGeneratingReport || !query.trim()} className="flex min-h-[58px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-center transition-all hover:border-purple-400/50 hover:bg-slate-50 hover:shadow-sm dark:border-white/10 dark:bg-white/5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 transition-colors group-hover:bg-purple-100 dark:bg-purple-900/20">
                         {isGeneratingReport ? <i className="fa-solid fa-spinner fa-spin text-purple-500"></i> : <i className="fa-solid fa-wand-magic-sparkles text-purple-500 text-lg"></i>}
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-[2px] text-slate-500 dark:text-slate-300 group-hover:text-purple-600">Risk Intel</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">Risk Intel</span>
                 </button>
               </>
           )}
         </div>
 
 
-        <div className="mt-6 border-t border-slate-100 pt-4 dark:border-white/10">
+        <div className="mt-4 border-t border-slate-100 pt-3 dark:border-white/10">
             <button
                 type="button"
                 onClick={() => setShowCarrierGateway((prev) => !prev)}
-                className="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-left transition hover:border-primary/40 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+                className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition hover:border-primary/40 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
             >
                 <span>
                     <span className="block text-[10px] font-black uppercase tracking-[2px] text-slate-400 dark:text-slate-300">
@@ -760,7 +759,7 @@ Return ONLY a JSON object in this exact shape:
                         {showCarrierGateway ? 'Carrier shortcuts are open.' : 'Carrier shortcuts are tucked away to keep Search compact.'}
                     </span>
                 </span>
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-200">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm dark:bg-white/10 dark:text-slate-200">
                     <i className={`fa-solid ${showCarrierGateway ? 'fa-chevron-up' : 'fa-chevron-down'} text-sm`}></i>
                 </span>
             </button>
