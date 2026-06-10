@@ -568,23 +568,21 @@ Return ONLY a JSON object in this exact shape:
         {/* Dynamic Background Mesh */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#003f87] via-[#0076d3] to-[#35a7ff]"></div>
         
-        <div className="relative z-10 mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
+        <div className="relative z-10 mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4">
             <div>
-                <h2 className="flex items-center gap-3 font-outfit text-2xl font-black tracking-tight text-slate-900 dark:text-text-dark sm:text-3xl">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-900">
-                        <i className="fa-solid fa-magnifying-glass text-base"></i>
+                <h2 className="flex items-center gap-2.5 font-outfit text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#003f87] text-white shadow-sm">
+                        <i className="fa-solid fa-magnifying-glass text-sm"></i>
                     </span>
                     Unified Search
                 </h2>
-                <p className="mt-1 max-w-xl pl-1 text-[13px] font-semibold leading-5 text-slate-500 dark:text-slate-300">
-                    Access policies, property records, and document twins instantly.
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Find customers in Agency Matrix by name or address — or switch modes below.
                 </p>
             </div>
-            <div className="flex items-center gap-3">
-                 <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 dark:border-white/10 dark:bg-white/5">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-300">System Online</span>
-                 </div>
+            <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 md:flex dark:border-white/10 dark:bg-white/5">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-green-500"></span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-300">{searchCount} searches today</span>
             </div>
         </div>
 
@@ -600,12 +598,12 @@ Return ONLY a JSON object in this exact shape:
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder={MODE_META[mode].placeholder}
-                className="w-full rounded-2xl border-2 border-slate-200 bg-white py-3.5 pl-11 pr-16 text-base font-black text-slate-800 shadow-inner outline-none transition-all placeholder:text-slate-300 focus:border-primary/60 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-700 dark:focus:border-accent/50 sm:text-lg"
+                className="w-full rounded-xl border-2 border-slate-200 bg-white py-3.5 pl-11 pr-16 text-base font-semibold text-slate-800 shadow-inner outline-none transition-all placeholder:font-normal placeholder:text-slate-400 focus:border-primary/60 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-accent/50 sm:text-lg"
               />
               <div className="absolute inset-y-0 right-2 flex items-center">
-                  <button 
+                  <button
                     onClick={handleSearch}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-light text-white shadow-sm transition-all hover:scale-105 hover:shadow-primary/30 active:scale-95"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-light text-white shadow-sm transition-all hover:scale-105 hover:shadow-primary/30 active:scale-95"
                   >
                       <i className="fa-solid fa-arrow-right text-base"></i>
                   </button>
@@ -616,30 +614,30 @@ Return ONLY a JSON object in this exact shape:
           {/* REAL ESTATE MODE: Additional File Upload UI */}
           {mode === 'realestate' && (
               <div className="mt-4 animate-slide-down">
-                  <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-white/10 dark:bg-white/5">
+                  <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-white/10 dark:bg-white/5">
                       <div className="flex-1">
-                          <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-300 block mb-3 tracking-[2px]">Optional: Attach Evidence (Inspection/Appraisal/Photos)</label>
-                          <div className="flex gap-3 items-center">
-                              <button 
+                          <label className="mb-2 block text-xs font-semibold text-slate-500 dark:text-slate-300">Optional: attach evidence (inspection, appraisal, photos)</label>
+                          <div className="flex flex-wrap items-center gap-3">
+                              <button
                                   onClick={() => propertyFileInputRef.current?.click()}
-                                  className="px-4 py-2.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-[11px] font-black text-primary dark:text-accent uppercase tracking-[2px] hover:shadow-md transition-all flex items-center gap-2 group/btn"
+                                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-primary transition-all hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:text-accent"
                               >
-                                  <i className="fa-solid fa-paperclip text-base group-hover/btn:scale-110 transition-transform"></i> Attach Staging
+                                  <i className="fa-solid fa-paperclip"></i> Attach Files
                               </button>
                               <input type="file" multiple ref={propertyFileInputRef} onChange={handlePropertyFileChange} accept=".pdf,image/*" className="hidden" />
-                              
+
                               <div className="flex flex-wrap gap-2">
                                   {propertyFiles.map((f, i) => (
-                                      <div key={i} className="bg-primary/10 text-primary dark:text-accent px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter flex items-center gap-2 border border-primary/20">
-                                          <span className="truncate max-w-[120px]">{f.name}</span>
+                                      <div key={i} className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary dark:text-accent">
+                                          <span className="max-w-[120px] truncate">{f.name}</span>
                                           <button onClick={() => removePropertyFile(i)} className="hover:text-red-500"><i className="fa-solid fa-times"></i></button>
                                       </div>
                                   ))}
                               </div>
                           </div>
                       </div>
-                      <div className="text-[10px] text-slate-400 dark:text-slate-300 font-black uppercase tracking-[2px] italic max-w-[200px] opacity-60 text-right">
-                          AI will merge physical evidence with live data.
+                      <div className="max-w-[200px] text-right text-xs italic text-slate-400 dark:text-slate-400">
+                          AI merges attached evidence with live data.
                       </div>
                   </div>
               </div>
@@ -647,21 +645,21 @@ Return ONLY a JSON object in this exact shape:
           
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
              {modeButtons.map(btn => (
-                <button 
+                <button
                   key={btn.mode}
                   onClick={() => setMode(btn.mode)}
-                  className={`relative flex shrink-0 items-center gap-2 overflow-hidden whitespace-nowrap rounded-xl border px-3.5 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] transition-all duration-200 group ${
-                    mode === btn.mode 
-                      ? 'bg-slate-950 dark:bg-primary border-slate-950 dark:border-primary text-white shadow-sm'
-                      : 'bg-white border-slate-200 dark:border-white/10 text-slate-500 hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 hover:text-primary dark:hover:text-white'
+                  className={`group relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border px-3.5 py-2 text-sm font-semibold transition-all duration-200 ${
+                    mode === btn.mode
+                      ? 'border-[#003f87] bg-[#003f87] text-white shadow-sm'
+                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-white'
                   }`}
                 >
-                  <i className={`fa-solid ${btn.icon} ${mode === btn.mode ? '' : 'text-slate-300 group-hover:text-primary dark:group-hover:text-white transition-colors'}`}></i> 
+                  <i className={`fa-solid ${btn.icon} text-xs ${mode === btn.mode ? '' : 'text-slate-400 transition-colors group-hover:text-[#003f87] dark:group-hover:text-white'}`}></i>
                   {btn.label}
-                  <kbd className={`hidden md:inline-block px-1.5 py-0.5 rounded font-mono text-[9px] font-black uppercase tracking-normal ${
+                  <kbd className={`hidden rounded px-1.5 py-0.5 font-mono text-[10px] font-bold md:inline-block ${
                     mode === btn.mode
                       ? 'bg-white/20 text-white'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                      : 'bg-slate-100 text-slate-400 dark:bg-slate-800'
                   }`}>
                     {btn.shortcut.replace('Alt + ', '⌥').replace('Ctrl + ', '⌃')}
                   </kbd>
@@ -671,20 +669,20 @@ Return ONLY a JSON object in this exact shape:
 
           {/* Recent Searches History */}
           {searchHistory.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-2 animate-fade-in pl-1">
-              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 mr-1">Recent:</span>
+            <div className="mt-2.5 flex flex-wrap items-center gap-2 animate-fade-in pl-1">
+              <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Recent</span>
               {searchHistory.map((historicQuery, idx) => (
                 <button
                   key={`${historicQuery}-${idx}`}
                   onClick={() => handleHistoryClick(historicQuery)}
-                  className="rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:border-primary/50 dark:hover:border-accent/50 hover:bg-white dark:hover:bg-white/10 hover:shadow-sm transition-all"
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-all hover:border-primary/50 hover:bg-white hover:shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-accent/50 dark:hover:bg-white/10"
                 >
                   {historicQuery}
                 </button>
               ))}
               <button
                 onClick={() => setSearchHistory([])}
-                className="text-[10px] font-black uppercase tracking-wider text-rose-500/80 hover:text-rose-600 pl-2 transition-colors font-outfit font-black"
+                className="pl-1 text-xs font-semibold text-rose-500/80 transition-colors hover:text-rose-600"
               >
                 Clear
               </button>
@@ -692,53 +690,31 @@ Return ONLY a JSON object in this exact shape:
           )}
         </div>
         
-        <div className={`relative z-10 grid grid-cols-2 gap-2 md:grid-cols-4 ${mode === 'realestate' ? 'lg:grid-cols-6' : 'lg:grid-cols-5'}`}>
-          <button onClick={handleSearch} className="col-span-2 flex min-h-[58px] w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 py-3 text-white shadow-sm transition-all hover:shadow-md active:scale-95 dark:from-primary dark:to-primary-light md:col-span-4 lg:col-span-1 font-black group">
-              <i className="fa-solid fa-bolt text-base text-amber-300"></i>
-              <span className="text-[11px] uppercase tracking-[0.16em]">Execute</span>
-          </button>
-          
-          <button onClick={() => window.open("https://agents.agencymatrix.com/#/", "_blank")} className="flex min-h-[58px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-center transition-all hover:border-primary/50 hover:bg-slate-50 hover:shadow-sm dark:border-white/10 dark:bg-white/5 dark:hover:border-accent/50">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 transition-colors group-hover:bg-primary/10 dark:bg-white/5 dark:group-hover:bg-accent/10">
-                <i className="fa-solid fa-building-shield text-slate-400 group-hover:text-primary dark:group-hover:text-accent text-lg"></i>
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">Matrix Home</span>
+        <div className="relative z-10 flex flex-wrap items-center gap-2">
+          <button onClick={handleSearch} className="inline-flex items-center gap-2 rounded-lg bg-[#003f87] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#0076d3] hover:shadow-md active:scale-95">
+              <i className="fa-solid fa-magnifying-glass text-xs"></i>
+              Search
           </button>
 
-          <button onClick={() => window.open("https://agents.agencymatrix.com/customerEdit.php?id=0", "_blank")} className="flex min-h-[58px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-center transition-all hover:border-primary/50 hover:bg-slate-50 hover:shadow-sm dark:border-white/10 dark:bg-white/5 dark:hover:border-accent/50">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 transition-colors group-hover:bg-primary/10 dark:bg-white/5 dark:group-hover:bg-accent/10">
-                <i className="fa-solid fa-user-plus text-slate-400 group-hover:text-primary dark:group-hover:text-accent text-lg"></i>
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">New Prospect</span>
+          <button onClick={handleNewFolder} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:border-[#0076d3]/50 hover:text-[#003f87] hover:shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white">
+              <i className="fa-brands fa-google-drive text-xs text-slate-400"></i>
+              Cloud Folder
           </button>
 
-          <button onClick={handleNewFolder} className="flex min-h-[58px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-center transition-all hover:border-primary/50 hover:bg-slate-50 hover:shadow-sm dark:border-white/10 dark:bg-white/5 dark:hover:border-accent/50">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 transition-colors group-hover:bg-primary/10 dark:bg-white/5 dark:group-hover:bg-accent/10">
-                <i className="fa-brands fa-google-drive text-slate-400 group-hover:text-primary dark:group-hover:text-accent text-lg"></i>
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">Cloud Folder</span>
-          </button>
-
-          <button onClick={handleNotesOpen} className="flex min-h-[58px] items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 p-2.5 text-center transition-all hover:border-orange-300 hover:bg-white hover:shadow-sm dark:border-white/10 dark:bg-white/5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 transition-transform group-hover:scale-105 dark:bg-orange-900/30">
-                <i className="fa-solid fa-note-sticky text-orange-500 text-lg"></i>
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-orange-600/80 dark:text-orange-400">Audit Memo</span>
+          <button onClick={handleNotesOpen} className="inline-flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3.5 py-2.5 text-sm font-semibold text-orange-700 transition-all hover:border-orange-300 hover:bg-white hover:shadow-sm dark:border-orange-400/30 dark:bg-orange-500/10 dark:text-orange-300">
+              <i className="fa-solid fa-note-sticky text-xs"></i>
+              Audit Memo
           </button>
 
           {mode === 'realestate' && (
               <>
-                <button onClick={handleGisSearch} disabled={isGisSearching} className="flex min-h-[58px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-center transition-all hover:border-green-400/50 hover:bg-slate-50 hover:shadow-sm dark:border-white/10 dark:bg-white/5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 transition-colors group-hover:bg-green-100 dark:bg-green-900/20">
-                        {isGisSearching ? <i className="fa-solid fa-spinner fa-spin text-green-500"></i> : <i className="fa-solid fa-map-location-dot text-green-500 text-lg"></i>}
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">Tax GIS</span>
+                <button onClick={handleGisSearch} disabled={isGisSearching} className="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5 text-sm font-semibold text-green-700 transition-all hover:border-green-300 hover:bg-white hover:shadow-sm disabled:opacity-60 dark:border-green-400/30 dark:bg-green-500/10 dark:text-green-300">
+                    <i className={`fa-solid ${isGisSearching ? 'fa-spinner fa-spin' : 'fa-map-location-dot'} text-xs`}></i>
+                    Tax GIS
                 </button>
-                <button onClick={handleGenerateReport} disabled={isGeneratingReport || !query.trim()} className="flex min-h-[58px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-center transition-all hover:border-purple-400/50 hover:bg-slate-50 hover:shadow-sm dark:border-white/10 dark:bg-white/5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 transition-colors group-hover:bg-purple-100 dark:bg-purple-900/20">
-                        {isGeneratingReport ? <i className="fa-solid fa-spinner fa-spin text-purple-500"></i> : <i className="fa-solid fa-wand-magic-sparkles text-purple-500 text-lg"></i>}
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">Risk Intel</span>
+                <button onClick={handleGenerateReport} disabled={isGeneratingReport || !query.trim()} className="inline-flex items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3.5 py-2.5 text-sm font-semibold text-purple-700 transition-all hover:border-purple-300 hover:bg-white hover:shadow-sm disabled:opacity-60 dark:border-purple-400/30 dark:bg-purple-500/10 dark:text-purple-300">
+                    <i className={`fa-solid ${isGeneratingReport ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'} text-xs`}></i>
+                    Risk Intel
                 </button>
               </>
           )}
@@ -751,15 +727,18 @@ Return ONLY a JSON object in this exact shape:
                 onClick={() => setShowCarrierGateway((prev) => !prev)}
                 className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition hover:border-primary/40 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
             >
-                <span>
-                    <span className="block text-[10px] font-black uppercase tracking-[2px] text-slate-400 dark:text-slate-300">
-                        Master Carrier Gateway
-                    </span>
-                    <span className="mt-1 block text-xs font-semibold text-slate-500 dark:text-slate-300">
-                        {showCarrierGateway ? 'Carrier shortcuts are open.' : 'Carrier shortcuts are tucked away to keep Search compact.'}
+                <span className="flex items-center gap-3">
+                    <i className="fa-solid fa-building-shield text-sm text-slate-400"></i>
+                    <span>
+                        <span className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+                            Carrier Portals
+                        </span>
+                        <span className="block text-xs text-slate-500 dark:text-slate-400">
+                            {showCarrierGateway ? 'Carrier shortcuts are open.' : 'Nationwide, Progressive, NC Grange, and more.'}
+                        </span>
                     </span>
                 </span>
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm dark:bg-white/10 dark:text-slate-200">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm dark:bg-white/10 dark:text-slate-200">
                     <i className={`fa-solid ${showCarrierGateway ? 'fa-chevron-up' : 'fa-chevron-down'} text-sm`}></i>
                 </span>
             </button>

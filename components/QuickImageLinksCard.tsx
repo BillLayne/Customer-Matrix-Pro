@@ -71,19 +71,19 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
   };
 
   return (
-    <div className="rounded-[1.75rem] border border-slate-200/70 bg-white/80 p-5 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.5)] backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
-      <div className="mb-5 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5 sm:p-5">
+      <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.35em] text-[#0076d3] dark:text-cyan-300">
+          <h2 className="flex items-center gap-2.5 font-outfit text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900">
+              <i className="fa-solid fa-image text-sm"></i>
+            </span>
             Quick Image Links
-          </p>
-          <h2 className="mt-1 font-outfit text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-            Upload JPG, PNG, or WEBP straight to Imgur
           </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Upload JPG, PNG, or WEBP to Imgur — the hosted link copies automatically.
+          </p>
         </div>
-        <p className="max-w-xl text-xs leading-5 text-slate-500 dark:text-slate-300">
-          Drop an image, copy the hosted link instantly, and keep your latest share links on the dashboard.
-        </p>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">

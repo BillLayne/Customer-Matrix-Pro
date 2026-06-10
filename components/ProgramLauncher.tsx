@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface ProgramLauncherProps {
@@ -18,16 +18,6 @@ interface ProgramEntry {
   accent: string;
   note: string;
   targetType: 'local' | 'web';
-}
-
-interface LauncherCollection {
-  id: string;
-  eyebrow: string;
-  title: string;
-  description: string;
-  icon: string;
-  accent: string;
-  programIds: string[];
 }
 
 const PROGRAMS: ProgramEntry[] = [
@@ -327,86 +317,65 @@ const PROGRAMS: ProgramEntry[] = [
 ];
 
 const CATEGORY_ORDER: ProgramCategory[] = ['Operations', 'Documents & Forms', 'Property & Coverage'];
+
 const CATEGORY_ICONS: Record<ProgramCategory, string> = {
   Operations: 'fa-solid fa-bolt',
   'Documents & Forms': 'fa-solid fa-folder-open',
   'Property & Coverage': 'fa-solid fa-house-circle-check',
 };
 
-const CATEGORY_DESCRIPTIONS: Record<ProgramCategory, string> = {
-  Operations: 'Communication, delivery, and daily workflow tools.',
-  'Documents & Forms': 'Issue forms, proof, cards, quotes, and customer-facing paperwork.',
-  'Property & Coverage': 'Address-first research, rebuild help, and coverage estimate tools.',
+const CATEGORY_STYLES: Record<ProgramCategory, { iconBg: string; iconText: string }> = {
+  Operations: {
+    iconBg: 'bg-blue-50 dark:bg-blue-500/15',
+    iconText: 'text-[#0069bd] dark:text-sky-300',
+  },
+  'Documents & Forms': {
+    iconBg: 'bg-emerald-50 dark:bg-emerald-500/15',
+    iconText: 'text-emerald-700 dark:text-emerald-300',
+  },
+  'Property & Coverage': {
+    iconBg: 'bg-amber-50 dark:bg-amber-500/15',
+    iconText: 'text-amber-700 dark:text-amber-300',
+  },
 };
 
-const FEATURED_COLLECTIONS: LauncherCollection[] = [
-  {
-    id: 'most-used',
-    eyebrow: 'Most Used',
-    title: 'Start with the tools people reach for first',
-    description: 'These are the fastest paths for customer communication, certificates, proof, and quote delivery.',
-    icon: 'fa-solid fa-star',
-    accent: 'from-[#003f87] via-[#0076d3] to-cyan-400',
-    programIds: ['send-docs', 'sms-command-center', 'certificate-generator', 'poi-generator', 'insurance-cards', 'pdf-quote-creator', 'no-loss'],
-  },
-  {
-    id: 'coverage-lane',
-    eyebrow: 'Coverage Lane',
-    title: 'When the next question starts with an address or dwelling',
-    description: 'Property lookup, rebuild cost help, and condo coverage tools grouped into one path.',
-    icon: 'fa-solid fa-house-circle-check',
-    accent: 'from-emerald-800 via-teal-700 to-cyan-500',
-    programIds: ['nc-tools-property', 'home-rebuild', 'condo-coverage', 'home-inventory', 'nc-grange-down-payment'],
-  },
-  {
-    id: 'customer-shortcuts',
-    eyebrow: 'Customer Shortcuts',
-    title: 'Reference, contacts, no-loss, and renewal links',
-    description: 'Fast access to the customer reference card, carrier contact pages, no-loss forms, and renewal Gmail program.',
-    icon: 'fa-solid fa-link',
-    accent: 'from-slate-900 via-blue-800 to-cyan-500',
-    programIds: ['carrier-contact-pages', 'customer-reference-card', 'no-loss', 'renewal-gmail-program'],
-  },
-];
-
 const RECENT_PROGRAMS_KEY = 'matrix-pro-recent-programs';
+const PINNED_PROGRAMS_KEY = 'matrix-pro-pinned-programs';
+
+const DEFAULT_PINNED: string[] = [
+  'send-docs',
+  'sms-command-center',
+  'certificate-generator',
+  'poi-generator',
+  'insurance-cards',
+  'pdf-quote-creator',
+  'no-loss',
+  'carrier-contact-pages',
+];
 
 const toFileUrl = (windowsPath: string) => encodeURI(`file:///${windowsPath.replace(/\\/g, '/')}`);
 
-const displayPath = (windowsPath: string) =>
-  windowsPath
-    .replace('C:\\Users\\bill\\OneDrive\\Documents\\Playground\\', '')
-    .replace('C:\\Users\\bill\\OneDrive\\Documents\\', '');
-
-const groupedPrograms = CATEGORY_ORDER.map((category) => ({
-  category,
-  items: PROGRAMS.filter((program) => program.category === category),
-}));
-
 const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
-  const isHostedDashboard = window.location.protocol.startsWith('http') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+  const isHostedDashboard =
+    window.location.protocol.startsWith('http') &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1';
   const [recentProgramIds, setRecentProgramIds] = useLocalStorage<string[]>(RECENT_PROGRAMS_KEY, []);
-  const [isMobileView, setIsMobileView] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<Record<ProgramCategory, boolean>>({
-    Operations: true,
-    'Documents & Forms': false,
-    'Property & Coverage': false,
-  });
+  const [pinnedProgramIds, setPinnedProgramIds] = useLocalStorage<string[]>(PINNED_PROGRAMS_KEY, DEFAULT_PINNED);
+  const [filterQuery, setFilterQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<ProgramCategory | 'All'>('All');
 
   const programMap = useMemo(
     () => Object.fromEntries(PROGRAMS.map((program) => [program.id, program])),
     []
   );
 
-  const featuredCollections = useMemo(
+  const pinnedPrograms = useMemo(
     () =>
-      FEATURED_COLLECTIONS.map((collection) => ({
-        ...collection,
-        items: collection.programIds
-          .map((programId) => programMap[programId])
-          .filter((program): program is ProgramEntry => Boolean(program)),
-      })),
-    [programMap]
+      pinnedProgramIds
+        .map((programId) => programMap[programId])
+        .filter((program): program is ProgramEntry => Boolean(program)),
+    [programMap, pinnedProgramIds]
   );
 
   const recentPrograms = useMemo(
@@ -418,20 +387,38 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
     [programMap, recentProgramIds]
   );
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
-    const updateMobileState = (event?: MediaQueryListEvent) => {
-      const matches = event?.matches ?? mediaQuery.matches;
-      setIsMobileView(matches);
-    };
+  const normalizedFilter = filterQuery.trim().toLowerCase();
 
-    updateMobileState();
-    mediaQuery.addEventListener('change', updateMobileState);
-    return () => mediaQuery.removeEventListener('change', updateMobileState);
-  }, []);
+  const filteredPrograms = useMemo(() => {
+    if (!normalizedFilter) return [];
+    return PROGRAMS.filter((program) =>
+      [program.title, program.description, program.category, program.note]
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedFilter)
+    );
+  }, [normalizedFilter]);
 
-  const toggleCategory = (category: ProgramCategory) => {
-    setExpandedCategories((prev) => ({ ...prev, [category]: !prev[category] }));
+  const groupedPrograms = useMemo(
+    () =>
+      CATEGORY_ORDER.filter((category) => activeCategory === 'All' || activeCategory === category).map(
+        (category) => ({
+          category,
+          items: PROGRAMS.filter((program) => program.category === category),
+        })
+      ),
+    [activeCategory]
+  );
+
+  const togglePin = (program: ProgramEntry) => {
+    setPinnedProgramIds((prev) => {
+      if (prev.includes(program.id)) {
+        addToast(`${program.title} unpinned.`, 'info');
+        return prev.filter((id) => id !== program.id);
+      }
+      addToast(`${program.title} pinned to the top.`, 'success');
+      return [...prev, program.id];
+    });
   };
 
   const openProgram = (program: ProgramEntry) => {
@@ -455,211 +442,178 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
     addToast(`Popup blocked while opening ${program.title}. Please allow popups for this dashboard.`, 'warning');
   };
 
+  const renderTile = (program: ProgramEntry) => {
+    const isPinned = pinnedProgramIds.includes(program.id);
+    const styles = CATEGORY_STYLES[program.category];
+    return (
+      <button
+        key={program.id}
+        type="button"
+        onClick={() => openProgram(program)}
+        title={program.description}
+        className="group flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-[#0076d3]/50 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-cyan-400/40"
+      >
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${styles.iconBg} ${styles.iconText}`}>
+          <i className={`${program.icon} text-base`}></i>
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-slate-900 dark:text-white">
+            {program.title}
+          </span>
+          <span className="block truncate text-xs text-slate-500 dark:text-slate-400">{program.note}</span>
+        </span>
+        <span
+          role="button"
+          aria-label={isPinned ? `Unpin ${program.title}` : `Pin ${program.title}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            togglePin(program);
+          }}
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm transition ${
+            isPinned
+              ? 'text-amber-500 hover:text-slate-400'
+              : 'text-slate-300 opacity-0 hover:text-amber-500 group-hover:opacity-100 dark:text-slate-600'
+          }`}
+          title={isPinned ? 'Unpin from top' : 'Pin to top'}
+        >
+          <i className={`${isPinned ? 'fa-solid' : 'fa-regular'} fa-star`}></i>
+        </span>
+      </button>
+    );
+  };
+
   return (
-    <div className="rounded-[1.45rem] border border-slate-200/70 bg-white/80 p-4 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.5)] backdrop-blur-xl sm:rounded-[1.75rem] sm:p-5 dark:border-white/10 dark:bg-white/5">
-      <div className="mb-4 flex flex-col gap-2 lg:mb-5 lg:flex-row lg:items-end lg:justify-between">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5 sm:p-5">
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.35em] text-[#0076d3] dark:text-cyan-300">
-            Guided Tool Launchers
-          </p>
-          <h2 className="mt-1 font-outfit text-xl font-black tracking-tight text-slate-900 sm:text-2xl dark:text-white">
-            Open the right agency tool without hunting for it
+          <h2 className="flex items-center gap-2.5 font-outfit text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900">
+              <i className="fa-solid fa-table-cells-large text-sm"></i>
+            </span>
+            Program Launcher
           </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Every agency tool in one place. Star the ones you use most to keep them on top.
+          </p>
         </div>
-        <p className="max-w-xl text-xs leading-5 text-slate-500 dark:text-slate-300">
-          Featured tools come first, recent tools stay visible, and the full launcher wall still lives underneath.
-        </p>
+
+        <div className="relative w-full lg:max-w-xs">
+          <i className="fa-solid fa-filter pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400"></i>
+          <input
+            type="text"
+            value={filterQuery}
+            onChange={(e) => setFilterQuery(e.target.value)}
+            placeholder="Filter tools… (e.g. certificate)"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-9 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#0076d3]/60 focus:bg-white dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500"
+          />
+          {filterQuery && (
+            <button
+              type="button"
+              onClick={() => setFilterQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200"
+              aria-label="Clear filter"
+            >
+              <i className="fa-solid fa-circle-xmark"></i>
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="space-y-3 sm:space-y-5">
-        {featuredCollections.map((collection) => (
-          <section
-            key={collection.id}
-            className="overflow-hidden rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-white/5"
-          >
-            <div className={`h-2 bg-gradient-to-r ${collection.accent}`}></div>
-            <div className="p-4 sm:p-5">
-              <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                <div className="flex items-start gap-3">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] bg-gradient-to-br ${collection.accent} text-white shadow-lg`}>
-                    <i className={`${collection.icon} text-base`}></i>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-400">
-                      {collection.eyebrow}
-                    </p>
-                    <h3 className="mt-1 font-outfit text-lg font-black tracking-tight text-slate-900 dark:text-white">
-                      {collection.title}
-                    </h3>
-                    <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-300">
-                      {collection.description}
-                    </p>
-                  </div>
-                </div>
-                <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                  {collection.items.length} shortcuts
-                </span>
+      {normalizedFilter ? (
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            {filteredPrograms.length} {filteredPrograms.length === 1 ? 'match' : 'matches'}
+          </p>
+          {filteredPrograms.length > 0 ? (
+            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredPrograms.map(renderTile)}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
+              No tools match “{filterQuery}”. Try a shorter word.
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {pinnedPrograms.length > 0 && (
+            <section>
+              <div className="mb-2.5 flex items-center gap-2">
+                <i className="fa-solid fa-star text-xs text-amber-500"></i>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Pinned
+                </h3>
               </div>
+              <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {pinnedPrograms.map(renderTile)}
+              </div>
+            </section>
+          )}
 
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {collection.items.map((program) => (
+          {recentPrograms.length > 0 && (
+            <section>
+              <div className="mb-2.5 flex items-center gap-2">
+                <i className="fa-solid fa-clock-rotate-left text-xs text-slate-400"></i>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Recent
+                </h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {recentPrograms.map((program) => (
                   <button
                     key={program.id}
                     onClick={() => openProgram(program)}
-                    className="group rounded-[1.1rem] border border-slate-200/80 bg-white/90 p-4 text-left shadow-[0_16px_40px_-36px_rgba(15,23,42,0.8)] transition hover:-translate-y-1 hover:border-[#0076d3]/40 hover:shadow-xl dark:border-white/10 dark:bg-[#0b1727]/80"
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-[#0076d3]/50 hover:bg-white hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.95rem] bg-gradient-to-br ${program.accent} text-white shadow-lg`}>
-                        <i className={`${program.icon} text-sm`}></i>
-                      </div>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/10 dark:text-slate-300">
-                        {program.note}
-                      </span>
-                    </div>
-                    <h4 className="mt-4 font-outfit text-lg font-black tracking-tight text-slate-900 dark:text-white">
-                      {program.title}
-                    </h4>
-                    <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-300">
-                      {program.description}
-                    </p>
-                    <div className="mt-4 inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#003f87] transition group-hover:text-[#0076d3] dark:text-cyan-300">
-                      <i className="fa-solid fa-arrow-up-right-from-square"></i>
-                      Open now
-                    </div>
+                    <i className={`${program.icon} text-[11px]`}></i>
+                    {program.title}
                   </button>
                 ))}
               </div>
-            </div>
-          </section>
-        ))}
+            </section>
+          )}
 
-        <section className="rounded-[1.2rem] border border-slate-200/80 bg-white/90 p-4 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.4)] dark:border-white/10 dark:bg-[#0b1727]/80">
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-400">
-                Recent Tools
-              </p>
-              <h3 className="mt-1 font-outfit text-lg font-black tracking-tight text-slate-900 dark:text-white">
-                Jump back into what you opened last
+          <section>
+            <div className="mb-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4 dark:border-white/10">
+              <h3 className="mr-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                All Tools
               </h3>
-            </div>
-            <p className="max-w-xl text-xs leading-5 text-slate-500 dark:text-slate-300">
-              This keeps the launcher friendlier for repeat work, especially when someone uses the same 3 to 5 tools all day.
-            </p>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {recentPrograms.length > 0 ? (
-              recentPrograms.map((program) => (
+              {(['All', ...CATEGORY_ORDER] as Array<ProgramCategory | 'All'>).map((category) => (
                 <button
-                  key={program.id}
-                  onClick={() => openProgram(program)}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-600 transition hover:border-[#0076d3]/40 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-                >
-                  <i className={program.icon}></i>
-                  {program.title}
-                </button>
-              ))
-            ) : (
-              <div className="rounded-full border border-dashed border-slate-200 bg-slate-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
-                Open a tool and it will show here
-              </div>
-            )}
-          </div>
-        </section>
-
-        {groupedPrograms.map((group) => (
-          <section key={group.category}>
-            <div className="mb-3">
-              {isMobileView ? (
-                <button
+                  key={category}
                   type="button"
-                  onClick={() => toggleCategory(group.category)}
-                  className="flex w-full items-center gap-3 rounded-[1.2rem] border border-slate-200 bg-slate-50/80 px-4 py-4 text-left dark:border-white/10 dark:bg-white/5"
+                  onClick={() => setActiveCategory(category)}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                    activeCategory === category
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                      : 'border border-slate-200 bg-white text-slate-500 hover:border-[#0076d3]/40 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white'
+                  }`}
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] bg-slate-900 text-white dark:bg-[#0076d3]">
-                    <i className={`${CATEGORY_ICONS[group.category]} text-base`}></i>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-xs font-black uppercase tracking-[0.22em] text-slate-700 dark:text-slate-100">
-                      {group.category}
-                    </h3>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
-                      {CATEGORY_DESCRIPTIONS[group.category]}
-                    </p>
-                  </div>
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
-                    <i className={`fa-solid ${expandedCategories[group.category] ? 'fa-chevron-up' : 'fa-chevron-down'} text-sm`}></i>
-                  </div>
+                  {category === 'All'
+                    ? `All (${PROGRAMS.length})`
+                    : `${category} (${PROGRAMS.filter((p) => p.category === category).length})`}
                 </button>
-              ) : (
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-xs font-black uppercase tracking-[0.24em] text-slate-500 dark:text-slate-300">
-                      {group.category}
-                    </h3>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
-                      {CATEGORY_DESCRIPTIONS[group.category]}
-                    </p>
-                  </div>
-                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                    {group.items.length} tools
-                  </span>
-                </div>
-              )}
+              ))}
             </div>
 
-            {(!isMobileView || expandedCategories[group.category]) && (
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {group.items.map((program) => (
-                  <article
-                    key={program.id}
-                    className="overflow-hidden rounded-[1.2rem] border border-slate-200/80 bg-white/90 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.8)] transition hover:-translate-y-1 hover:border-[#0076d3]/40 hover:shadow-xl sm:rounded-[1.35rem] dark:border-white/10 dark:bg-[#0b1727]/80"
-                  >
-                    <div className={`h-2 bg-gradient-to-r ${program.accent}`}></div>
-                    <div className="p-4">
-                      <div className="mb-4 flex items-start gap-3 sm:justify-between">
-                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] bg-gradient-to-br ${program.accent} text-white shadow-lg`}>
-                          <i className={`${program.icon} text-base`}></i>
-                        </div>
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/10 dark:text-slate-300">
-                          {program.note}
-                        </span>
-                      </div>
-
-                      <h4 className="font-outfit text-lg font-black tracking-tight text-slate-900 sm:text-xl dark:text-white">
-                        {program.title}
-                      </h4>
-                      <p className="mt-2 text-[13px] leading-5 text-slate-500 sm:text-sm dark:text-slate-300">{program.description}</p>
-
-                      <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/5">
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-400">
-                          {program.targetType === 'web' ? 'Live link' : 'Local entry'}
-                        </p>
-                        <p className="mt-2 break-all text-xs leading-5 text-slate-500 dark:text-slate-300">
-                          {isHostedDashboard && program.hostedTarget
-                            ? program.hostedTarget
-                            : program.targetType === 'web'
-                              ? program.target
-                              : displayPath(program.target)}
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={() => openProgram(program)}
-                        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:bg-[#003f87] dark:bg-white dark:text-slate-900 dark:hover:bg-cyan-300"
-                      >
-                        <i className="fa-solid fa-arrow-up-right-from-square"></i>
-                        Open Tool
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
+            <div className="space-y-4">
+              {groupedPrograms.map((group) => (
+                <div key={group.category}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <i className={`${CATEGORY_ICONS[group.category]} text-xs ${CATEGORY_STYLES[group.category].iconText}`}></i>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {group.category}
+                    </h4>
+                  </div>
+                  <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {group.items.map(renderTile)}
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

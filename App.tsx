@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import AiAssistant from './components/AiAssistant';
 import SearchCard from './components/SearchCard';
 import QuickSearchPopup from './components/QuickSearchPopup';
 import ProgramLauncher from './components/ProgramLauncher';
@@ -11,7 +10,7 @@ import type { ToastMessage } from './types';
 
 const quickActions = [
   {
-    label: 'Agency Matrix Home',
+    label: 'Matrix Home',
     description: 'Open the main agent portal.',
     href: 'https://agents.agencymatrix.com/#/',
     icon: 'fa-solid fa-house-chimney-window',
@@ -54,168 +53,14 @@ const quickActions = [
   },
 ];
 
-type WorkspaceTab = 'search' | 'gmail' | 'tools';
-type SectionPanelKey = 'email' | 'images';
-
-const workspaceTabs: Array<{
-  id: WorkspaceTab;
-  label: string;
-  description: string;
-  icon: string;
-}> = [
-  {
-    id: 'search',
-    label: 'Unified Search',
-    description: 'Matrix lookup and customer search',
-    icon: 'fa-solid fa-magnifying-glass',
-  },
-  {
-    id: 'gmail',
-    label: 'Gmail Engineering',
-    description: 'Generate and refine emails',
-    icon: 'fa-solid fa-envelope-open-text',
-  },
-  {
-    id: 'tools',
-    label: 'Tools',
-    description: 'Launchers, image links, forms',
-    icon: 'fa-solid fa-table-cells-large',
-  },
-];
-
-const quickStartCards = [
-  {
-    id: 'send-docs',
-    eyebrow: 'Start Here',
-    title: 'Send customer documents',
-    description: 'Jump straight into the Send Bill Docs portal when someone needs to upload or receive files.',
-    icon: 'fa-solid fa-file-arrow-up',
-    accent: 'from-sky-700 via-cyan-600 to-teal-500',
-    type: 'link' as const,
-    href: 'https://www.sendbilldocs.com/agent.html',
-  },
-  {
-    id: 'sms',
-    eyebrow: 'Fastest Reply',
-    title: 'Open SMS Command Center',
-    description: 'Use your shared text line for quick customer replies, documents, cards, and attachments.',
-    icon: 'fa-solid fa-comments',
-    accent: 'from-emerald-800 via-teal-700 to-cyan-500',
-    type: 'link' as const,
-    href: 'https://agency-sms-command-center.bill-7e3.workers.dev',
-  },
-  {
-    id: 'gmail',
-    eyebrow: 'Email Help',
-    title: 'Jump to Gmail Engineering',
-    description: 'Scroll to the email studio when you need to build or refine a customer-facing insurance email.',
-    icon: 'fa-solid fa-envelope-open-text',
-    accent: 'from-slate-900 via-[#003f87] to-[#0076d3]',
-    type: 'section' as const,
-    panel: 'email' as const,
-  },
-  {
-    id: 'certificates',
-    eyebrow: 'Most Used Forms',
-    title: 'Open Certificates',
-    description: 'Go directly to the live certificate platform for COIs and certificate requests.',
-    icon: 'fa-solid fa-certificate',
-    accent: 'from-teal-800 via-emerald-700 to-green-500',
-    type: 'link' as const,
-    href: 'https://coi-certificates-certguard-ai.pages.dev/',
-  },
-  {
-    id: 'poi',
-    eyebrow: 'Proof Tools',
-    title: 'Open POI Generator',
-    description: 'Build proof-of-insurance documents and polished proof emails from the dedicated generator.',
-    icon: 'fa-solid fa-file-pdf',
-    accent: 'from-blue-900 via-sky-700 to-cyan-500',
-    type: 'link' as const,
-    href: 'https://bill-layne-insurance-poi-generator.pages.dev',
-  },
-  {
-    id: 'property',
-    eyebrow: 'Property Lookup',
-    title: 'Open NC Property Tools',
-    description: 'Go right into property lookup and risk intel when a coverage question starts with an address.',
-    icon: 'fa-solid fa-map-location-dot',
-    accent: 'from-emerald-900 via-teal-700 to-cyan-500',
-    type: 'link' as const,
-    href: 'https://nc-insurance-tools-gemini.pages.dev/',
-  },
-];
-
-const workflowGuides = [
-  {
-    id: 'communicate',
-    eyebrow: 'Communicate',
-    title: 'Reply, send, and follow up',
-    description: 'Use this lane when the job is getting something out to a customer quickly.',
-    icon: 'fa-solid fa-paper-plane',
-    accent: 'from-sky-700 via-blue-700 to-indigo-600',
-    actions: [
-      { label: 'Send Docs', type: 'link' as const, href: 'https://www.sendbilldocs.com/agent.html' },
-      { label: 'SMS Center', type: 'link' as const, href: 'https://agency-sms-command-center.bill-7e3.workers.dev' },
-      { label: 'Gmail Studio', type: 'section' as const, panel: 'email' as const },
-      { label: 'Renewal Gmail', type: 'link' as const, href: 'https://renewal-gmail-program.pages.dev/' },
-    ],
-  },
-  {
-    id: 'documents',
-    eyebrow: 'Create Documents',
-    title: 'Issue the right form fast',
-    description: 'Use this lane when you need certificates, proof, ID cards, quotes, or other customer forms.',
-    icon: 'fa-solid fa-folder-open',
-    accent: 'from-teal-800 via-emerald-700 to-green-500',
-    actions: [
-      { label: 'Certificates', type: 'link' as const, href: 'https://coi-certificates-certguard-ai.pages.dev/' },
-      { label: 'POI Generator', type: 'link' as const, href: 'https://bill-layne-insurance-poi-generator.pages.dev' },
-      { label: 'Insurance Cards', type: 'link' as const, href: 'https://insurance-card-generator-2026-color-edition.pages.dev/' },
-      { label: 'Carrier Contacts', type: 'link' as const, href: 'https://insurance-card-generator-2026-color-edition.pages.dev/contact-page-index' },
-      { label: 'Reference Card', type: 'link' as const, href: 'https://insurance-card-generator-2026-color-edition.pages.dev/?builder=policy-reference&agency=1' },
-    ],
-  },
-  {
-    id: 'property',
-    eyebrow: 'Coverage & Property',
-    title: 'Start with the address',
-    description: 'Use these tools when a customer needs property data, rebuild help, or coverage estimates.',
-    icon: 'fa-solid fa-house-circle-check',
-    accent: 'from-amber-700 via-orange-600 to-yellow-500',
-    actions: [
-      { label: 'NC Property Tools', type: 'link' as const, href: 'https://nc-insurance-tools-gemini.pages.dev/' },
-      { label: 'Rebuild Estimator', type: 'link' as const, href: 'https://home-rebuild-estimator.pages.dev' },
-      { label: 'Condo Calculator', type: 'link' as const, href: 'https://condo-coverage-calculator.pages.dev' },
-    ],
-  },
-  {
-    id: 'content',
-    eyebrow: 'Image & Content',
-    title: 'Build what you need to send',
-    description: 'Use these tools when the customer needs a polished image, HTML, quote visual, or photo guide.',
-    icon: 'fa-solid fa-wand-magic-sparkles',
-    accent: 'from-fuchsia-700 via-violet-700 to-indigo-600',
-    actions: [
-      { label: 'Quick Image Links', type: 'section' as const, panel: 'images' as const },
-      { label: 'HTML Studio', type: 'link' as const, href: '/html-studio.html' },
-      { label: 'PDF Quote Creator', type: 'link' as const, href: 'https://insurance-quote-image-creator.bill-7e3.workers.dev/' },
-    ],
-  },
-];
-
 export default function App() {
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [searchCount, setSearchCount] = useLocalStorage<number>('searchesToday', 0);
   const [showQuickSearch, setShowQuickSearch] = useState(false);
   const [showShortcutModal, setShowShortcutModal] = useState(false);
-  const [activeWorkspaceTab, setActiveWorkspaceTab] = useLocalStorage<WorkspaceTab | 'split'>('matrix-pro-layout-mode', 'search');
-  const currentTab: WorkspaceTab = activeWorkspaceTab === 'split' ? 'search' : activeWorkspaceTab;
-  const emailSectionRef = useRef<HTMLElement | null>(null);
-  const imagesSectionRef = useRef<HTMLElement | null>(null);
   const launcherSectionRef = useRef<HTMLElement | null>(null);
-  const toolsSectionRef = useRef<HTMLElement | null>(null);
+  const imagesSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -241,14 +86,6 @@ export default function App() {
     setSearchCount((prev) => prev + 1);
   };
 
-  const switchWorkspaceTab = useCallback(
-    (tab: WorkspaceTab, label?: string) => {
-      setActiveWorkspaceTab(tab);
-      addToast(`Switched to ${label || workspaceTabs.find((item) => item.id === tab)?.label || 'workspace'}...`, 'info');
-    },
-    [addToast, setActiveWorkspaceTab]
-  );
-
   const openExternalLink = useCallback(
     (label: string, href: string) => {
       window.open(href, '_blank');
@@ -257,21 +94,9 @@ export default function App() {
     [addToast]
   );
 
-  const revealSection = useCallback(
-    (panel: SectionPanelKey | null, targetRef: React.RefObject<HTMLElement | null>, label: string) => {
-      if (panel === 'email') {
-        setActiveWorkspaceTab('gmail');
-      }
-      if (panel === 'images') {
-        setActiveWorkspaceTab('tools');
-      }
-      window.setTimeout(() => {
-        targetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 120);
-      addToast(`Jumping to ${label}...`, 'info');
-    },
-    [addToast, setActiveWorkspaceTab]
-  );
+  const scrollToSection = useCallback((targetRef: React.RefObject<HTMLElement | null>) => {
+    targetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   const handleQuickSearch = useCallback(
     (query: string) => {
@@ -286,7 +111,7 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm' && !e.shiftKey) {
         e.preventDefault();
         setShowQuickSearch(true);
       }
@@ -321,349 +146,189 @@ export default function App() {
   }, [addToast]);
 
   return (
-    <div className="min-h-screen bg-[#eef4f9] text-slate-900 transition-colors duration-300 dark:bg-[#07111f] dark:text-slate-100">
-
-      <div className="relative z-10">
-        <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/92 backdrop-blur-xl dark:border-white/10 dark:bg-[#07111f]/90">
-          <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3 px-4 py-2.5 sm:gap-4 sm:px-5 lg:px-6">
-            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white shadow-sm sm:h-10 sm:w-10">
-                <i className="fa-solid fa-table-columns text-base"></i>
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-[10px] font-black uppercase tracking-[0.22em] text-[#0069bd] dark:text-cyan-300">
-                  Bill Layne Insurance
-                </p>
-                <h1 className="truncate font-outfit text-base font-black tracking-tight text-slate-900 dark:text-white sm:text-lg">
-                  Agency Command Center
-                </h1>
-                <p className="hidden text-[11px] text-slate-500 dark:text-slate-300 sm:block">
-                  Unified Agency Matrix search first, local launch boxes underneath.
-                </p>
-              </div>
+    <div className="min-h-screen bg-[#f1f5f9] text-slate-900 transition-colors duration-300 dark:bg-[#0b1220] dark:text-slate-100">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-xl dark:border-white/10 dark:bg-[#0b1220]/95">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#003f87] text-white shadow-sm">
+              <i className="fa-solid fa-shield-halved text-base"></i>
             </div>
-
-            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <div className="hidden lg:flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-2xl border border-slate-200 dark:border-white/10 mr-1">
-                {workspaceTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => switchWorkspaceTab(tab.id, tab.label)}
-                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition flex items-center gap-1 ${
-                      currentTab === tab.id
-                        ? 'bg-white dark:bg-slate-900 shadow-sm text-primary dark:text-accent'
-                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
-                    }`}
-                    title={tab.description}
-                  >
-                    <i className={`${tab.icon} text-[10px]`}></i> {tab.id === 'search' ? 'Search' : tab.id === 'gmail' ? 'Gmail' : 'Tools'}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setShowQuickSearch(true)}
-                className="hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-600 shadow-sm transition hover:border-[#0076d3]/40 hover:text-[#003f87] sm:flex dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-              >
-                <i className="fa-solid fa-bolt mr-2"></i>
-                Quick Search
-              </button>
-              <button
-                onClick={() => setShowShortcutModal(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#0076d3]/40 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-                title="Keyboard Shortcuts Help"
-              >
-                <i className="fa-solid fa-circle-question"></i>
-              </button>
-              <button
-                onClick={toggleTheme}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#0076d3]/40 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
-              </button>
+            <div className="min-w-0">
+              <h1 className="truncate font-outfit text-base font-bold tracking-tight text-slate-900 dark:text-white sm:text-lg">
+                Agency Command Center
+              </h1>
+              <p className="hidden truncate text-xs text-slate-500 dark:text-slate-400 sm:block">
+                Bill Layne Insurance
+              </p>
             </div>
           </div>
-        </header>
 
-        <main className="mx-auto max-w-[1500px] px-4 pb-24 pt-3 sm:px-5 sm:pb-10 lg:px-6">
-          <nav className="sticky top-[61px] z-40 mb-3 rounded-2xl border border-slate-200 bg-white/92 p-1.5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-[#07111f]/90 sm:top-[66px]">
-            <div className="grid grid-cols-3 gap-2">
-              {workspaceTabs.map((tab) => {
-                const isActive = currentTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => switchWorkspaceTab(tab.id, tab.label)}
-                    className={`flex min-h-[3rem] items-center justify-center gap-2 rounded-xl px-2 py-2 text-center transition sm:min-h-[3.25rem] sm:justify-start sm:gap-3 sm:px-3 sm:text-left ${
-                      isActive
-                        ? 'bg-slate-950 text-white shadow-xl shadow-blue-950/20 dark:bg-white dark:text-slate-950'
-                        : 'bg-slate-50 text-slate-600 hover:bg-white hover:text-[#003f87] dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white'
-                    }`}
-                    aria-pressed={isActive}
-                  >
-                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isActive ? 'bg-[#0076d3] text-white' : 'bg-white text-slate-400 shadow-sm dark:bg-white/10 dark:text-slate-300'}`}>
-                      <i className={`${tab.icon} text-sm`}></i>
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-[10px] font-black uppercase tracking-[0.12em] sm:text-xs sm:tracking-[0.16em]">
-                        <span className="sm:hidden">{tab.id === 'search' ? 'Search' : tab.id === 'gmail' ? 'Gmail' : 'Tools'}</span>
-                        <span className="hidden sm:inline">{tab.label}</span>
-                      </span>
-                      <span className={`mt-1 hidden truncate text-[11px] font-semibold md:block ${isActive ? 'text-white/70 dark:text-slate-500' : 'text-slate-400 dark:text-slate-500'}`}>
-                        {tab.description}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          <nav className="hidden items-center gap-1 md:flex">
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-[#003f87] dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+            >
+              <i className="fa-solid fa-magnifying-glass mr-1.5 text-xs"></i>
+              Search
+            </button>
+            <button
+              onClick={() => scrollToSection(launcherSectionRef)}
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-[#003f87] dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+            >
+              <i className="fa-solid fa-table-cells-large mr-1.5 text-xs"></i>
+              Tools
+            </button>
+            <button
+              onClick={() => scrollToSection(imagesSectionRef)}
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-[#003f87] dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+            >
+              <i className="fa-solid fa-image mr-1.5 text-xs"></i>
+              Images
+            </button>
           </nav>
 
-          {currentTab === 'search' && (
-            <div className="space-y-4 animate-fade-in">
-              <section>
-                <SearchCard addToast={addToast} searchCount={searchCount} onSearch={handleSearchIncrement} />
-              </section>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={() => setShowQuickSearch(true)}
+              className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-[#0076d3]/50 hover:text-[#003f87] sm:flex dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:text-white"
+            >
+              <i className="fa-solid fa-bolt text-xs"></i>
+              Quick Search
+              <kbd className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-400 dark:bg-white/10 dark:text-slate-400">
+                Ctrl M
+              </kbd>
+            </button>
+            <button
+              onClick={() => setShowShortcutModal(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-[#0076d3]/50 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white"
+              title="Keyboard shortcuts"
+            >
+              <i className="fa-solid fa-circle-question"></i>
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-[#0076d3]/50 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
+            </button>
+          </div>
+        </div>
+      </header>
 
-              <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-white/5 sm:p-4">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#0076d3] dark:text-cyan-300">
-                      Search Workspace
-                    </p>
-                    <h2 className="mt-1 font-outfit text-lg font-black tracking-tight text-slate-900 dark:text-white sm:text-xl">
-                      Agency Matrix dashboard
-                    </h2>
-                  </div>
+      <main className="mx-auto max-w-[1400px] space-y-4 px-4 pb-16 pt-4 sm:px-6">
+        <section>
+          <SearchCard addToast={addToast} searchCount={searchCount} onSearch={handleSearchIncrement} />
+        </section>
 
-                  <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[520px]">
-                    {quickActions.map((action) => (
-                      <button
-                        key={action.label}
-                        onClick={() => openExternalLink(action.label, action.href)}
-                        className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition hover:border-[#0076d3]/40 hover:bg-white hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
-                      >
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-[#0076d3]">
-                          <i className={action.icon}></i>
-                        </span>
-                        <span className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-700 dark:text-slate-100">
-                          {action.label}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            </div>
-          )}
+        <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-white/5 sm:p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Quick Links
+            </span>
+            {quickActions.map((action) => (
+              <button
+                key={action.label}
+                onClick={() => openExternalLink(action.label, action.href)}
+                title={action.description}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-[#0076d3]/50 hover:bg-white hover:text-[#003f87] hover:shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+              >
+                <i className={`${action.icon} text-xs text-[#0069bd] dark:text-sky-300`}></i>
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </section>
 
-          {currentTab === 'gmail' && (
-            <section ref={emailSectionRef} className="animate-fade-in">
-              <AiAssistant addToast={addToast} layoutMode="gmail" />
-            </section>
-          )}
+        <section ref={launcherSectionRef} className="scroll-mt-20">
+          <ProgramLauncher addToast={addToast} />
+        </section>
 
-          {currentTab === 'tools' && (
-            <div ref={toolsSectionRef} className="space-y-5 animate-fade-in">
-              <section>
-                <div className="overflow-hidden rounded-[1.45rem] border border-slate-200/70 bg-white/80 p-4 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.45)] backdrop-blur-xl dark:border-white/10 dark:bg-white/5 sm:p-5">
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#0076d3] dark:text-cyan-300">
-                        Workflow Lanes
-                      </p>
-                      <h2 className="mt-1 font-outfit text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-2xl">
-                        Launch the next step without crowding Search
-                      </h2>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => switchWorkspaceTab('search', 'Unified Search')}
-                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[11px] font-black uppercase tracking-[0.16em] text-slate-600 transition hover:border-[#0076d3]/40 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-                    >
-                      <i className="fa-solid fa-magnifying-glass"></i>
-                      Back to Search
-                    </button>
-                  </div>
+        <section ref={imagesSectionRef} className="scroll-mt-20">
+          <QuickImageLinksCard addToast={addToast} />
+        </section>
+      </main>
 
-                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {quickStartCards.map((card) => (
-                      <button
-                        key={card.id}
-                        onClick={() =>
-                          card.type === 'link'
-                            ? openExternalLink(card.title, card.href)
-                            : revealSection(
-                                card.panel,
-                                card.panel === 'email' ? emailSectionRef : imagesSectionRef,
-                                card.title
-                              )
-                        }
-                        className="group overflow-hidden rounded-[1.15rem] border border-slate-200/80 bg-white/90 text-left shadow-[0_18px_50px_-42px_rgba(15,23,42,0.8)] transition hover:-translate-y-1 hover:border-[#0076d3]/40 hover:shadow-xl dark:border-white/10 dark:bg-[#0b1727]/80"
-                      >
-                        <div className={`h-1.5 bg-gradient-to-r ${card.accent}`}></div>
-                        <div className="p-4">
-                          <div className="mb-3 flex items-start justify-between gap-3">
-                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.9rem] bg-gradient-to-br ${card.accent} text-white shadow-lg`}>
-                              <i className={`${card.icon} text-sm`}></i>
-                            </div>
-                            <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:bg-white/10 dark:text-slate-300">
-                              {card.eyebrow}
-                            </span>
-                          </div>
-                          <h3 className="font-outfit text-base font-black tracking-tight text-slate-900 dark:text-white">
-                            {card.title}
-                          </h3>
-                          <p className="mt-2 text-[13px] leading-5 text-slate-500 dark:text-slate-300">
-                            {card.description}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+      <QuickSearchPopup
+        isOpen={showQuickSearch}
+        onClose={() => setShowQuickSearch(false)}
+        onSearch={handleQuickSearch}
+        addToast={addToast}
+      />
 
-                  <div className="mt-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
-                    {workflowGuides.map((guide) => (
-                      <article
-                        key={guide.id}
-                        className="overflow-hidden rounded-[1.15rem] border border-slate-200/80 bg-slate-50/80 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.6)] dark:border-white/10 dark:bg-white/5"
-                      >
-                        <div className={`h-1.5 bg-gradient-to-r ${guide.accent}`}></div>
-                        <div className="p-4">
-                          <div className="mb-3 flex items-center gap-3">
-                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.95rem] bg-gradient-to-br ${guide.accent} text-white shadow-lg`}>
-                              <i className={`${guide.icon} text-sm`}></i>
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">
-                                {guide.eyebrow}
-                              </p>
-                              <h3 className="font-outfit text-base font-black tracking-tight text-slate-900 dark:text-white">
-                                {guide.title}
-                              </h3>
-                            </div>
-                          </div>
-                          <p className="text-[13px] leading-5 text-slate-500 dark:text-slate-300">
-                            {guide.description}
-                          </p>
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            {guide.actions.map((action) => (
-                              <button
-                                key={action.label}
-                                onClick={() =>
-                                  action.type === 'link'
-                                    ? openExternalLink(action.label, action.href)
-                                    : revealSection(
-                                        action.panel,
-                                        action.panel === 'email' ? emailSectionRef : imagesSectionRef,
-                                        action.label
-                                      )
-                                }
-                                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-slate-600 transition hover:border-[#0076d3]/40 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-                              >
-                                {action.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              </section>
-
-              <section ref={imagesSectionRef}>
-                <QuickImageLinksCard addToast={addToast} />
-              </section>
-
-              <section ref={launcherSectionRef}>
-                <ProgramLauncher addToast={addToast} />
-              </section>
-            </div>
-          )}
-        </main>
-
-        <QuickSearchPopup
-          isOpen={showQuickSearch}
-          onClose={() => setShowQuickSearch(false)}
-          onSearch={handleQuickSearch}
-          addToast={addToast}
-        />
-
-        <Modal
-          isOpen={showShortcutModal}
-          onClose={() => setShowShortcutModal(false)}
-          title="Keyboard Shortcuts Cheat Sheet"
-          maxWidthClass="max-w-lg"
-        >
-          <div className="space-y-4 text-slate-800 dark:text-slate-200">
-            <p className="text-xs font-black uppercase tracking-widest text-[#0076d3] dark:text-cyan-300">
-              Agency Command Matrix Shortcuts
-            </p>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <h4 className="text-xs font-black uppercase text-slate-400 dark:text-slate-500">General Actions</h4>
-                <div className="flex items-center justify-between text-xs border-b border-slate-100 dark:border-white/10 pb-1">
-                  <span>Focus Search Bar</span>
-                  <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono font-bold text-[10px]">/</kbd>
-                </div>
-                <div className="flex items-center justify-between text-xs border-b border-slate-100 dark:border-white/10 pb-1">
-                  <span>Quick Search Popup</span>
-                  <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono font-bold text-[10px]">Ctrl + M</kbd>
-                </div>
-                <div className="flex items-center justify-between text-xs border-b border-slate-100 dark:border-white/10 pb-1">
-                  <span>Toggle Dark Mode</span>
-                  <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono font-bold text-[10px]">Ctrl + D</kbd>
-                </div>
-                <div className="flex items-center justify-between text-xs border-b border-slate-100 dark:border-white/10 pb-1">
-                  <span>Close Modal</span>
-                  <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono font-bold text-[10px]">Esc</kbd>
-                </div>
+      <Modal
+        isOpen={showShortcutModal}
+        onClose={() => setShowShortcutModal(false)}
+        title="Keyboard Shortcuts"
+        maxWidthClass="max-w-lg"
+      >
+        <div className="space-y-4 text-slate-800 dark:text-slate-200">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                General
+              </h4>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
+                <span>Focus Search Bar</span>
+                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">/</kbd>
               </div>
-
-              <div className="space-y-2">
-                <h4 className="text-xs font-black uppercase text-slate-400 dark:text-slate-500">Search Modes</h4>
-                <div className="flex items-center justify-between text-xs border-b border-slate-100 dark:border-white/10 pb-1">
-                  <span>Web Search</span>
-                  <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono font-bold text-[10px]">Alt + W</kbd>
-                </div>
-                <div className="flex items-center justify-between text-xs border-b border-slate-100 dark:border-white/10 pb-1">
-                  <span>Real Estate</span>
-                  <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono font-bold text-[10px]">Alt + H</kbd>
-                </div>
-                <div className="flex items-center justify-between text-xs border-b border-slate-100 dark:border-white/10 pb-1">
-                  <span>People Search</span>
-                  <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono font-bold text-[10px]">Alt + P</kbd>
-                </div>
-                <div className="flex items-center justify-between text-xs border-b border-slate-100 dark:border-white/10 pb-1">
-                  <span>Client Folder</span>
-                  <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono font-bold text-[10px]">Alt + F</kbd>
-                </div>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
+                <span>Quick Search Popup</span>
+                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Ctrl + M</kbd>
+              </div>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
+                <span>Toggle Dark Mode</span>
+                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Ctrl + D</kbd>
+              </div>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
+                <span>Close Modal</span>
+                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Esc</kbd>
               </div>
             </div>
-            
-            <div className="pt-2">
-              <h4 className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 mb-1">Compliance Studio</h4>
-              <div className="flex items-center justify-between text-xs border-b border-slate-100 dark:border-white/10 pb-1">
-                <span>Open Audit Memo Studio</span>
-                <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono font-bold text-[10px]">Alt + N or Ctrl + Shift + M</kbd>
+
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                Search Modes
+              </h4>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
+                <span>Web Search</span>
+                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Alt + W</kbd>
               </div>
-            </div>
-            
-            <div className="mt-4 pt-3 text-[11px] text-slate-400 dark:text-slate-500 text-center font-medium border-t border-slate-100 dark:border-white/10">
-              Press key combinations anywhere outside text input fields to trigger shortcuts instantly.
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
+                <span>Real Estate</span>
+                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Alt + H</kbd>
+              </div>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
+                <span>People Search</span>
+                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Alt + P</kbd>
+              </div>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
+                <span>Client Folder</span>
+                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Alt + F</kbd>
+              </div>
             </div>
           </div>
-        </Modal>
 
-        <div className="fixed bottom-6 right-6 z-[110] flex flex-col gap-3">
-          {toasts.map((toast) => (
-            <Toast key={toast.id} message={toast.message} type={toast.type} />
-          ))}
+          <div className="pt-2">
+            <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Audit Memo
+            </h4>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
+              <span>Open Audit Memo Studio</span>
+              <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Alt + N or Ctrl + Shift + M</kbd>
+            </div>
+          </div>
+
+          <div className="mt-4 border-t border-slate-100 pt-3 text-center text-[11px] font-medium text-slate-400 dark:border-white/10 dark:text-slate-500">
+            Press key combinations anywhere outside text input fields to trigger shortcuts instantly.
+          </div>
         </div>
+      </Modal>
+
+      <div className="fixed bottom-6 right-6 z-[110] flex flex-col gap-3">
+        {toasts.map((toast) => (
+          <Toast key={toast.id} message={toast.message} type={toast.type} />
+        ))}
       </div>
     </div>
   );
