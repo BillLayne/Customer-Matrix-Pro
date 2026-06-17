@@ -46,6 +46,12 @@ const quickActions = [
     icon: 'fa-solid fa-envelope-circle-check',
   },
   {
+    label: 'DL123 Maker',
+    description: 'Open the DL123 certification maker.',
+    href: '/dl123-generator/index.html',
+    icon: 'fa-solid fa-file-shield',
+  },
+  {
     label: 'No Loss Forms',
     description: 'Open the no-loss form agent portal.',
     href: 'https://mynolossform.com/agent-portal.html',
