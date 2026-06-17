@@ -375,7 +375,7 @@ Agency Website local source:
 | Quote Template Studio | `https://quote-template-studio.pages.dev/` |
 | PDF Quote Creator | `https://insurance-quote-image-creator.bill-7e3.workers.dev/` |
 | Photo Guide Creator | `/photo-guide-composer.html` |
-| DL123 Generator | local source `C:\Users\bill\OneDrive\Documents\Playground\dl123-generator\index.html`; hosted route `/dl123-generator/index.html` |
+| DL123 Generator | `/dl123-generator/index.html` |
 | Cancellation Link Generator | `https://thecancellationform.com/link-generator.html` |
 | No Loss Form Generator | `https://mynolossform.com/agent-portal.html` |
 
