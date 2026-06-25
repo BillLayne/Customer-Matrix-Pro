@@ -46,6 +46,24 @@ const quickActions = [
     icon: 'fa-solid fa-envelope-circle-check',
   },
   {
+    label: 'Hosted Links',
+    description: 'Create hosted quote and customer links.',
+    href: 'https://agency-quote-link-host.bill-7e3.workers.dev/',
+    icon: 'fa-solid fa-link',
+  },
+  {
+    label: 'Claude Designer',
+    description: 'Create polished documents and emails in Claude Designer.',
+    href: 'https://claude.ai/design/p/2d67b336-76a7-40c8-803f-68a57c3d947c',
+    icon: 'fa-solid fa-pen-nib',
+  },
+  {
+    label: 'Hazard Collages',
+    description: 'Create hazard observation photo collages.',
+    href: 'https://chatgpt.com/g/g-p-6a0c8997403c8191897c34fba8e553e7-observation-hazard-photo-collage-generator/project',
+    icon: 'fa-solid fa-triangle-exclamation',
+  },
+  {
     label: 'DL123 Maker',
     description: 'Open the DL123 certification maker.',
     href: '/dl123-generator/index.html',
