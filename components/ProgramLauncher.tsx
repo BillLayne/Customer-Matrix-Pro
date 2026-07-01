@@ -375,6 +375,11 @@ const CATEGORY_STYLES: Record<ProgramCategory, { iconBg: string; iconText: strin
   },
 };
 
+const byProgramTitle = (a: ProgramEntry, b: ProgramEntry) =>
+  a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+
+const sortProgramsByTitle = (programs: ProgramEntry[]) => [...programs].sort(byProgramTitle);
+
 const RECENT_PROGRAMS_KEY = 'matrix-pro-recent-programs';
 const PINNED_PROGRAMS_KEY = 'matrix-pro-pinned-programs';
 
@@ -431,11 +436,13 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
 
   const filteredPrograms = useMemo(() => {
     if (!normalizedFilter) return [];
-    return PROGRAMS.filter((program) =>
-      [program.title, program.description, program.category, program.note]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedFilter)
+    return sortProgramsByTitle(
+      PROGRAMS.filter((program) =>
+        [program.title, program.description, program.category, program.note]
+          .join(' ')
+          .toLowerCase()
+          .includes(normalizedFilter)
+      )
     );
   }, [normalizedFilter]);
 
@@ -444,7 +451,7 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
       CATEGORY_ORDER.filter((category) => activeCategory === 'All' || activeCategory === category).map(
         (category) => ({
           category,
-          items: PROGRAMS.filter((program) => program.category === category),
+          items: sortProgramsByTitle(PROGRAMS.filter((program) => program.category === category)),
         })
       ),
     [activeCategory]
