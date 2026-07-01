@@ -5,7 +5,7 @@ interface ProgramLauncherProps {
   addToast: (message: string, type?: 'success' | 'warning' | 'danger' | 'info') => void;
 }
 
-type ProgramCategory = 'Operations' | 'Documents & Forms' | 'Property & Coverage';
+type ProgramCategory = 'Operations' | 'Documents & Forms' | 'AI' | 'Property & Coverage';
 
 interface ProgramEntry {
   id: string;
@@ -92,13 +92,61 @@ const PROGRAMS: ProgramEntry[] = [
   {
     id: 'claude-designer',
     title: 'Claude Designer',
-    category: 'Operations',
+    category: 'AI',
     description: 'Open your Claude Designer program for creating polished documents and emails.',
     target: 'https://claude.ai/design/p/2d67b336-76a7-40c8-803f-68a57c3d947c',
     hostedTarget: 'https://claude.ai/design/p/2d67b336-76a7-40c8-803f-68a57c3d947c',
     icon: 'fa-solid fa-pen-nib',
     accent: 'from-violet-800 to-fuchsia-500',
     note: 'Design workspace',
+    targetType: 'web',
+  },
+  {
+    id: 'claude-blog',
+    title: 'Claude Blog',
+    category: 'AI',
+    description: 'Open your Claude blog design workspace for blog drafts, layouts, and web content.',
+    target: 'https://claude.ai/design/p/01ed6d4c-a132-45db-8a01-569b7805b332',
+    hostedTarget: 'https://claude.ai/design/p/01ed6d4c-a132-45db-8a01-569b7805b332',
+    icon: 'fa-solid fa-newspaper',
+    accent: 'from-orange-800 to-amber-500',
+    note: 'Blog design workspace',
+    targetType: 'web',
+  },
+  {
+    id: 'chatgpt',
+    title: 'ChatGPT',
+    category: 'AI',
+    description: 'Open ChatGPT for general agency writing, planning, analysis, and AI assistance.',
+    target: 'https://chatgpt.com/',
+    hostedTarget: 'https://chatgpt.com/',
+    icon: 'fa-solid fa-comments',
+    accent: 'from-emerald-800 to-teal-500',
+    note: 'General AI assistant',
+    targetType: 'web',
+  },
+  {
+    id: 'chatgpt-images',
+    title: 'ChatGPT Images',
+    category: 'AI',
+    description: 'Open your insurance hero photos project for AI image creation.',
+    target: 'https://chatgpt.com/g/g-p-6a2c92d88a6c8191bf5fce312ac56b7a-insurance-hero-photos/project',
+    hostedTarget: 'https://chatgpt.com/g/g-p-6a2c92d88a6c8191bf5fce312ac56b7a-insurance-hero-photos/project',
+    icon: 'fa-solid fa-image',
+    accent: 'from-pink-800 to-rose-500',
+    note: 'Hero photo project',
+    targetType: 'web',
+  },
+  {
+    id: 'grok',
+    title: 'Grok',
+    category: 'AI',
+    description: 'Open Grok for AI research, writing, and second-opinion work.',
+    target: 'https://grok.com/',
+    hostedTarget: 'https://grok.com/',
+    icon: 'fa-solid fa-robot',
+    accent: 'from-slate-900 to-slate-500',
+    note: 'AI assistant',
     targetType: 'web',
   },
   {
@@ -234,14 +282,62 @@ const PROGRAMS: ProgramEntry[] = [
   },
   {
     id: 'hazard-collages',
-    title: 'Hazard Photo Collages',
-    category: 'Documents & Forms',
+    title: 'ChatGPT Hazard Collage',
+    category: 'AI',
     description: 'Create observation and hazard photo collages for inspections, underwriting, and client documentation.',
     target: 'https://chatgpt.com/g/g-p-6a0c8997403c8191897c34fba8e553e7-observation-hazard-photo-collage-generator/project',
     hostedTarget: 'https://chatgpt.com/g/g-p-6a0c8997403c8191897c34fba8e553e7-observation-hazard-photo-collage-generator/project',
     icon: 'fa-solid fa-triangle-exclamation',
     accent: 'from-orange-700 to-amber-500',
     note: 'Photo collage GPT',
+    targetType: 'web',
+  },
+  {
+    id: 'agency-password-vault',
+    title: 'Agency Password Vault',
+    category: 'AI',
+    description: 'Open the agency password vault for protected internal login references.',
+    target: 'https://agency-password-vault.bill-7e3.workers.dev/',
+    hostedTarget: 'https://agency-password-vault.bill-7e3.workers.dev/',
+    icon: 'fa-solid fa-key',
+    accent: 'from-yellow-700 to-amber-500',
+    note: 'Secure password vault',
+    targetType: 'web',
+  },
+  {
+    id: 'gemini',
+    title: 'Gemini',
+    category: 'AI',
+    description: 'Open Gemini for AI writing, research, and planning work.',
+    target: 'https://gemini.google.com/u/1/app',
+    hostedTarget: 'https://gemini.google.com/u/1/app',
+    icon: 'fa-solid fa-gem',
+    accent: 'from-blue-800 to-cyan-500',
+    note: 'Google Gemini',
+    targetType: 'web',
+  },
+  {
+    id: 'gemini-flow',
+    title: 'Gemini Flow',
+    category: 'AI',
+    description: 'Open Google Flow for AI video and visual creation workflows.',
+    target: 'https://labs.google/fx/tools/flow',
+    hostedTarget: 'https://labs.google/fx/tools/flow',
+    icon: 'fa-solid fa-film',
+    accent: 'from-purple-800 to-indigo-500',
+    note: 'Google Flow',
+    targetType: 'web',
+  },
+  {
+    id: 'gemini-notebook-videos',
+    title: 'Gemini Notebook Videos',
+    category: 'AI',
+    description: 'Open your Gemini notebook video workspace.',
+    target: 'https://gemini.google.com/u/1/app/afb7cf7d6d569713',
+    hostedTarget: 'https://gemini.google.com/u/1/app/afb7cf7d6d569713',
+    icon: 'fa-solid fa-video',
+    accent: 'from-cyan-800 to-blue-500',
+    note: 'Notebook video workspace',
     targetType: 'web',
   },
   {
@@ -352,11 +448,12 @@ const PROGRAMS: ProgramEntry[] = [
   },
 ];
 
-const CATEGORY_ORDER: ProgramCategory[] = ['Operations', 'Documents & Forms', 'Property & Coverage'];
+const CATEGORY_ORDER: ProgramCategory[] = ['Operations', 'Documents & Forms', 'AI', 'Property & Coverage'];
 
 const CATEGORY_ICONS: Record<ProgramCategory, string> = {
   Operations: 'fa-solid fa-bolt',
   'Documents & Forms': 'fa-solid fa-folder-open',
+  AI: 'fa-solid fa-wand-magic-sparkles',
   'Property & Coverage': 'fa-solid fa-house-circle-check',
 };
 
@@ -368,6 +465,10 @@ const CATEGORY_STYLES: Record<ProgramCategory, { iconBg: string; iconText: strin
   'Documents & Forms': {
     iconBg: 'bg-emerald-50 dark:bg-emerald-500/15',
     iconText: 'text-emerald-700 dark:text-emerald-300',
+  },
+  AI: {
+    iconBg: 'bg-violet-50 dark:bg-violet-500/15',
+    iconText: 'text-violet-700 dark:text-violet-300',
   },
   'Property & Coverage': {
     iconBg: 'bg-amber-50 dark:bg-amber-500/15',
