@@ -607,15 +607,14 @@
 
   function buildTwelvePay(premium, effDate) {
     if (premium < 500) return { key: '12pay', title: '12-Pay Plan', eligible: false, reason: 'Minimum full-term premium of $500 required.' };
-    const down = +(premium * 0.0833).toFixed(2);
-    const inst = +(premium * 0.0833).toFixed(2);
-    // Reconcile the final installment so the math closes
-    const last = +(premium - down - inst * 10).toFixed(2);
+    const monthly = +(premium / 12).toFixed(2);
+    // Reconcile the final payment for penny-rounding while basing the plan on premium / 12.
+    const last = +(premium - monthly * 11).toFixed(2);
     const schedule = [
-      { num: 1, amount: down, fee: 1.50, date: effDate, label: 'Down Payment', isDown: true }
+      { num: 1, amount: monthly, fee: 1.50, date: effDate, label: 'Recurring Payment', isDown: true }
     ];
     for (let i = 1; i <= 10; i++) {
-      schedule.push({ num: i + 1, amount: inst, fee: 1.50, date: addMonths(effDate, i) });
+      schedule.push({ num: i + 1, amount: monthly, fee: 1.50, date: addMonths(effDate, i) });
     }
     schedule.push({ num: 12, amount: last, fee: 1.50, date: addMonths(effDate, 11) });
     return {
@@ -623,12 +622,12 @@
       title: '12-Pay Plan',
       badge: 'AUTO-DRAFT REQUIRED',
       eligible: true,
-      downPayment: down,
+      downPayment: monthly,
       installmentCount: 11,
       totalFees: 18,
       totalCost: +(premium + 18).toFixed(2),
       schedule: schedule,
-      notes: '<strong>8.33% down</strong> + $1.50 fee on effective date, then eleven <strong>8.33%</strong> monthly auto-drafts on the same day. Total fees: <strong>$18.00</strong>. Minimum premium $500. <strong>Electronic check (autopay) required.</strong>'
+      notes: '<strong>Twelve equal premium payments</strong> automatically posted monthly on the same day as the effective date. A <strong>$1.50</strong> service fee is added to each payment. Total fees: <strong>$18.00</strong>. Minimum premium $500. <strong>Electronic check recurring payment required.</strong>'
     };
   }
 
