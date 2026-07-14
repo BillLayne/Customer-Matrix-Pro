@@ -8,6 +8,17 @@ import Modal from './components/Modal';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import type { ToastMessage } from './types';
 
+/** Local calendar day, e.g. "2026-07-14". Used to reset the daily search counter. */
+const todayKey = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+};
+
+interface SearchLog {
+  day: string;
+  count: number;
+}
+
 const quickActions = [
   {
     label: 'Matrix Home',
@@ -104,7 +115,7 @@ const quickActions = [
 export default function App() {
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [searchCount, setSearchCount] = useLocalStorage<number>('searchesToday', 0);
+  const [searchLog, setSearchLog] = useLocalStorage<SearchLog>('matrix-pro-search-log', { day: todayKey(), count: 0 });
   const [showQuickSearch, setShowQuickSearch] = useState(false);
   const [showShortcutModal, setShowShortcutModal] = useState(false);
   const launcherSectionRef = useRef<HTMLElement | null>(null);
@@ -118,8 +129,12 @@ export default function App() {
     }
   }, [theme]);
 
+  // A monotonic counter, not Date.now(): two toasts raised in the same millisecond
+  // would otherwise share an id and collide as React keys.
+  const toastIdRef = useRef(0);
+
   const addToast = useCallback((message: string, type: ToastMessage['type'] = 'success') => {
-    const id = Date.now();
+    const id = (toastIdRef.current += 1);
     setToasts((prev) => [...prev, { id, message, type }]);
     window.setTimeout(() => {
       setToasts((prev) => prev.filter((toast) => toast.id !== id));
@@ -130,8 +145,14 @@ export default function App() {
     setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
   };
 
+  // Reads as 0 again once the date rolls over, without needing the tab to be reloaded.
+  const searchCount = searchLog.day === todayKey() ? searchLog.count : 0;
+
   const handleSearchIncrement = () => {
-    setSearchCount((prev) => prev + 1);
+    setSearchLog((prev) => {
+      const today = todayKey();
+      return prev.day === today ? { day: today, count: prev.count + 1 } : { day: today, count: 1 };
+    });
   };
 
   const openExternalLink = useCallback(

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface ProgramLauncherProps {
@@ -531,6 +531,18 @@ const sortProgramsByTitle = (programs: ProgramEntry[]) => [...programs].sort(byP
 
 const RECENT_PROGRAMS_KEY = 'matrix-pro-recent-programs';
 const PINNED_PROGRAMS_KEY = 'matrix-pro-pinned-programs';
+const LAUNCHER_VERSION_KEY = 'matrix-pro-launcher-version';
+
+/**
+ * DEFAULT_PINNED only applies to a browser that has never opened the dashboard, so tools
+ * added later would otherwise never surface for an existing user. Bump LAUNCHER_VERSION and
+ * list the new ids here: on next load they are pinned once and badged NEW. Unpinning still
+ * sticks, because the version has already been recorded by then.
+ */
+const LAUNCHER_VERSION = 2;
+const NEW_IN_VERSION: Record<number, string[]> = {
+  2: ['bli-task-board', 'bli-mail-gateway', 'claude-quotes', 'claude-gmail'],
+};
 
 const DEFAULT_PINNED: string[] = [
   'send-docs',
@@ -558,8 +570,41 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
     window.location.hostname !== '127.0.0.1';
   const [recentProgramIds, setRecentProgramIds] = useLocalStorage<string[]>(RECENT_PROGRAMS_KEY, []);
   const [pinnedProgramIds, setPinnedProgramIds] = useLocalStorage<string[]>(PINNED_PROGRAMS_KEY, DEFAULT_PINNED);
+  const [seenVersion, setSeenVersion] = useLocalStorage<number>(LAUNCHER_VERSION_KEY, 1);
   const [filterQuery, setFilterQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<ProgramCategory | 'All'>('All');
+  const [newProgramIds, setNewProgramIds] = useState<string[]>([]);
+  const filterInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Surface tools added since this browser last saw the launcher: pin them once, badge them NEW.
+  useEffect(() => {
+    if (seenVersion >= LAUNCHER_VERSION) return;
+    const freshIds = Object.entries(NEW_IN_VERSION)
+      .filter(([version]) => Number(version) > seenVersion)
+      .flatMap(([, ids]) => ids)
+      .filter((id) => PROGRAMS.some((program) => program.id === id));
+
+    if (freshIds.length > 0) {
+      setPinnedProgramIds((prev) => [...prev, ...freshIds.filter((id) => !prev.includes(id))]);
+      setNewProgramIds(freshIds);
+    }
+    setSeenVersion(LAUNCHER_VERSION);
+  }, [seenVersion, setPinnedProgramIds, setSeenVersion]);
+
+  // "/" focuses the filter from anywhere on the page, as long as you aren't already typing.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      if (target?.isContentEditable) return;
+      event.preventDefault();
+      filterInputRef.current?.focus();
+      filterInputRef.current?.select();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const programMap = useMemo(
     () => Object.fromEntries(PROGRAMS.map((program) => [program.id, program])),
@@ -620,6 +665,8 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
   };
 
   const openProgram = (program: ProgramEntry) => {
+    setNewProgramIds((prev) => prev.filter((id) => id !== program.id));
+
     if (isHostedDashboard && program.targetType === 'local' && !program.hostedTarget) {
       addToast(`${program.title} is a local-only tool. Open it from the local dashboard on this computer.`, 'warning');
       return;
@@ -642,41 +689,53 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
 
   const renderTile = (program: ProgramEntry) => {
     const isPinned = pinnedProgramIds.includes(program.id);
+    const isNew = newProgramIds.includes(program.id);
     const styles = CATEGORY_STYLES[program.category];
+    // The star is a sibling of the open button, not nested inside it: a button inside a button is
+    // invalid HTML and left the star unreachable by keyboard.
     return (
-      <button
+      <div
         key={program.id}
-        type="button"
-        onClick={() => openProgram(program)}
-        title={program.description}
-        className="group flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-[#0076d3]/50 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-cyan-400/40"
+        className="group flex w-full items-center gap-1 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-[#0076d3]/50 hover:shadow-md focus-within:border-[#0076d3]/50 dark:border-white/10 dark:bg-white/5 dark:hover:border-cyan-400/40 dark:focus-within:border-cyan-400/40"
       >
-        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${styles.iconBg} ${styles.iconText}`}>
-          <i className={`${program.icon} text-base`}></i>
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold text-slate-900 dark:text-white">
-            {program.title}
+        <button
+          type="button"
+          onClick={() => openProgram(program)}
+          title={program.description}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-[#0076d3]"
+        >
+          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${styles.iconBg} ${styles.iconText}`}>
+            <i className={`${program.icon} text-base`}></i>
           </span>
-          <span className="block truncate text-xs text-slate-500 dark:text-slate-400">{program.note}</span>
-        </span>
-        <span
-          role="button"
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1.5">
+              <span className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                {program.title}
+              </span>
+              {isNew && (
+                <span className="shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                  New
+                </span>
+              )}
+            </span>
+            <span className="block truncate text-xs text-slate-500 dark:text-slate-400">{program.note}</span>
+          </span>
+        </button>
+        <button
+          type="button"
           aria-label={isPinned ? `Unpin ${program.title}` : `Pin ${program.title}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            togglePin(program);
-          }}
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm transition ${
+          aria-pressed={isPinned}
+          onClick={() => togglePin(program)}
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-[#0076d3] ${
             isPinned
               ? 'text-amber-500 hover:text-slate-400'
-              : 'text-slate-300 opacity-0 hover:text-amber-500 group-hover:opacity-100 dark:text-slate-600'
+              : 'text-slate-300 opacity-0 hover:text-amber-500 focus-visible:opacity-100 group-hover:opacity-100 dark:text-slate-600'
           }`}
           title={isPinned ? 'Unpin from top' : 'Pin to top'}
         >
           <i className={`${isPinned ? 'fa-solid' : 'fa-regular'} fa-star`}></i>
-        </span>
-      </button>
+        </button>
+      </div>
     );
   };
 
@@ -698,13 +757,25 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
         <div className="relative w-full lg:max-w-xs">
           <i className="fa-solid fa-filter pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400"></i>
           <input
+            ref={filterInputRef}
             type="text"
             value={filterQuery}
             onChange={(e) => setFilterQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && filteredPrograms.length > 0) {
+                e.preventDefault();
+                openProgram(filteredPrograms[0]);
+                return;
+              }
+              if (e.key === 'Escape') {
+                setFilterQuery('');
+                e.currentTarget.blur();
+              }
+            }}
             placeholder="Filter tools… (e.g. certificate)"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-9 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#0076d3]/60 focus:bg-white dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-16 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#0076d3]/60 focus:bg-white dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500"
           />
-          {filterQuery && (
+          {filterQuery ? (
             <button
               type="button"
               onClick={() => setFilterQuery('')}
@@ -713,6 +784,10 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
             >
               <i className="fa-solid fa-circle-xmark"></i>
             </button>
+          ) : (
+            <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-400 dark:bg-slate-800 dark:text-slate-500 sm:block">
+              /
+            </kbd>
           )}
         </div>
       </div>
@@ -721,6 +796,11 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
         <div>
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             {filteredPrograms.length} {filteredPrograms.length === 1 ? 'match' : 'matches'}
+            {filteredPrograms.length > 0 && (
+              <span className="ml-2 normal-case tracking-normal text-slate-400 dark:text-slate-500">
+                — press Enter to open {filteredPrograms[0].title}
+              </span>
+            )}
           </p>
           {filteredPrograms.length > 0 ? (
             <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

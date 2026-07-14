@@ -643,6 +643,10 @@ Return ONLY a JSON object in this exact shape:
               </div>
           )}
           
+          {/* The scrollbar is hidden, so a fade on the right edge is the only cue that
+              more modes exist off-screen. It disappears at sm, where the row wraps. */}
+          <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-white to-transparent dark:from-slate-900 sm:hidden"></div>
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
              {modeButtons.map(btn => (
                 <button
@@ -665,6 +669,7 @@ Return ONLY a JSON object in this exact shape:
                   </kbd>
                 </button>
               ))}
+          </div>
           </div>
 
           {/* Recent Searches History */}
@@ -762,18 +767,22 @@ Return ONLY a JSON object in this exact shape:
                                 style={{ backgroundColor: portal.color }}
                             ></div>
                             <div className="relative z-10 mb-2 flex h-10 w-full items-center justify-center transition-transform duration-300 group-hover/portal:scale-110">
-                                {portal.image ? (
-                                    <img
-                                        src={portal.image}
-                                        alt={portal.name}
-                                        className="h-full w-auto object-contain transition-all duration-300 group-hover/portal:brightness-0 group-hover/portal:invert"
-                                    />
-                                ) : (
-                                    <i
-                                        className={`${portal.icon} text-xl transition-colors duration-300 group-hover/portal:text-white`}
-                                        style={{ color: !portal.image ? (portal.color || '#94a3b8') : undefined }}
-                                    ></i>
-                                )}
+                                {/* Dark mode: carrier artwork is dark ink, so it needs a light plate to stay legible.
+                                    The plate drops away on hover, where the tile fills with the carrier colour. */}
+                                <span className="flex h-full max-w-full items-center justify-center rounded-lg px-1.5 transition-colors duration-300 dark:bg-white/95 dark:group-hover/portal:bg-transparent">
+                                    {portal.image ? (
+                                        <img
+                                            src={portal.image}
+                                            alt={portal.name}
+                                            className="h-full w-auto object-contain transition-all duration-300 group-hover/portal:brightness-0 group-hover/portal:invert"
+                                        />
+                                    ) : (
+                                        <i
+                                            className={`${portal.icon} text-xl text-[var(--portal-color)] transition-colors duration-300 group-hover/portal:text-white`}
+                                            style={{ '--portal-color': portal.color || '#94a3b8' } as React.CSSProperties}
+                                        ></i>
+                                    )}
+                                </span>
                             </div>
                             <span className="relative z-10 text-[9px] font-black uppercase leading-tight tracking-widest text-slate-600 transition-colors duration-300 group-hover/portal:text-white dark:text-slate-400">
                                 {portal.name}
