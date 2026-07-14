@@ -52,10 +52,34 @@ const quickActions = [
     icon: 'fa-solid fa-link',
   },
   {
+    label: 'Task Board',
+    description: 'Open the BLI docs task board.',
+    href: 'https://bli-task-board.bill-7e3.workers.dev/',
+    icon: 'fa-solid fa-clipboard-check',
+  },
+  {
+    label: 'Mail Gateway',
+    description: 'Open the BLI mail gateway sender.',
+    href: 'https://www.billlayneinsurance.com/mail-gateway/',
+    icon: 'fa-solid fa-paper-plane',
+  },
+  {
     label: 'Claude Designer',
-    description: 'Create polished documents and emails in Claude Designer.',
-    href: 'https://claude.ai/design/p/2d67b336-76a7-40c8-803f-68a57c3d947c',
+    description: 'Open the Claude Designer home workspace.',
+    href: 'https://claude.ai/design',
     icon: 'fa-solid fa-pen-nib',
+  },
+  {
+    label: 'Claude Quotes',
+    description: 'Open the Claude quotes design project.',
+    href: 'https://claude.ai/design/p/d400fd7a-9a6e-4086-acb5-e0997ea223f5',
+    icon: 'fa-solid fa-file-invoice-dollar',
+  },
+  {
+    label: 'Claude Gmail',
+    description: 'Open the Claude Gmail design project.',
+    href: 'https://claude.ai/design/p/2d67b336-76a7-40c8-803f-68a57c3d947c',
+    icon: 'fa-solid fa-envelope-open-text',
   },
   {
     label: 'Hazard Collages',
