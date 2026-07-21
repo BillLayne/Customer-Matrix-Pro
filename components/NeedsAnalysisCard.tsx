@@ -82,7 +82,7 @@ Now, create the questionnaire based on the client's needs and generate the JSON 
             const ai = new GoogleGenAI({ apiKey: API_KEY });
             
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3-flash-preview',
                 contents: prompt,
                 config: {
                     responseMimeType: "application/json",

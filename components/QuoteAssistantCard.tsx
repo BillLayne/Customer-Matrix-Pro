@@ -83,7 +83,7 @@ Now, analyze the user's notes and generate the JSON output.
             const ai = new GoogleGenAI({ apiKey: API_KEY });
             
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3-flash-preview',
                 contents: prompt,
                 config: {
                     responseMimeType: "application/json",

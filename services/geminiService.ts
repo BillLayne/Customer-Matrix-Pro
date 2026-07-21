@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { PROMPT_TEMPLATES, type TemplateContract } from "../constants";
 import { EMAIL_DESIGN_SYSTEM_V2 } from "./emailDesignSystemV2";
 
-const DEFAULT_MODELS = ['gemini-3-flash-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'] as const;
+const DEFAULT_MODELS = ['gemini-3-flash-preview', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'] as const;
 
 const SYSTEM_INSTRUCTION = `Act as an expert insurance agent for Bill Layne Insurance Agency in Elkin, NC. Your tone should be friendly, professional, helpful, and clear. Think of yourself as a trusted local advisor, not a corporate robot. Be approachable and reassuring.
 Our agency's key carriers are: Nationwide, Progressive, National General, Alamance Farmers Mutual, Foremost, Travelers, NC Grange Mutual, Hagerty, Dairyland, NCJUA, Steadily, and Dairyland.

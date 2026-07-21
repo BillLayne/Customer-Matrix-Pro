@@ -172,7 +172,7 @@ Return a single JSON object with the keys corresponding to the fields above.
             const contents = fileData ? { parts: [{ text: prompt }, { inlineData: fileData }] } : prompt;
 
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3-flash-preview',
                 contents: contents,
                 config: {
                     responseMimeType: "application/json",
@@ -461,7 +461,7 @@ Keep your response concise, professional, and directly useful. If drafting an em
             const ai = new GoogleGenAI({ apiKey: API_KEY });
     
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3-flash-preview',
                 contents: fullPrompt,
             });
     

@@ -13,7 +13,7 @@ interface SearchCardProps {
   onSearch: () => void;
 }
 
-const SEARCH_MODELS = ['gemini-3-flash-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'] as const;
+const SEARCH_MODELS = ['gemini-3-flash-preview', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'] as const;
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error && error.message) return error.message;
