@@ -1,731 +1,303 @@
-# Agency Command Center Handoff
+# Agency Command Center — Live Handoff
 
-Last updated: June 10, 2026
+**Last verified against the code: July 23, 2026.**
 
-This is the complete current handoff for Bill Layne's personal Agency Command Center / Customer Matrix Pro dashboard.
+This document describes the dashboard **as it actually exists right now**. It replaces the June 10, 2026 handoff, which described a tabbed layout and a Gmail Engineering workspace that no longer exist in the UI.
 
-## REDESIGN UPDATE — June 10, 2026 (read this first)
+If anything here disagrees with the code, the code wins — re-verify and update this file.
 
-The dashboard was redesigned. Anything below that describes tabs or Gmail Engineering UI is now historical.
+---
 
-- **Gmail Engineering was removed from the UI.** `App.tsx` no longer imports `AiAssistant`. All Gmail files (`components/AiAssistant.tsx`, `constants.ts` templates, `services/emailDesignSystemV2.ts`, `geminiService.ts`, `emailEngine.ts`, `poiTemplate.ts`) are intact in the repo for a future rebuild — do not delete them.
-- **The Search/Gmail/Tools tab system is gone.** The app is now one scrolling page: Unified Search → Quick Links row → Program Launcher → Quick Image Links. The `matrix-pro-layout-mode` localStorage key is no longer used.
-- **Program Launcher was rebuilt** (`components/ProgramLauncher.tsx`, still the launcher source of truth): type-to-filter input, category pills (Operations / Documents & Forms / Property & Coverage), a **Pinned** section controlled by star toggles (localStorage `matrix-pro-pinned-programs`, seeded with Bill's most-used tools), and Recent chips (`matrix-pro-recent-programs` unchanged). Quick-start cards, workflow lanes, and featured collections were removed as redundant — every tool appears exactly once plus optional pin.
-- **Styling normalized:** normal-case semibold type instead of black-weight uppercase micro-text, single brand accent (#003f87/#0076d3), compact tiles, color-coded category icons (blue/emerald/amber). Dark mode preserved.
-- SearchCard kept ALL functionality (modes, GIS, Risk Intel, Audit Memo, carrier gateway) with restyled UI; Matrix Home/New Prospect moved out of SearchCard into the Quick Links row.
-- Verified: `npm run lint`, `npm run build`, desktop + dark mode + 375px mobile (no horizontal overflow).
+## 1. Identity & URLs
 
-## 1. Project Identity
+| | |
+|---|---|
+| Working name | Agency Command Center |
+| Repo name | `Customer-Matrix-Pro` |
+| Local repo | `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro` |
+| GitHub | https://github.com/BillLayne/Customer-Matrix-Pro |
+| Live site | https://customer-matrix-pro.pages.dev/ |
+| Cloudflare Pages project | `customer-matrix-pro` |
+| Owner | Bill Layne — this is his **personal** command center |
 
-- Working name: `Agency Command Center`
-- Previous/common name: `Agency Command Matrix`
-- Repo name: `Customer-Matrix-Pro`
-- Owner: Bill Layne
-- Business: Bill Layne Insurance Agency
-- Purpose: Bill's personal internal browser dashboard and agency command center
-- Local repo: `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro`
-- GitHub repo: `https://github.com/BillLayne/Customer-Matrix-Pro`
-- Live protected site: `https://customer-matrix-pro.pages.dev/`
-- Cloudflare Pages project: `customer-matrix-pro`
+Separate, do not confuse: the staff dashboard at `Playground\Agency-Staff-Dashboard` → https://agency-staff-dashboard.pages.dev/. If a launcher target changes for both people, check whether the staff dashboard needs the same edit.
 
-This dashboard is Bill's personal command center. It is separate from the staff-facing dashboard:
+### Live state right now
 
-- Staff local repo: `C:\Users\bill\OneDrive\Documents\Playground\Agency-Staff-Dashboard`
-- Staff GitHub repo: `https://github.com/BillLayne/agency-staff-dashboard`
-- Staff live site: `https://agency-staff-dashboard.pages.dev/`
+- Local `main` HEAD: **`9a10f64`** — "Quick Image Links: format picker (Gmail / Logo / Web / GIF) before upload"
+- GitHub `origin/main`: **in sync**, nothing unpushed
+- Newest **production deployment** was built from **`0d3e131`**
 
-## 2. Product Purpose
+**⚠️ `9a10f64` (the image format picker) is committed and pushed but NOT deployed.** There is no CI — GitHub does not build this project. Pushing does nothing to the live site. Someone must run the deploy command in §3.
 
-Agency Command Center is Bill's all-in-one browser dashboard for daily agency work.
+---
 
-The app is designed to make these jobs fast:
+## 2. What the app is
 
-- search Agency Matrix by customer name or address
-- open customer/prospect search paths quickly
-- launch the most-used agency tools from one page
-- generate and refine Gmail-safe insurance emails
-- manage proof, certificate, card, quote, renewal, receipt, image, and no-loss workflows
-- open property, rebuild, condo, and coverage tools without hunting through bookmarks
+A single-page internal dashboard Bill opens every day. Two jobs dominate:
 
-The main UX principle is still:
+1. **Search Agency Matrix** for a customer by name or address — the first action of most tasks.
+2. **Launch one of ~40 agency tools** without hunting through bookmarks.
 
-**Unified Search / Agency Matrix search must stay the primary focus.**
+**The governing UX rule: Unified Search stays at the top and must be usable without scrolling.** Do not push content above it.
 
-Search is the first daily action. Gmail Engineering is the second major workflow. Tools and launchers support those jobs without taking over the page.
+### Page structure (top to bottom, `App.tsx`)
 
-## 3. Current UX Structure
+1. **Sticky header** — logo, in-page nav (Search / Tools / Images), Quick Search button, shortcuts modal, light/dark toggle
+2. **Unified Search** (`components/SearchCard.tsx`) — includes the collapsible Carrier Portals drawer
+3. **Quick Links** — one row of 15 chips (`quickActions` array in `App.tsx`)
+4. **Program Launcher** (`components/ProgramLauncher.tsx`)
+5. **Quick Image Links** (`components/QuickImageLinksCard.tsx`)
 
-The homepage is now a tabbed workspace instead of one long scrolling wall.
+There are **no tabs**. The Search/Gmail/Tools tab system and the `matrix-pro-layout-mode` key were removed in `9b1a351`.
 
-Primary tabs in `App.tsx`:
+### Gmail Engineering is gone from the UI
 
-- `Unified Search`
-- `Gmail Engineering`
-- `Tools`
+Removed in `9b1a351` because it was broken and Bill plans to rebuild it. **The files are deliberately still in the repo — do not delete them:** `components/AiAssistant.tsx`, `services/geminiService.ts`, `services/emailEngine.ts`, `services/emailDesignSystemV2.ts`, `services/poiTemplate.ts`, and `PROMPT_TEMPLATES` / `TEMPLATE_KEYS` / `TemplateContract` in `constants.ts`. `GMAIL_ENGINEERING_STUDIO_HANDOFF.md` is retained as an archive of how that system worked.
 
-Important current behavior:
+Note: `AiAssistant.tsx` is no longer imported anywhere, but `tsc --noEmit` still type-checks it, so it must keep compiling.
 
-- The active tab is stored in localStorage under `matrix-pro-layout-mode`.
-- Default workspace behavior keeps Search first.
-- Search stays visible without having to scroll.
-- Gmail Engineering is reachable from the top tab row and from quick-start/workflow actions.
-- Tools view contains workflow lanes, Quick Image Links, and Program Launcher.
+---
 
-Current visual structure:
+## 3. Build, verify, deploy
 
-1. Sticky branded top header
-2. Desktop tab control and mobile tab bar
-3. Search workspace with Agency Matrix search first
-4. Gmail Engineering compact workspace
-5. Tools workspace with quick-start cards, workflow lanes, quick image links, and guided Program Launcher
-6. Quick Search popup
-7. Help/shortcut modal
-8. Toast notifications
+Run everything from the repo root.
 
-## 4. First-Read Files
-
-Read these before changing behavior:
-
-1. `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\CUSTOMER_MATRIX_PRO_AI_HANDOFF.md`
-2. `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\GMAIL_ENGINEERING_STUDIO_HANDOFF.md`
-3. `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\App.tsx`
-4. `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\components\SearchCard.tsx`
-5. `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\components\ProgramLauncher.tsx`
-6. `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\components\AiAssistant.tsx`
-7. `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\constants.ts`
-8. `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\services\emailDesignSystemV2.ts`
-9. `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\services\geminiService.ts`
-10. `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\services\emailEngine.ts`
-11. `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\services\poiTemplate.ts`
-12. `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\functions\_middleware.ts`
-
-## 5. Primary Files By Purpose
-
-### App Shell
-
-File:
-
-`C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\App.tsx`
-
-Controls:
-
-- overall page layout
-- Search/Gmail/Tools tabs
-- top header
-- quick action buttons
-- quick-start cards
-- workflow lanes
-- section switching
-- Quick Search popup
-- help modal
-- theme toggle
-- toast messaging
-
-Current important app-level data:
-
-- `quickActions`
-- `workspaceTabs`
-- `quickStartCards`
-- `workflowGuides`
-- `activeWorkspaceTab`
-- `searchCount`
-- `showQuickSearch`
-
-Current quick actions in `App.tsx` include:
-
-- Agency Matrix Home
-- New Prospect
-- Reports
-- Carrier Contacts
-- Customer Reference
-- Renewal Gmail
-- No Loss Forms
-
-### Search Workspace
-
-File:
-
-`C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\components\SearchCard.tsx`
-
-Purpose:
-
-- Agency Matrix customer search
-- name/address search
-- web search
-- real estate / property lookup helpers
-- people search
-- client folder / OneDrive helper behavior
-- carrier gateway / supporting shortcuts
-
-Do not bury this component. It is the center of Bill's dashboard.
-
-### Gmail Engineering Studio
-
-Primary files:
-
-- `components\AiAssistant.tsx`
-- `constants.ts`
-- `services\emailDesignSystemV2.ts`
-- `services\geminiService.ts`
-- `services\emailEngine.ts`
-- `services\poiTemplate.ts`
-- `GMAIL_ENGINEERING_STUDIO_HANDOFF.md`
-
-Purpose:
-
-- generate Gmail-safe insurance HTML emails
-- generate dedicated Proof of Insurance emails
-- parse attached quote/policy PDFs
-- refine generated templates
-- validate Gmail HTML
-- preview email output
-- copy/download/print email output
-- sync rich HTML to Gmail compose
-- normalize carrier logos and email shell
-
-Treat these as high-risk shared system files. Small changes can affect all template types.
-
-### Program Launcher
-
-File:
-
-`C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\components\ProgramLauncher.tsx`
-
-This is the launcher source of truth.
-
-It controls:
-
-- launcher inventory
-- categories
-- featured collections
-- recent tools
-- local-vs-hosted routing
-- popup-open behavior
-- localStorage key `matrix-pro-recent-programs`
-
-If a launcher link is wrong, inspect this file first.
-
-### Quick Image Links
-
-Files:
-
-- `components\QuickImageLinksCard.tsx`
-- `services\imgurService.ts`
-
-Purpose:
-
-- upload JPG, PNG, and WEBP images to Imgur
-- copy hosted links automatically
-- keep recent uploaded image links in localStorage
-- recent upload list is scrollable with `max-h-[26rem]`, `overflow-y-auto`, and `data-testid="quick-image-recent-uploads-scroll"`
-
-### Static Public Tools
-
-Folder:
-
-`C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\public`
-
-These are real deployed utility files, not examples:
-
-- `public\html-studio.html`
-- `public\nc-grange-down-payment-calculator.html`
-- `public\photo-guide-composer.html`
-- `public\receipt-maker.html`
-- `public\dl123-generator\index.html`
-- `public\dl123-generator\css\styles.css`
-- `public\dl123-generator\js\scripts.js`
-
-Carrier/static assets also live under `public`.
-
-### Access Gate
-
-File:
-
-`C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\functions\_middleware.ts`
-
-Purpose:
-
-- protects the live dashboard with Cloudflare Pages middleware
-- renders login page
-- handles `/login`
-- handles `/logout`
-
-Important details:
-
-- cookie name: `customer_matrix_pro_auth`
-- approved cookie value: `approved`
-- login route: `/login`
-- logout route: `/logout`
-- env variable: `SITE_PASSWORD`
-- cookie lifetime: one week
-- unauthenticated live checks return `401 Unauthorized`; that is expected
-
-## 6. Gmail Engineering Current State
-
-Gmail Engineering was recently repaired and compacted.
-
-Recent commits:
-
-- `691a148` - `Repair Gmail template routing`
-- `7cb6748` - `Compact Gmail engineering workspace`
-
-Current Gmail UI in `components\AiAssistant.tsx`:
-
-- no large Gmail title band in Gmail tab mode
-- compact `Setup & Brand` dropdown moved into the work container
-- single `Template` dropdown in the compact top strip
-- prompt draft and Generate Email button are high in the workspace
-- Sync to Gmail appears inside the prompt/preview workflow, not as a bottom sticky bar
-- quick favorite/prefill template buttons were removed
-- browse-template drawer was removed in Gmail mode
-
-Current Gmail routing fix:
-
-- `selectedTemplateKey` is stored separately from `promptDraft`
-- selecting a template sets both stable template key and editable prompt text
-- editing the prompt no longer loses template identity
-- POI routes by `selectedTemplateKey === 'poi'`
-- text-based POI detection remains only as fallback when no template was selected
-- generic email generation passes:
-  - `templateKey`
-  - `templateType`
-  - `templateTitle`
-  - `templateInstructions`
-  - full `contract`
-
-Current Gmail design/prompt architecture:
-
-- `constants.ts` defines `TemplateType`, `TemplateContract`, `PROMPT_TEMPLATES`, `TEMPLATE_KEYS`, and `getTemplate()`
-- `services\emailDesignSystemV2.ts` is the active authoritative Gmail design-system prompt
-- `services\geminiService.ts` imports `EMAIL_DESIGN_SYSTEM_V2`
-- `generateEmailTemplate()` formats the selected template contract into the Gemini request
-- `detectTemplateType()` prefers explicit `templateType` and `templateKey` before title fallback
-
-Important Gmail templates/contracts currently include:
-
-- Auto Insurance Quote
-- Home Insurance Quote
-- Renters Insurance Quote
-- Motorcycle Insurance Quote
-- SR-22 Auto Quote
-- Commercial Insurance Quote
-- Rate Comparison
-- Welcome / New Business
-- Policy Renewal
-- Payment Receipt
-- Policy Change Confirmation
-- Proof of Insurance
-- Certificate of Insurance
-- Cancellation Notice
-- Claims Notice / Acknowledgement
-- B2B Underwriter Correspondence
-- Insurance Needs Analysis
-- Marketing / Newsletter
-- Referral Request / Thank-You
-- Google Review Request
-
-Dedicated POI path:
-
-- `extractPoiEmailData()` in `services\geminiService.ts`
-- `generatePoiEmail()` in `services\poiTemplate.ts`
-- `normalizeGeneratedEmailHtml()` in `services\emailEngine.ts`
-
-Important Gmail warning:
-
-Do not assume a wrong template is only a prompt problem. Prior bugs came from the repair/normalization layer too, especially duplicate header/hero behavior. Always inspect:
-
-- `components\AiAssistant.tsx`
-- `constants.ts`
-- `services\geminiService.ts`
-- `services\emailEngine.ts`
-- `services\poiTemplate.ts`
-
-## 7. Launcher Inventory
-
-This reflects the active definitions in `components\ProgramLauncher.tsx`.
-
-### Operations
-
-| Tool | Target |
-| --- | --- |
-| Send Documents | `https://www.sendbilldocs.com/agent.html` |
-| Quote Drip Follow Up | `https://quote-follow-up-manager-cloudflare.pages.dev/` |
-| AI Task Manager | `https://ai-task-manager.bill-7e3.workers.dev` |
-| SMS Command Center | `https://agency-sms-command-center.bill-7e3.workers.dev` |
-| Renewal Gmail Program | `https://renewal-gmail-program.pages.dev/` |
-| HTML Studio | `/html-studio.html` |
-| Agency Website | `https://www.billlayneinsurance.com` |
-
-Agency Website local source:
-
-`C:\Users\bill\OneDrive\Documents\Playground\Bill-Layne-Insurance-Agency\index.html`
-
-### Documents & Forms
-
-| Tool | Target |
-| --- | --- |
-| Insurance Card Generator | `https://insurance-card-generator-2026-color-edition.pages.dev/` |
-| Carrier & Agency Contacts | `https://insurance-card-generator-2026-color-edition.pages.dev/contact-page-index` |
-| Customer Reference Card | `https://insurance-card-generator-2026-color-edition.pages.dev/?builder=policy-reference&agency=1` |
-| POI Generator | `https://bill-layne-insurance-poi-generator.pages.dev` |
-| Certificates | `https://coi-certificates-certguard-ai.pages.dev/` |
-| Envelope Maker | `https://envelope-maker-cte.pages.dev` |
-| Receipt Maker | `https://billlayne.github.io/Receipt-Maker/index.html` |
-| NC Grange Down Payment | `/nc-grange-down-payment-calculator.html` |
-| Quote Template Studio | `https://quote-template-studio.pages.dev/` |
-| PDF Quote Creator | `https://insurance-quote-image-creator.bill-7e3.workers.dev/` |
-| Photo Guide Creator | `/photo-guide-composer.html` |
-| DL123 Generator | `/dl123-generator/index.html` |
-| Cancellation Link Generator | `https://thecancellationform.com/link-generator.html` |
-| No Loss Form Generator | `https://mynolossform.com/agent-portal.html` |
-
-Important local sources:
-
-- Insurance Card Generator: `C:\Users\bill\OneDrive\Documents\Playground\insurance-card-generator-2026-color-edition\index.html`
-- POI Generator: `C:\Users\bill\OneDrive\Documents\Playground\bill-layne-insurance-poi-generator\index.html`
-- Envelope Maker: `C:\Users\bill\OneDrive\Documents\Envelope-Maker\index.html`
-
-### Property & Coverage
-
-| Tool | Target |
-| --- | --- |
-| Home Inventory | `https://billlayne.github.io/HOME-INVENTORY/` |
-| Home Rebuild Estimator | `https://home-rebuild-estimator.pages.dev` |
-| Condo Coverage Calculator | `https://condo-coverage-calculator.pages.dev` |
-| NC Tools Property Lookup | `https://nc-insurance-tools-gemini.pages.dev/` |
-
-Important local sources:
-
-- Home Inventory: `C:\Users\bill\OneDrive\Documents\Playground\HOME-INVENTORY\index.html`
-- Home Rebuild Estimator: `C:\Users\bill\OneDrive\Documents\Playground\HOME-REBUILD-ESTIMATOR\public\index.html`
-- Condo Coverage Calculator: `C:\Users\bill\OneDrive\Documents\Playground\CONDO-COVERAGE-CALCULATOR\public\index.html`
-
-### Featured Launcher Collections
-
-Current featured collections:
-
-- `Most Used`
-  - send docs
-  - SMS command center
-  - certificates
-  - POI generator
-  - insurance cards
-  - PDF quote creator
-  - no-loss
-
-- `Coverage Lane`
-  - NC property tools
-  - home rebuild
-  - condo coverage
-  - home inventory
-  - NC Grange down payment
-
-- `Customer Shortcuts`
-  - carrier contact pages
-  - customer reference card
-  - no-loss
-  - renewal Gmail program
-
-## 8. App Shell Shortcuts And Workflow Lanes
-
-Quick actions in `App.tsx` include:
-
-- Agency Matrix Home
-- New Prospect
-- Reports
-- Carrier Contacts
-- Customer Reference
-- Renewal Gmail
-- No Loss Forms
-
-Quick-start cards include:
-
-- Send documents
-- Open SMS Command Center
-- Jump to Gmail Engineering
-- Start Proof/Certificates
-- Launch Property Tools
-- Open Image Tools
-
-Workflow lane groups:
-
-- Communicate
-- Create Documents
-- Coverage & Property
-- Image & Content
-
-Communicate lane includes:
-
-- Send Docs
-- SMS Center
-- Gmail Studio
-- Renewal Gmail
-
-Create Documents lane includes:
-
-- Certificates
-- POI Generator
-- Insurance Cards
-- Carrier Contacts
-- Reference Card
-
-Image & Content lane includes:
-
-- Quick Image Links
-- HTML Studio
-- PDF Quote Creator
-
-## 9. Technology Stack
-
-- React 19
-- TypeScript
-- Vite
-- Cloudflare Pages
-- Cloudflare Pages Functions
-- `@google/genai`
-- `marked`
-- localStorage for recent/history behavior
-
-There is no traditional database.
-
-The app is mostly:
-
-- frontend rendering
-- launcher routing
-- Gemini-powered Gmail generation
-- POI extraction/rendering
-- Imgur upload helper
-- static utility hosting
-- Cloudflare middleware protection
-
-## 10. Repository Structure
-
-Important folders:
-
-- `components` - UI sections and cards
-- `services` - Gemini, Gmail, Imgur, POI, and email helpers
-- `public` - hosted static HTML tools and assets
-- `functions` - Cloudflare Pages middleware
-- `hooks` - shared hooks such as localStorage
-- `dist` - built output
-- `.wrangler` - local Wrangler state
-
-Important root files:
-
-- `App.tsx`
-- `index.tsx`
-- `constants.ts`
-- `types.ts`
-- `vite.config.ts`
-- `package.json`
-- `.env.local`
-- `.dev.vars`
-- `CUSTOMER_MATRIX_PRO_AI_HANDOFF.md`
-- `GMAIL_ENGINEERING_STUDIO_HANDOFF.md`
-
-## 11. Environment Variables
-
-Do not put real secret values into handoff docs, code, or chat.
-
-`.env.local`:
-
-- path: `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\.env.local`
-- primary variable: `GEMINI_API_KEY`
-
-Fallback patterns used in config:
-
-- `GEMINI_API_KEY`
-- `GOOGLE_API_KEY`
-- `API_KEY`
-
-`vite.config.ts` loads env in this order:
-
-1. `env.GEMINI_API_KEY`
-2. `process.env.GEMINI_API_KEY`
-3. `process.env.GOOGLE_API_KEY`
-4. `process.env.API_KEY`
-
-It defines:
-
-- `process.env.API_KEY`
-- `process.env.GEMINI_API_KEY`
-
-`.dev.vars`:
-
-- path: `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro\.dev.vars`
-- used for Cloudflare deployment / local process env
-- expected variables include:
-  - `CLOUDFLARE_API_TOKEN`
-  - `CLOUDFLARE_ACCOUNT_ID`
-  - `SITE_PASSWORD`
-
-Important env behavior:
-
-Windows user-level environment variables can override what gets used during builds. If the live site behaves as if it is using an old Gemini key:
-
-1. check `.env.local`
-2. check Windows user-level `GEMINI_API_KEY`
-3. rebuild with the intended key explicitly loaded
-4. redeploy Pages
-
-## 12. Build, Verify, Deploy
-
-Run from:
-
-`C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro`
-
-Local checks:
-
-```powershell
-npm run lint
-npm run build
+```bash
+npm run lint && npm run build
 ```
 
-Typical direct Cloudflare Pages deploy:
+`lint` is `tsc --noEmit` (no ESLint). Then deploy:
 
-```powershell
-$env:GEMINI_API_KEY=[Environment]::GetEnvironmentVariable('GEMINI_API_KEY','User')
-if (Test-Path '.dev.vars') {
-  $vars = Get-Content '.dev.vars' | Where-Object { $_ -match '^[A-Z0-9_]+=' }
-  foreach ($line in $vars) {
-    $name, $value = $line -split '=', 2
-    [Environment]::SetEnvironmentVariable($name, $value, 'Process')
-  }
-}
-npm run build
+```bash
 npx wrangler pages deploy dist --project-name customer-matrix-pro
 ```
 
-Recent successful deployment facts:
+**Deploy gotchas — all three have burned previous sessions:**
 
-- `npx wrangler --version` was `4.97.0`
-- latest style/layout deploy preview was `https://09933da4.customer-matrix-pro.pages.dev`
-- stable live URL remains `https://customer-matrix-pro.pages.dev/`
-- protected live and preview URLs can return `401 Unauthorized` without the auth cookie
+- **No CI.** GitHub never builds this. A push is not a deploy.
+- **`curl` returns 401 + the access-gate login HTML, not the app.** That is the auth middleware working correctly. Never conclude "the deploy failed" from a curl result — check in an authenticated browser.
+- **Propagation + browser cache.** The origin can serve the previous `index.html` for ~5–15 seconds after deploying, and a browser will happily serve a cached copy long after that. Verify with `fetch(url, {cache:'no-store'})` and retry a couple of times before believing a stale result. Bill may need Ctrl+Shift+R.
 
-## 13. Git / Recent Commits
+Local dev: `npm run dev` (Vite, port 3000 by default). There is a preview entry named `matrix-pro` on port 8797 in the LIVE repo's `.claude/launch.json`. Note that `preview_screenshot` reliably times out on this app — use `preview_eval` / `preview_snapshot`, or drive a real browser, to verify visually.
 
-Recent important commits:
+---
 
-- `7cb6748` - `Compact Gmail engineering workspace`
-- `691a148` - `Repair Gmail template routing`
-- `8b89e8a` - `Condense Gmail engineering workspace`
-- `79ccac6` - `Refine command center layout`
-- `3c1b255` - `Improve Gmail engineering layout`
-- `79baacc` - `Promote no loss form shortcut`
-- `ed78048` - `Add customer shortcut links`
-- `3e03034` - `Improve Matrix Pro workspace UX`
+## 4. Stack & infrastructure
 
-Current branch convention:
+- React 19 + TypeScript + Vite 6, deployed to Cloudflare Pages as static assets
+- **Tailwind is compiled at build time** — `tailwind.config.js` + `postcss.config.js` + `index.css`. The `cdn.tailwindcss.com` runtime script was removed on 2026-07-14. New utility classes work automatically via JIT; if a class silently does nothing, check the `content` globs in `tailwind.config.js`.
+- Font Awesome 6 and Google Fonts (Inter + Outfit) still load from CDN in `index.html`
+- `@google/genai` for the AI features inside Search
+- `marked` (dependency of the dormant Gmail code)
+- No database. State lives in `localStorage`.
 
-- main working branch is `main`
-- remote is `origin`
-- GitHub repo is `https://github.com/BillLayne/Customer-Matrix-Pro`
+### Access gate — `functions/_middleware.ts`
 
-## 14. Operational Rules For New Agents
+A Cloudflare Pages Function password-gates the whole site.
 
-1. Keep Unified Search / Agency Matrix search as the main focus.
-2. Keep Gmail Engineering compact and easy to generate from without scrolling.
-3. Treat `components\ProgramLauncher.tsx` as launcher source of truth.
-4. Treat Gmail Engineering files as high-risk shared system files.
-5. Do not expose secrets in docs, code, screenshots, browser output, or chat.
-6. Remember the live site is password protected; unauthenticated checks returning `401` are expected.
-7. If a launcher change affects both Bill and staff, check whether `Agency-Staff-Dashboard` also needs the update.
-8. If a hosted utility lives in `public`, update it in this repo directly.
-9. For targeted production fixes, consider a clean temporary clone if the main worktree has unrelated edits.
-10. For Gmail template bugs, inspect both model prompt/routing and `emailEngine.ts` normalization.
-11. Before pushing live, run `npm run lint` and `npm run build`.
-12. For UI changes, verify desktop and mobile layout where practical.
+- Cookie `customer_matrix_pro_auth=approved`, one week, HttpOnly + Secure
+- Routes: `POST /login`, `/logout`
+- Password comes from the `SITE_PASSWORD` environment variable in the Cloudflare Pages project
+- **Security note:** the middleware falls back to a hardcoded password literal when `SITE_PASSWORD` is unset. That literal is committed to the repo. Worth removing (fail closed instead) — see §9.
 
-## 15. Current Known High-Risk Areas
+---
 
-### Gmail Engineering
+## 5. Unified Search — `components/SearchCard.tsx`
 
-High risk because:
+The most-used component in the app. Treat it carefully.
 
-- one shared prompt/design system affects many email types
-- `normalizeGeneratedEmailHtml()` can change final HTML after Gemini returns output
-- POI uses a dedicated path
-- template selection relies on stable `selectedTemplateKey`
-- carrier logo normalization is shared across templates
+**Five search modes** (`MODE_META` in `constants.ts`):
 
-### Environment / Gemini Key
+| Mode | Opens | Shortcut |
+|---|---|---|
+| Agency Matrix | `agents.agencymatrix.com` customer search | Ctrl + M |
+| Web Search | Google | Alt + W |
+| Real Estate | Zillow | Alt + H |
+| People | TruePeopleSearch | Alt + P |
+| Client Folder | Google Drive search | Alt + F |
 
-High risk because:
+Agency Matrix mode auto-picks `selection=Address` when the query contains a digit, otherwise `selection=Name`.
 
-- Vite bakes the Gemini key into the built frontend bundle
-- `.env.local`, process env, Windows user-level env, and fallback names can differ
-- a successful secret upload does not prove the live built bundle is using the intended key
+**Other features:**
 
-### Launcher Links
+- `/` focuses the search input from anywhere (unless you are already typing)
+- Recent searches (last 6) as clickable chips — `matrix-pro-search-history`
+- Buttons: Search, Cloud Folder, Audit Memo — plus **Tax GIS** and **Risk Intel** which appear only in Real Estate mode
+- **Audit Memo studio** (Alt + N or Ctrl + Shift + M) — an E&O compliance memo builder. Paste notes or attach a PDF/image, Gemini formats an audit-ready CRM memo, then "Execute Sync & Matrix" copies it and opens the customer in Agency Matrix.
+- **Tax GIS** — Gemini + Google Search finds the county GIS/parcel viewer, falling back to the local `NC_COUNTY_GIS_DATA` table
+- **Risk Intel** — two-pass Gemini research → a full HTML property report you can save, print, or copy into Gmail
+- **Carrier Portals** — collapsible drawer, state in `matrix-pro-show-carrier-gateway`, list is `DEFAULT_INSURANCE_PORTALS` in `constants.ts`
+- Search counter resets per calendar day (`matrix-pro-search-log` stores `{day, count}`)
 
-High risk because:
+**Dark-mode gotcha (do not undo):** carrier logos are dark-ink artwork sitting on a 10%-opacity brand tint, so in dark mode they disappear without a light plate behind them. `SearchCard.tsx` wraps each logo in a `dark:bg-white/95` plate that drops away on hover, where the tile fills with the carrier's color. Keep that wrapper if you touch the portal markup.
 
-- many links are external live tools
-- some local tools have hosted fallbacks
-- Bill uses these links daily
-- staff dashboard may need a matching update for shared launcher targets
+---
 
-## 16. Copy/Paste Brief For Another AI
+## 6. Quick Links row — `App.tsx`
 
-```text
-This project is Bill Layne Insurance's personal Agency Command Center / Customer Matrix Pro dashboard.
+A flat, hardcoded array called `quickActions`. **This is a separate list from the Program Launcher** — adding a tool to the launcher does NOT add a chip here, and vice versa. Update by hand when a tool deserves top-level placement.
 
-Repo:
-C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro
+Current 15 chips: Matrix Home · New Prospect · Reports · Carrier Contacts · Customer Reference · Renewal Gmail · Hosted Links · Task Board · Mail Gateway · Claude Designer · Claude Quotes · Claude Gmail · Hazard Collages · DL123 Maker · No Loss Forms
 
-GitHub:
-https://github.com/BillLayne/Customer-Matrix-Pro
+---
 
-Live protected site:
-https://customer-matrix-pro.pages.dev/
+## 7. Program Launcher — `components/ProgramLauncher.tsx`
 
-Cloudflare Pages project:
-customer-matrix-pro
+**The `PROGRAMS` array in this file is the single source of truth for every launcher target.** If a link is wrong, fix it here first.
 
-Read these first:
-1. CUSTOMER_MATRIX_PRO_AI_HANDOFF.md
-2. GMAIL_ENGINEERING_STUDIO_HANDOFF.md
-3. App.tsx
-4. components/SearchCard.tsx
-5. components/ProgramLauncher.tsx
-6. components/AiAssistant.tsx
-7. constants.ts
-8. services/emailDesignSystemV2.ts
-9. services/geminiService.ts
-10. services/emailEngine.ts
-11. services/poiTemplate.ts
-12. functions/_middleware.ts
+**40 tools in 4 categories:** Operations (10) · Documents & Forms (14) · AI (12) · Property & Coverage (4). Within every section tools are sorted alphabetically by title.
 
-Important:
-- Unified Search / Agency Matrix search stays the main focus and must be visible without scrolling.
-- The app uses Search/Gmail/Tools tabs stored in localStorage under matrix-pro-layout-mode.
-- ProgramLauncher.tsx is the launcher source of truth.
-- Gmail Engineering now uses stable selectedTemplateKey routing and full TemplateContract metadata.
-- services/emailDesignSystemV2.ts is the active Gmail design-system prompt.
-- constants.ts contains PROMPT_TEMPLATES and template contracts.
-- POI routes by selectedTemplateKey === 'poi' and uses poiTemplate.ts.
-- The Gmail UI is intentionally compact: Setup & Brand plus Template dropdown in the top work strip, Prompt Draft and Generate Email in the main container.
-- Quick favorite/prefill chips and browse-template drawer were removed from Gmail mode.
-- The live site is password protected, so unauthenticated requests may return 401.
-- Static tools in /public are deployed utilities, not examples.
-- Gemini key troubleshooting must consider .env.local, process env, and Windows user-level GEMINI_API_KEY.
-- For small urgent production fixes, a clean temporary clone can be safer if the main worktree is dirty.
+**How you find things:**
+
+- **Filter box** — type to search title/description/category/note; `/` focuses it
+- **Category pills** — All / Operations / Documents & Forms / AI / Property & Coverage, with counts
+- **Pinned** — star any tile to keep it at the top (`matrix-pro-pinned-programs`)
+- **Recent** — last 6 opened, as chips (`matrix-pro-recent-programs`)
+
+### ⚠️ Adding a new tool — the version-stamp protocol
+
+`DEFAULT_PINNED` **only applies to a browser that has never opened the dashboard.** Bill's browser already has a saved pin list, so a newly added tool would never surface for him. To make a new tool appear:
+
+1. Append the entry to `PROGRAMS`
+2. **Bump `LAUNCHER_VERSION`**
+3. **Add the new ids under that version number in `NEW_IN_VERSION`**
+
+On next load those ids get pinned once and badged **NEW**. Unpinning still sticks afterwards, because the version has already been recorded. Currently `LAUNCHER_VERSION = 2`; version 2 introduced `bli-task-board`, `bli-mail-gateway`, `claude-quotes`, `claude-gmail`.
+
+Then decide separately whether it also deserves a Quick Links chip in `App.tsx` (§6).
+
+### Local vs hosted targets
+
+Entries may carry both a Windows `target` and a `hostedTarget`. On the deployed site (`isHostedDashboard`) the hosted URL wins; running locally, `targetType: 'local'` opens a `file:///` URL. A local-only tool with no `hostedTarget` shows a warning toast on the live site instead of a broken link.
+
+Tools hosted inside this repo's `public/` folder: `/html-studio.html`, `/nc-grange-down-payment-calculator.html`, `/photo-guide-composer.html`, `/dl123-generator/index.html`. These are **real deployed utilities, not examples** — edit them here.
+
+---
+
+## 8. Quick Image Links — `components/QuickImageLinksCard.tsx` + `services/imageHostService.ts`
+
+Migrated off Imgur on 2026-07-23 (`0d3e131`, `9a10f64`). Uploads now go to **BLI Image Host** at `https://img.billlayneinsurance.com`. The Imgur service and its Client-ID were deleted from this repo.
+
+- **Access code** entered once per device, stored in `localStorage` as `bliImgAccessCode`, verified via `GET /api/check` with an `x-access-code` header
+- **Format presets, chosen before upload** (persisted in `quick-image-preset`, default **Gmail**):
+
+| Preset | Output | Why |
+|---|---|---|
+| **Gmail** (default) | JPEG, max 1200px, q0.80 | Bill mostly uploads for Gmail templates, and email clients cannot render WebP |
+| Logo | PNG | keeps transparency and sharp edges |
+| Web | WebP, max 1600px, q0.82 | smallest files for web pages and quotes |
+| GIF / Original | untouched | animation and vectors survive |
+
+- Images are optimized **client-side** (canvas) before the POST. GIF and SVG always pass through. JPEG flattens transparency onto white. If the re-encode would not shrink the file, the original is uploaded instead.
+- Upload is `POST /api/upload?filename=…` with the blob as the body; the returned URL is copied to the clipboard automatically
+- Upload history (last 25) lives in `quicklink-upload-history`
+
+---
+
+## 9. localStorage keys
+
+| Key | Holds |
+|---|---|
+| `theme` | light / dark |
+| `matrix-pro-search-log` | `{day, count}` — daily search counter |
+| `matrix-pro-search-history` | last 6 search queries |
+| `matrix-pro-show-carrier-gateway` | Carrier Portals drawer open/closed |
+| `matrix-pro-pinned-programs` | pinned launcher tool ids |
+| `matrix-pro-recent-programs` | recently opened tool ids |
+| `matrix-pro-launcher-version` | last launcher version this browser saw |
+| `quick-image-preset` | selected image format preset |
+| `quicklink-upload-history` | recent image uploads |
+| `bliImgAccessCode` | BLI Image Host access code |
+
+A `local-storage-error` event surfaces quota failures as a toast.
+
+---
+
+## 10. Environment & secrets
+
+Never put real secret values in this file, in code, in chat, or in screenshots.
+
+- **`.env.local`** (gitignored via `*.local`) — `GEMINI_API_KEY`
+- **`.dev.vars`** (gitignored) — `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SITE_PASSWORD`
+- **Cloudflare Pages project settings** — `SITE_PASSWORD` for the live gate
+
+`vite.config.ts` resolves the Gemini key in this order: `env.GEMINI_API_KEY` → `process.env.GEMINI_API_KEY` → `process.env.GOOGLE_API_KEY` → `process.env.API_KEY`, then defines both `process.env.API_KEY` and `process.env.GEMINI_API_KEY`.
+
+**Two consequences that matter:**
+
+1. **The Gemini key is baked into the built frontend bundle.** Anyone who gets past the password gate can read it. Rotate it if the site password is ever shared.
+2. **A Windows user-level `GEMINI_API_KEY` can override what you intended.** If the live site behaves like it is using an old key, check `.env.local`, the process env, and the Windows user-level variable, then rebuild and redeploy. Uploading a secret successfully does not prove the built bundle uses it.
+
+Gemini model fallback chain (`services/geminiService.ts` and `SearchCard.tsx`): `gemini-3-flash-preview` → `gemini-3.5-flash` → `gemini-3.1-flash-lite`, retried on 429/503/quota errors.
+
+---
+
+## 11. Repo map
+
+**Live application files:**
+
+```
+App.tsx                       page shell, quickActions, header, shortcuts modal
+index.tsx / index.html / index.css
+constants.ts                  portals, mode meta, county GIS, carrier data, (dormant) email templates
+types.ts
+vite.config.ts / tailwind.config.js / postcss.config.js
+components/SearchCard.tsx           Unified Search  ← highest-traffic component
+components/ProgramLauncher.tsx      launcher; PROGRAMS is the source of truth
+components/QuickImageLinksCard.tsx  image uploader
+components/QuickSearchPopup.tsx     Ctrl+M popup
+components/Modal.tsx / Toast.tsx
+services/imageHostService.ts        BLI Image Host client + presets
+hooks/useLocalStorage.tsx
+functions/_middleware.ts            password gate
+public/                             hosted tools + carrier logo images
 ```
 
-## 17. Current Status
+**Dormant — kept intentionally, not imported by the app:** `components/AiAssistant.tsx`, `Favorites.tsx`, `Header.tsx`, `PortalsCard.tsx`, `QuickActions.tsx`, `NeedsAnalysisCard.tsx`, `PdfParserCard.tsx`, `QuoteAssistantCard.tsx`, `TaskMatrixCard.tsx`; `services/geminiService.ts` (still used by SearchCard), `emailEngine.ts`, `emailDesignSystemV2.ts`, `poiTemplate.ts`.
 
-As of June 10, 2026:
+---
 
-- Search-first tabbed layout is the current UX direction.
-- Gmail Engineering is compact and uses stable template routing.
-- Customer shortcut links are present:
-  - Carrier & Agency Contacts
-  - Customer Reference Card
-  - Renewal Gmail Program
-  - DL123 Maker
-  - No Loss Form Generator
-- Program Launcher includes No Loss in Most Used and Customer Shortcuts.
-- Quick Image Links recent uploads area is scrollable.
-- Latest production UI deploy was successful.
-- Live site remains password protected.
+## 12. Known issues / open items
+
+- **`9a10f64` is not deployed.** The image format picker is live in the repo only. Deploy per §3.
+- **Carrier logos still load from Imgur.** `DEFAULT_INSURANCE_PORTALS` in `constants.ts` (and `AGENCY_LOGO`, `CARRIER_LOGOS`) point at `i.imgur.com`, even though matching PNGs already sit in `public/` (`nationwide.png`, `progressive.png`, `nc_grange.png`, …) and the agency now runs its own image host. Worth switching to local paths so the drawer does not depend on Imgur.
+- **`SITE_PASSWORD` has a committed fallback literal** in `functions/_middleware.ts`. Should fail closed when the variable is missing.
+- **`agency-password-vault` is categorized as `AI`** in `PROGRAMS`. It is a password vault; it probably belongs under Operations.
+- **`README.md` is still the stock AI Studio scaffold text** and does not describe this project.
+- Bundle is ~560 kB (~138 kB gzipped) in one chunk — fine for an internal tool, but that is why the build prints a chunk-size warning.
+- The dormant Gmail/Task/Quote components still compile on every `npm run lint`, so a breaking change to `constants.ts` or the services can fail the build from code nothing renders.
+
+---
+
+## 13. Rules for anyone working on this
+
+1. **Unified Search stays first and visible without scrolling.** Never push content above it.
+2. **`PROGRAMS` in `ProgramLauncher.tsx` is the launcher source of truth.** Fix links there.
+3. **Adding a launcher tool requires bumping `LAUNCHER_VERSION` + listing ids in `NEW_IN_VERSION`**, or Bill will never see it (§7).
+4. **Quick Links chips in `App.tsx` are a separate hardcoded list** and must be updated by hand.
+5. **Do not delete the Gmail Engineering files.** They are staged for a rebuild.
+6. **Push ≠ deploy.** Always run the wrangler command, and remember 401-from-curl is normal (§3).
+7. Run `npm run lint` and `npm run build` before deploying.
+8. Verify desktop **and** dark mode; keep the carrier-logo light plate (§5).
+9. Never expose secrets in code, docs, screenshots, or chat.
+10. If a change affects shared launcher targets, check the staff dashboard too.
+
+---
+
+## 14. Commit history since the redesign
+
+```
+9a10f64  Quick Image Links: format picker (Gmail / Logo / Web / GIF)   ← HEAD, NOT DEPLOYED
+0d3e131  Quick Image Links: swap Imgur for BLI Image Host              ← currently live
+495defb  Switch Gemini models to gemini-3-flash-preview
+979e704  Fix dark-mode carrier logos, daily search counter, launcher a11y
+77518e4  Add Claude Quotes, Claude Gmail, Task Board, Mail Gateway tiles
+708962c  Fix NC Grange 12-pay calculation
+9f01bed  Add AI launcher section
+4794539  Alphabetize Command Center launcher sections
+a5f615b  Add Command Center shortcut containers
+1c48336  Use hosted DL123 command center route
+125a8ca  Add DL123 maker shortcut
+9b1a351  Redesign command center: search-first single page, remove Gmail UI
+```
