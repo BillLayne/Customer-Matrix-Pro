@@ -113,7 +113,7 @@ The most-used component in the app. Treat it carefully.
 |---|---|---|
 | Agency Matrix | `agents.agencymatrix.com` customer search | Ctrl + M |
 | Web Search | Google | Alt + W |
-| Real Estate | Zillow | Alt + H |
+| Real Estate | NC Insurance Tools agency property lookup (`26d5834f` deployment, with `?address=` prefilled) | Alt + H |
 | People | TruePeopleSearch | Alt + P |
 | Client Folder | Google Drive search | Alt + F |
 
@@ -123,10 +123,9 @@ Agency Matrix mode auto-picks `selection=Address` when the query contains a digi
 
 - `/` focuses the search input from anywhere (unless you are already typing)
 - Recent searches (last 6) as clickable chips — `matrix-pro-search-history`
-- Buttons: Search, Cloud Folder, Audit Memo — plus **Tax GIS** and **Risk Intel** which appear only in Real Estate mode
+- Buttons: Search, Cloud Folder, Audit Memo — plus **NC Tools** which appears only in Real Estate mode
 - **Audit Memo studio** (Alt + N or Ctrl + Shift + M) — an E&O compliance memo builder. Paste notes or attach a PDF/image, Gemini formats an audit-ready CRM memo, then "Execute Sync & Matrix" copies it and opens the customer in Agency Matrix.
-- **Tax GIS** — Gemini + Google Search finds the county GIS/parcel viewer, falling back to the local `NC_COUNTY_GIS_DATA` table
-- **Risk Intel** — two-pass Gemini research → a full HTML property report you can save, print, or copy into Gmail
+- **Real Estate / NC Tools handoff** — typing an address and pressing Enter, the arrow button, or the **NC Tools** button opens `https://26d5834f.nc-insurance-tools-gemini.pages.dev/?address=...`. The NC Insurance Tools app reads `address` / `q` from the URL and auto-runs the lookup inside `PropertyTab.tsx`.
 - **Carrier Portals** — collapsible drawer, state in `matrix-pro-show-carrier-gateway`, list is `DEFAULT_INSURANCE_PORTALS` in `constants.ts`
 - Search counter resets per calendar day (`matrix-pro-search-log` stores `{day, count}`)
 

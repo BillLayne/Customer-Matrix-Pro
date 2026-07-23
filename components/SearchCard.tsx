@@ -14,6 +14,10 @@ interface SearchCardProps {
 }
 
 const SEARCH_MODELS = ['gemini-3-flash-preview', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'] as const;
+const NC_INSURANCE_TOOLS_AGENCY_URL = 'https://26d5834f.nc-insurance-tools-gemini.pages.dev/';
+
+const buildNcInsuranceToolsUrl = (address: string) =>
+  `${NC_INSURANCE_TOOLS_AGENCY_URL}?address=${encodeURIComponent(address.trim())}`;
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error && error.message) return error.message;
@@ -100,7 +104,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
           url = `https://www.google.com/search?q=${encodeURIComponent(historicQuery)}`;
           break;
         case 'realestate':
-          url = `https://www.zillow.com/homes/${encodeURIComponent(historicQuery)}_rb/`;
+          url = buildNcInsuranceToolsUrl(historicQuery);
           break;
         case 'people':
           url = `https://www.truepeoplesearch.com/results?name=${encodeURIComponent(historicQuery)}`;
@@ -111,7 +115,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
         }
       }
       window.open(url, '_blank');
-      addToast(`Searching ${mode}...`, 'info');
+      addToast(mode === 'realestate' ? 'Opening NC Insurance Tools with this address...' : `Searching ${mode}...`, 'info');
     }, 50);
   };
 
@@ -188,7 +192,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
         url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
         break;
       case 'realestate':
-        url = `https://www.zillow.com/homes/${encodeURIComponent(query)}_rb/`;
+        url = buildNcInsuranceToolsUrl(query);
         break;
       case 'people':
         url = `https://www.truepeoplesearch.com/results?name=${encodeURIComponent(query)}`;
@@ -200,8 +204,25 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
       }
     }
     window.open(url, '_blank');
-    addToast(`Searching ${mode}...`, 'info');
+    addToast(mode === 'realestate' ? 'Opening NC Insurance Tools with this address...' : `Searching ${mode}...`, 'info');
     setQuery('');
+  };
+
+  const handleNcInsuranceToolsOpen = () => {
+    if (!query.trim()) {
+      addToast('Please enter a property address for NC Insurance Tools.', 'warning');
+      inputRef.current?.focus();
+      return;
+    }
+
+    const trimmedQuery = query.trim();
+    setSearchHistory((prev) => {
+      const filtered = prev.filter((q) => q.toLowerCase() !== trimmedQuery.toLowerCase());
+      return [trimmedQuery, ...filtered].slice(0, 6);
+    });
+    onSearch();
+    window.open(buildNcInsuranceToolsUrl(trimmedQuery), '_blank');
+    addToast('Opening NC Insurance Tools with this address...', 'info');
   };
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -614,31 +635,24 @@ Return ONLY a JSON object in this exact shape:
           {/* REAL ESTATE MODE: Additional File Upload UI */}
           {mode === 'realestate' && (
               <div className="mt-4 animate-slide-down">
-                  <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-white/10 dark:bg-white/5">
-                      <div className="flex-1">
-                          <label className="mb-2 block text-xs font-semibold text-slate-500 dark:text-slate-300">Optional: attach evidence (inspection, appraisal, photos)</label>
-                          <div className="flex flex-wrap items-center gap-3">
-                              <button
-                                  onClick={() => propertyFileInputRef.current?.click()}
-                                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-primary transition-all hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:text-accent"
-                              >
-                                  <i className="fa-solid fa-paperclip"></i> Attach Files
-                              </button>
-                              <input type="file" multiple ref={propertyFileInputRef} onChange={handlePropertyFileChange} accept=".pdf,image/*" className="hidden" />
-
-                              <div className="flex flex-wrap gap-2">
-                                  {propertyFiles.map((f, i) => (
-                                      <div key={i} className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary dark:text-accent">
-                                          <span className="max-w-[120px] truncate">{f.name}</span>
-                                          <button onClick={() => removePropertyFile(i)} className="hover:text-red-500"><i className="fa-solid fa-times"></i></button>
-                                      </div>
-                                  ))}
-                              </div>
-                          </div>
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 shadow-sm dark:border-blue-400/30 dark:bg-blue-500/10">
+                      <div>
+                          <p className="text-sm font-semibold text-[#003f87] dark:text-blue-200">
+                            NC Insurance Tools property lookup
+                          </p>
+                          <p className="text-xs text-slate-600 dark:text-slate-300">
+                            Type a home address, then open the agency property workspace with that address preloaded.
+                          </p>
                       </div>
-                      <div className="max-w-[200px] text-right text-xs italic text-slate-400 dark:text-slate-400">
-                          AI merges attached evidence with live data.
-                      </div>
+                      <button
+                        type="button"
+                        onClick={handleNcInsuranceToolsOpen}
+                        disabled={!query.trim()}
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#003f87] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#0076d3] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                          <i className="fa-solid fa-house-circle-check text-xs"></i>
+                          Open NC Tools
+                      </button>
                   </div>
               </div>
           )}
@@ -712,16 +726,10 @@ Return ONLY a JSON object in this exact shape:
           </button>
 
           {mode === 'realestate' && (
-              <>
-                <button onClick={handleGisSearch} disabled={isGisSearching} className="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5 text-sm font-semibold text-green-700 transition-all hover:border-green-300 hover:bg-white hover:shadow-sm disabled:opacity-60 dark:border-green-400/30 dark:bg-green-500/10 dark:text-green-300">
-                    <i className={`fa-solid ${isGisSearching ? 'fa-spinner fa-spin' : 'fa-map-location-dot'} text-xs`}></i>
-                    Tax GIS
-                </button>
-                <button onClick={handleGenerateReport} disabled={isGeneratingReport || !query.trim()} className="inline-flex items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3.5 py-2.5 text-sm font-semibold text-purple-700 transition-all hover:border-purple-300 hover:bg-white hover:shadow-sm disabled:opacity-60 dark:border-purple-400/30 dark:bg-purple-500/10 dark:text-purple-300">
-                    <i className={`fa-solid ${isGeneratingReport ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'} text-xs`}></i>
-                    Risk Intel
-                </button>
-              </>
+              <button onClick={handleNcInsuranceToolsOpen} disabled={!query.trim()} className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-sm font-semibold text-[#003f87] transition-all hover:border-blue-300 hover:bg-white hover:shadow-sm disabled:opacity-60 dark:border-blue-400/30 dark:bg-blue-500/10 dark:text-blue-200">
+                  <i className="fa-solid fa-house-circle-check text-xs"></i>
+                  NC Tools
+              </button>
           )}
         </div>
 
