@@ -24,11 +24,9 @@ Separate, do not confuse: the staff dashboard at `Playground\Agency-Staff-Dashbo
 
 ### Live state right now
 
-- Local `main` HEAD: **`9a10f64`** — "Quick Image Links: format picker (Gmail / Logo / Web / GIF) before upload"
-- GitHub `origin/main`: **in sync**, nothing unpushed
-- Newest **production deployment** was built from **`0d3e131`**
-
-**⚠️ `9a10f64` (the image format picker) is committed and pushed but NOT deployed.** There is no CI — GitHub does not build this project. Pushing does nothing to the live site. Someone must run the deploy command in §3.
+- Latest verified deploy: **July 23, 2026** via Cloudflare preview `https://8eb7d1c0.customer-matrix-pro.pages.dev`
+- That deploy includes the Quick Image Links format picker and the Real Estate → NC Insurance Tools address handoff.
+- GitHub still does not auto-deploy this project. Pushing does nothing to the live site; someone must run the deploy command in §3.
 
 ---
 
@@ -259,7 +257,6 @@ public/                             hosted tools + carrier logo images
 
 ## 12. Known issues / open items
 
-- **`9a10f64` is not deployed.** The image format picker is live in the repo only. Deploy per §3.
 - **Carrier logos still load from Imgur.** `DEFAULT_INSURANCE_PORTALS` in `constants.ts` (and `AGENCY_LOGO`, `CARRIER_LOGOS`) point at `i.imgur.com`, even though matching PNGs already sit in `public/` (`nationwide.png`, `progressive.png`, `nc_grange.png`, …) and the agency now runs its own image host. Worth switching to local paths so the drawer does not depend on Imgur.
 - **`SITE_PASSWORD` has a committed fallback literal** in `functions/_middleware.ts`. Should fail closed when the variable is missing.
 - **`agency-password-vault` is categorized as `AI`** in `PROGRAMS`. It is a password vault; it probably belongs under Operations.
@@ -287,8 +284,9 @@ public/                             hosted tools + carrier logo images
 ## 14. Commit history since the redesign
 
 ```
-9a10f64  Quick Image Links: format picker (Gmail / Logo / Web / GIF)   ← HEAD, NOT DEPLOYED
-0d3e131  Quick Image Links: swap Imgur for BLI Image Host              ← currently live
+e3a0368  Route real estate search to NC Insurance Tools                ← deployed 2026-07-23
+9a10f64  Quick Image Links: format picker (Gmail / Logo / Web / GIF)   ← deployed 2026-07-23
+0d3e131  Quick Image Links: swap Imgur for BLI Image Host
 495defb  Switch Gemini models to gemini-3-flash-preview
 979e704  Fix dark-mode carrier logos, daily search counter, launcher a11y
 77518e4  Add Claude Quotes, Claude Gmail, Task Board, Mail Gateway tiles
