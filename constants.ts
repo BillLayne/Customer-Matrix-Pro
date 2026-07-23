@@ -600,12 +600,6 @@ export const CARRIER_RESOURCES = {
 };
 
 /* ============================================================================
-   IMGUR
-============================================================================ */
-export const IMGUR_CLIENT_ID = '546c25a59c58ad7';
-export const IMGUR_UPLOAD_URL = 'https://api.imgur.com/3/image';
-
-/* ============================================================================
    LOCAL STORAGE
 ============================================================================ */
 export const LOCAL_STORAGE_HISTORY_KEY = 'quicklink-upload-history';

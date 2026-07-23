@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { LOCAL_STORAGE_HISTORY_KEY } from '../constants';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { uploadImage } from '../services/imgurService';
+import { checkAccessCode, getAccessCode, setAccessCode, uploadImage } from '../services/imageHostService';
 import type { HistoryItem, ToastMessage } from '../types';
 
 interface QuickImageLinksCardProps {
@@ -13,6 +13,9 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
   const [isUploading, setIsUploading] = useState(false);
   const [latestLink, setLatestLink] = useState('');
   const [dragActive, setDragActive] = useState(false);
+  const [hasAccessCode, setHasAccessCode] = useState(() => Boolean(getAccessCode()));
+  const [codeDraft, setCodeDraft] = useState('');
+  const [isSavingCode, setIsSavingCode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const recentUploads = useMemo(() => history, [history]);
@@ -23,9 +26,9 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
   };
 
   const handleUpload = async (file: File) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
     if (!allowedTypes.includes(file.type)) {
-      addToast('Use JPG, PNG, or WEBP only.', 'warning');
+      addToast('Use JPG, PNG, WEBP, GIF, or SVG only.', 'warning');
       return;
     }
 
@@ -34,22 +37,45 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
       const result = await uploadImage(file);
       const newItem: HistoryItem = {
         id: String(Date.now()),
-        link: result.link,
-        deletehash: result.deletehash,
+        link: result.url,
+        key: result.key,
         name: file.name,
         createdAt: Date.now(),
         groups: [],
       };
 
       setHistory((prev) => [newItem, ...prev].slice(0, 25));
-      setLatestLink(result.link);
-      await navigator.clipboard.writeText(result.link);
-      addToast('Uploaded to Imgur and copied link.', 'success');
+      setLatestLink(result.url);
+      await navigator.clipboard.writeText(result.url);
+      addToast('Uploaded — link copied.', 'success');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Upload failed.';
+      if (message.toLowerCase().includes('access code')) {
+        setHasAccessCode(false);
+      }
       addToast(message, 'danger');
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleSaveCode = async () => {
+    const draft = codeDraft.trim();
+    if (!draft) return;
+    setIsSavingCode(true);
+    try {
+      if (await checkAccessCode(draft)) {
+        setAccessCode(draft);
+        setHasAccessCode(true);
+        setCodeDraft('');
+        addToast('Image host unlocked.', 'success');
+      } else {
+        addToast('Access code rejected.', 'danger');
+      }
+    } catch {
+      addToast('Could not reach the image host.', 'danger');
+    } finally {
+      setIsSavingCode(false);
     }
   };
 
@@ -81,9 +107,18 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
             Quick Image Links
           </h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Upload JPG, PNG, or WEBP to Imgur — the hosted link copies automatically.
+            Optimized and hosted on img.billlayneinsurance.com — the link copies automatically.
           </p>
         </div>
+        <a
+          href="https://img.billlayneinsurance.com"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex shrink-0 items-center gap-2 self-start rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-[#0076d3]/50 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:text-white lg:self-auto"
+        >
+          <i className="fa-solid fa-images"></i>
+          Open Library
+        </a>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">
@@ -103,29 +138,64 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
           <input
             ref={fileInputRef}
             type="file"
-            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+            accept=".jpg,.jpeg,.png,.webp,.gif,.svg,image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
             className="hidden"
             onChange={handleFileChange}
           />
-          <div className="flex flex-col items-center text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-gradient-to-br from-slate-950 via-[#003f87] to-[#0076d3] text-white shadow-xl shadow-blue-900/20">
-              <i className={`fa-solid ${isUploading ? 'fa-spinner fa-spin' : 'fa-cloud-arrow-up'} text-2xl`}></i>
+          {hasAccessCode ? (
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-gradient-to-br from-slate-950 via-[#003f87] to-[#0076d3] text-white shadow-xl shadow-blue-900/20">
+                <i className={`fa-solid ${isUploading ? 'fa-spinner fa-spin' : 'fa-cloud-arrow-up'} text-2xl`}></i>
+              </div>
+              <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
+                {isUploading ? 'Uploading image...' : 'Fast image link uploader'}
+              </h3>
+              <p className="mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-300">
+                Click to pick a file or drag one here. It's optimized to WebP, hosted on your own
+                domain, and the link copies automatically.
+              </p>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-[#003f87] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-cyan-300"
+              >
+                <i className="fa-solid fa-image"></i>
+                Choose Image
+              </button>
             </div>
-            <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
-              {isUploading ? 'Uploading image...' : 'Fast image link uploader'}
-            </h3>
-            <p className="mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-300">
-              Click to pick a file or drag one here. The hosted Imgur link copies automatically when the upload finishes.
-            </p>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-[#003f87] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-cyan-300"
-            >
-              <i className="fa-solid fa-image"></i>
-              Choose Image
-            </button>
-          </div>
+          ) : (
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-gradient-to-br from-slate-950 via-[#003f87] to-[#0076d3] text-white shadow-xl shadow-blue-900/20">
+                <i className="fa-solid fa-lock text-2xl"></i>
+              </div>
+              <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
+                Unlock the image host
+              </h3>
+              <p className="mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-300">
+                Enter the agency access code once — it's remembered on this device.
+              </p>
+              <div className="mt-5 flex w-full max-w-sm flex-col gap-3 sm:flex-row">
+                <input
+                  type="password"
+                  value={codeDraft}
+                  onChange={(e) => setCodeDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void handleSaveCode();
+                  }}
+                  placeholder="Access code"
+                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#0076d3] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+                />
+                <button
+                  onClick={() => void handleSaveCode()}
+                  disabled={isSavingCode || !codeDraft.trim()}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0076d3] px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-[#003f87] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <i className={`fa-solid ${isSavingCode ? 'fa-spinner fa-spin' : 'fa-unlock'}`}></i>
+                  Unlock
+                </button>
+              </div>
+            </div>
+          )}
 
           {latestLink && (
             <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#0b1727]/80">
