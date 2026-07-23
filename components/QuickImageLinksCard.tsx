@@ -1,7 +1,14 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { LOCAL_STORAGE_HISTORY_KEY } from '../constants';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { checkAccessCode, getAccessCode, setAccessCode, uploadImage } from '../services/imageHostService';
+import {
+  IMAGE_PRESETS,
+  checkAccessCode,
+  getAccessCode,
+  setAccessCode,
+  uploadImage,
+} from '../services/imageHostService';
+import type { ImagePresetId } from '../services/imageHostService';
 import type { HistoryItem, ToastMessage } from '../types';
 
 interface QuickImageLinksCardProps {
@@ -16,7 +23,10 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
   const [hasAccessCode, setHasAccessCode] = useState(() => Boolean(getAccessCode()));
   const [codeDraft, setCodeDraft] = useState('');
   const [isSavingCode, setIsSavingCode] = useState(false);
+  const [presetId, setPresetId] = useLocalStorage<ImagePresetId>('quick-image-preset', 'gmail');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const activePreset = IMAGE_PRESETS.find((p) => p.id === presetId) ?? IMAGE_PRESETS[0];
 
   const recentUploads = useMemo(() => history, [history]);
 
@@ -34,7 +44,7 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
 
     setIsUploading(true);
     try {
-      const result = await uploadImage(file);
+      const result = await uploadImage(file, activePreset);
       const newItem: HistoryItem = {
         id: String(Date.now()),
         link: result.url,
@@ -121,6 +131,31 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
         </a>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+          Format
+        </span>
+        {IMAGE_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            onClick={() => setPresetId(preset.id)}
+            title={preset.hint}
+            aria-pressed={preset.id === activePreset.id}
+            className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-bold transition ${
+              preset.id === activePreset.id
+                ? 'border-[#0076d3] bg-blue-50 text-[#003f87] shadow-sm dark:border-cyan-300/60 dark:bg-cyan-500/10 dark:text-cyan-200'
+                : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-[#0076d3]/50 hover:bg-white hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white'
+            }`}
+          >
+            <i className={`fa-solid ${preset.icon} text-[11px]`}></i>
+            {preset.label}
+          </button>
+        ))}
+        <span className="hidden text-xs text-slate-400 sm:inline dark:text-slate-500">
+          {activePreset.hint}
+        </span>
+      </div>
+
       <div className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">
         <div
           onDragOver={(e) => {
@@ -151,8 +186,11 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
                 {isUploading ? 'Uploading image...' : 'Fast image link uploader'}
               </h3>
               <p className="mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-300">
-                Click to pick a file or drag one here. It's optimized to WebP, hosted on your own
-                domain, and the link copies automatically.
+                Click to pick a file or drag one here — uploading as{' '}
+                <span className="font-bold text-slate-700 dark:text-slate-100">
+                  {activePreset.label}
+                </span>{' '}
+                ({activePreset.hint}). The link copies automatically.
               </p>
               <button
                 onClick={() => fileInputRef.current?.click()}
