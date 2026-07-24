@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import type { SearchMode } from '../types';
-import { MODE_META, NC_COUNTY_GIS_DATA, DEFAULT_INSURANCE_PORTALS } from '../constants';
+import type { Portal, SearchMode } from '../types';
+import { MODE_META, NC_COUNTY_GIS_DATA, DEFAULT_INSURANCE_PORTALS, MORE_CARRIER_PORTALS } from '../constants';
 import Modal from './Modal';
 import { generateContent } from '../services/geminiService';
 import { GoogleGenAI } from "@google/genai";
@@ -63,6 +63,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
   const [query, setQuery] = useState('');
   const [searchHistory, setSearchHistory] = useLocalStorage<string[]>('matrix-pro-search-history', []);
   const [showCarrierGateway, setShowCarrierGateway] = useLocalStorage<boolean>('matrix-pro-show-carrier-gateway', false);
+  const [showMoreCarriers, setShowMoreCarriers] = useState(false);
   const [isGisModalOpen, setIsGisModalOpen] = useState(false);
   const [gisInfo, setGisInfo] = useState<{ county: string; url: string; note?: string } | null>(null);
   const [isGisSearching, setIsGisSearching] = useState(false);
@@ -169,6 +170,16 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [addToast, query]);
+
+  // Escape closes the "More Carriers" panel.
+  useEffect(() => {
+    if (!showMoreCarriers) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowMoreCarriers(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showMoreCarriers]);
 
   const handleSearch = () => {
     if (!query.trim()) {
@@ -574,6 +585,48 @@ Return ONLY a JSON object in this exact shape:
     setStagedNotesFile(null);
   };
 
+  // Shared by the main portal row and the "More Carriers" panel so both stay identical.
+  const renderPortalTile = (portal: Portal) => (
+    <a
+      key={portal.id}
+      href={portal.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={portal.description}
+      className="group/portal relative flex min-h-20 flex-col items-center justify-center overflow-hidden rounded-xl border border-transparent bg-white/5 p-3 text-center backdrop-blur-md transition-all duration-300 hover:shadow-glow"
+      style={{
+        backgroundColor: portal.color ? `${portal.color}1A` : undefined,
+        borderColor: portal.color ? `${portal.color}33` : undefined,
+      }}
+    >
+      <div
+        className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover/portal:opacity-100"
+        style={{ backgroundColor: portal.color }}
+      ></div>
+      <div className="relative z-10 mb-2 flex h-10 w-full items-center justify-center transition-transform duration-300 group-hover/portal:scale-110">
+        {/* Dark mode: carrier artwork is dark ink, so it needs a light plate to stay legible.
+            The plate drops away on hover, where the tile fills with the carrier colour. */}
+        <span className="flex h-full max-w-full items-center justify-center rounded-lg px-1.5 transition-colors duration-300 dark:bg-white/95 dark:group-hover/portal:bg-transparent">
+          {portal.image ? (
+            <img
+              src={portal.image}
+              alt={portal.name}
+              className="h-full w-auto object-contain transition-all duration-300 group-hover/portal:brightness-0 group-hover/portal:invert"
+            />
+          ) : (
+            <i
+              className={`${portal.icon} text-xl text-[var(--portal-color)] transition-colors duration-300 group-hover/portal:text-white`}
+              style={{ '--portal-color': portal.color || '#94a3b8' } as React.CSSProperties}
+            ></i>
+          )}
+        </span>
+      </div>
+      <span className="relative z-10 text-[9px] font-black uppercase leading-tight tracking-widest text-slate-600 transition-colors duration-300 group-hover/portal:text-white dark:text-slate-400">
+        {portal.name}
+      </span>
+    </a>
+  );
+
   const modeButtons: { mode: SearchMode, icon: string, label: string, shortcut: string }[] = [
     { mode: 'agency', icon: 'fa-shield-halved', label: 'Agency Matrix', shortcut: 'Ctrl + M' },
     { mode: 'web', icon: 'fa-brands fa-google', label: 'Web Search', shortcut: 'Alt + W' },
@@ -737,7 +790,10 @@ Return ONLY a JSON object in this exact shape:
         <div className="mt-4 border-t border-slate-100 pt-3 dark:border-white/10">
             <button
                 type="button"
-                onClick={() => setShowCarrierGateway((prev) => !prev)}
+                onClick={() => {
+                    setShowMoreCarriers(false);
+                    setShowCarrierGateway((prev) => !prev);
+                }}
                 className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition hover:border-primary/40 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
             >
                 <span className="flex items-center gap-3">
@@ -757,47 +813,47 @@ Return ONLY a JSON object in this exact shape:
             </button>
 
             {showCarrierGateway && (
-                <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-7">
-                    {DEFAULT_INSURANCE_PORTALS.map(portal => (
-                        <a
-                            key={portal.id}
-                            href={portal.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="relative flex min-h-20 flex-col items-center justify-center overflow-hidden rounded-xl border border-transparent bg-white/5 p-3 text-center backdrop-blur-md transition-all duration-300 hover:shadow-glow group/portal"
-                            style={{
-                                backgroundColor: portal.color ? `${portal.color}1A` : undefined,
-                                borderColor: portal.color ? `${portal.color}33` : undefined
-                            }}
+                <>
+                    <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-7">
+                        {DEFAULT_INSURANCE_PORTALS.map(renderPortalTile)}
+
+                        {/* The rest of the carriers open in the panel below, so the daily row stays short. */}
+                        <button
+                            type="button"
+                            onClick={() => setShowMoreCarriers((prev) => !prev)}
+                            aria-expanded={showMoreCarriers}
+                            aria-controls="more-carriers-panel"
+                            className={`flex min-h-20 flex-col items-center justify-center rounded-xl border border-dashed p-3 text-center transition-all duration-300 ${
+                                showMoreCarriers
+                                    ? 'border-primary/50 bg-white shadow-sm dark:border-accent/50 dark:bg-white/10'
+                                    : 'border-slate-300 bg-slate-50 hover:border-primary/40 hover:bg-white dark:border-white/20 dark:bg-white/5 dark:hover:bg-white/10'
+                            }`}
                         >
-                            <div
-                                className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover/portal:opacity-100"
-                                style={{ backgroundColor: portal.color }}
-                            ></div>
-                            <div className="relative z-10 mb-2 flex h-10 w-full items-center justify-center transition-transform duration-300 group-hover/portal:scale-110">
-                                {/* Dark mode: carrier artwork is dark ink, so it needs a light plate to stay legible.
-                                    The plate drops away on hover, where the tile fills with the carrier colour. */}
-                                <span className="flex h-full max-w-full items-center justify-center rounded-lg px-1.5 transition-colors duration-300 dark:bg-white/95 dark:group-hover/portal:bg-transparent">
-                                    {portal.image ? (
-                                        <img
-                                            src={portal.image}
-                                            alt={portal.name}
-                                            className="h-full w-auto object-contain transition-all duration-300 group-hover/portal:brightness-0 group-hover/portal:invert"
-                                        />
-                                    ) : (
-                                        <i
-                                            className={`${portal.icon} text-xl text-[var(--portal-color)] transition-colors duration-300 group-hover/portal:text-white`}
-                                            style={{ '--portal-color': portal.color || '#94a3b8' } as React.CSSProperties}
-                                        ></i>
-                                    )}
+                            <span className="mb-2 flex h-10 w-full items-center justify-center">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-200/70 text-slate-600 dark:bg-white/10 dark:text-slate-200">
+                                    <i className={`fa-solid ${showMoreCarriers ? 'fa-chevron-up' : 'fa-ellipsis'} text-sm`}></i>
                                 </span>
-                            </div>
-                            <span className="relative z-10 text-[9px] font-black uppercase leading-tight tracking-widest text-slate-600 transition-colors duration-300 group-hover/portal:text-white dark:text-slate-400">
-                                {portal.name}
                             </span>
-                        </a>
-                    ))}
-                </div>
+                            <span className="text-[9px] font-black uppercase leading-tight tracking-widest text-slate-600 dark:text-slate-400">
+                                More Carriers
+                            </span>
+                        </button>
+                    </div>
+
+                    {showMoreCarriers && (
+                        <div
+                            id="more-carriers-panel"
+                            className="mt-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/70 p-3 animate-slide-down dark:border-white/15 dark:bg-white/5"
+                        >
+                            <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                                Also Represented
+                            </p>
+                            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                                {MORE_CARRIER_PORTALS.map(renderPortalTile)}
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
         </div>
       </div>

@@ -109,8 +109,19 @@ export const DEFAULT_INSURANCE_PORTALS: Portal[] = [
   { id:'national-general', name:'National General', url:'https://natgenagency.com/MainMenu.aspx', icon:'fa-solid fa-globe', description:'Agency portal', image: 'https://i.imgur.com/HF8oPAF.png', color: '#002D72' },
   { id:'progressive', name:'Progressive', url:'https://www.foragentsonly.com/home/?Welcome=400', icon:'fa-solid fa-chart-line', description:'For agents only portal', image: 'https://i.imgur.com/7N1vfo0.png', color: '#00A1E0' },
   { id:'foremost', name:'Foremost', url:'https://www.foremostagent.com/ia/portal/login', icon:'fa-solid fa-house-user', description:'Agent portal login', image: 'https://i.imgur.com/rHIo4r5.jpg', color: '#F58220' },
-  { id:'alamance', name:'Alamance', url:'https://alamance.britecore.com/agent/misc/ko_dashboard', icon:'fa-solid fa-shield-halved', description:'BriteCore dashboard', image: 'https://i.imgur.com/S8BVnvs.png', color: '#4CAF50' },
   { id:'nc-grange', name:'NC Grange', url:'https://ncgm.com/', icon:'fa-solid fa-tractor', description:'NC Grange portal', image: 'https://i.imgur.com/Fesnkng.png', color: '#2E7D32' }
+];
+
+/**
+ * The rest of the carriers Bill represents. These sit behind the "More Carriers"
+ * menu in the portal drawer so the tile row stays down to the daily-use portals.
+ * Logos are served from this repo's public/ folder.
+ */
+export const MORE_CARRIER_PORTALS: Portal[] = [
+  { id:'alamance', name:'Alamance', url:'https://alamance.britecore.com/agent/misc/ko_dashboard', icon:'fa-solid fa-shield-halved', description:'BriteCore dashboard', image:'/alamance.png', color:'#4CAF50' },
+  { id:'steadily', name:'Steadily', url:'https://agent.steadily.com/home', icon:'fa-solid fa-house-chimney-user', description:'Landlord insurance agent portal', color:'#2563eb' },
+  { id:'travelers', name:'Travelers', url:'https://signin.travelers.com/apps', icon:'fa-solid fa-umbrella', description:'Agent sign-in', image:'/travelers.png', color:'#E01719' },
+  { id:'dairyland', name:'Dairyland', url:'https://agent.dairylandagent.com/web/dashboard/my-dashboard?continue', icon:'fa-solid fa-motorcycle', description:'Agent dashboard', image:'/dairyland.png', color:'#0057B8' }
 ];
 
 /* ============================================================================
