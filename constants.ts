@@ -121,7 +121,13 @@ export const MORE_CARRIER_PORTALS: Portal[] = [
   { id:'alamance', name:'Alamance', url:'https://alamance.britecore.com/agent/misc/ko_dashboard', icon:'fa-solid fa-shield-halved', description:'BriteCore dashboard', image:'/alamance.png', color:'#4CAF50' },
   { id:'steadily', name:'Steadily', url:'https://agent.steadily.com/home', icon:'fa-solid fa-house-chimney-user', description:'Landlord insurance agent portal', color:'#2563eb' },
   { id:'travelers', name:'Travelers', url:'https://signin.travelers.com/apps', icon:'fa-solid fa-umbrella', description:'Agent sign-in', image:'/travelers.png', color:'#E01719' },
-  { id:'dairyland', name:'Dairyland', url:'https://agent.dairylandagent.com/web/dashboard/my-dashboard?continue', icon:'fa-solid fa-motorcycle', description:'Agent dashboard', image:'/dairyland.png', color:'#0057B8' }
+  { id:'dairyland', name:'Dairyland', url:'https://agent.dairylandagent.com/web/dashboard/my-dashboard?continue', icon:'fa-solid fa-motorcycle', description:'Agent dashboard', image:'/dairyland.png', color:'#0057B8' },
+  { id:'allstate', name:'Allstate', url:'https://myconnection1.allstate.com/IA/?CID=OTC-DNSR-GR-120523&att=myallstateconnection', icon:'fa-solid fa-hands-holding-circle', description:'MyConnection agent portal', color:'#0033A0' },
+  { id:'docusign', name:'DocuSign', url:'https://app.hellosign.com/', icon:'fa-solid fa-file-signature', description:'E-signature (HelloSign)', color:'#FFB800' },
+  { id:'colonial-group', name:'Colonial Group', url:'https://tcgportal.azurewebsites.net/Portal2', icon:'fa-solid fa-building-columns', description:'TCG agent portal', color:'#1e3a8a' },
+  { id:'hagerty', name:'Hagerty', url:'https://www.hagertyagent.com/Agent/Home', icon:'fa-solid fa-car-side', description:'Classic car agent portal', image:'/hagerty.png', color:'#C8102E' },
+  { id:'ncjua', name:'NCJUA', url:'https://insure.ncjuanciua.org/innovation', icon:'fa-solid fa-house-tsunami', description:'Coastal / FAIR plan portal', color:'#005596' },
+  { id:'ncrb', name:'NCRB', url:'https://webportal.ncrb.org/NCRBPortal/PortalHome.aspx', icon:'fa-solid fa-scale-balanced', description:'NC Rate Bureau portal', color:'#6d28d9' }
 ];
 
 /* ============================================================================
