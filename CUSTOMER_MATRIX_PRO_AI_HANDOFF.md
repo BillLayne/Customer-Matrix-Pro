@@ -1,6 +1,6 @@
 # Agency Command Center — Live Handoff
 
-**Last verified against the code: July 23, 2026.**
+**Last verified against the code: July 29, 2026.**
 
 This document describes the dashboard **as it actually exists right now**. It replaces the June 10, 2026 handoff, which described a tabbed layout and a Gmail Engineering workspace that no longer exist in the UI.
 
@@ -24,8 +24,8 @@ Separate, do not confuse: the staff dashboard at `Playground\Agency-Staff-Dashbo
 
 ### Live state right now
 
-- Latest verified deploy: **July 23, 2026** via Cloudflare preview `https://8eb7d1c0.customer-matrix-pro.pages.dev`
-- That deploy includes the Quick Image Links format picker and the Real Estate → NC Insurance Tools address handoff.
+- Latest production release: **July 29, 2026**.
+- This release includes the Quick Image Links format picker, the Real Estate → NC Insurance Tools address handoff, and Contact Numbers lookup with manual browser-saved entries.
 - GitHub still does not auto-deploy this project. Pushing does nothing to the live site; someone must run the deploy command in §3.
 
 ---
@@ -105,7 +105,7 @@ A Cloudflare Pages Function password-gates the whole site.
 
 The most-used component in the app. Treat it carefully.
 
-**Five search modes** (`MODE_META` in `constants.ts`):
+**Six search modes** (`MODE_META` in `constants.ts`):
 
 | Mode | Opens | Shortcut |
 |---|---|---|
@@ -114,6 +114,7 @@ The most-used component in the app. Treat it carefully.
 | Real Estate | NC Insurance Tools agency property lookup (`26d5834f` deployment, with `?address=` prefilled) | Alt + H |
 | People | TruePeopleSearch | Alt + P |
 | Client Folder | Google Drive search | Alt + F |
+| Contact Numbers | Local insurance company contact directory with live matching | Alt + C |
 
 Agency Matrix mode auto-picks `selection=Address` when the query contains a digit, otherwise `selection=Name`.
 
@@ -124,6 +125,11 @@ Agency Matrix mode auto-picks `selection=Address` when the query contains a digi
 - Buttons: Search, Cloud Folder, Audit Memo — plus **NC Tools** which appears only in Real Estate mode
 - **Audit Memo studio** (Alt + N or Ctrl + Shift + M) — an E&O compliance memo builder. Paste notes or attach a PDF/image, Gemini formats an audit-ready CRM memo, then "Execute Sync & Matrix" copies it and opens the customer in Agency Matrix.
 - **Real Estate / NC Tools handoff** — typing an address and pressing Enter, the arrow button, or the **NC Tools** button opens `https://26d5834f.nc-insurance-tools-gemini.pages.dev/?address=...`. The NC Insurance Tools app reads `address` / `q` from the URL and auto-runs the lookup inside `PropertyTab.tsx`.
+- **Contact Numbers** — selecting the mode focuses the main input. Results appear while Bill types a company name, inside a contained scrolling panel. Phone numbers use `tel:` links; phone, fax, email, and website rows each have a copy button. The built-in directory has 17 companies.
+- **Manual contact editor** — **Add Contact** opens a compact modal for company, type, label, and value. Repeated saves can add several details to one company. Manually added entries merge into a matching built-in company or create a new searchable company; the editor also lists and deletes manual entries.
+- **Manual contact storage** — `matrix-pro-manual-company-contacts` in `localStorage`. These entries persist only in that browser on that computer; they do not sync across devices because this app has no database.
+- **Contact directory source of truth** — `data/carrierContacts.ts`. Add future phone, fax, email, website, alias, or address records there; do not hardcode them in `SearchCard.tsx` or `ContactLookup.tsx`.
+- **Workers compensation source** — all 11 entries were transcribed and visually checked against `C:\Users\bill\My Drive (docs@billlayneinsurance.com)\2025 SOCIAL MEDIA CENTER\Bill layne insurance\Client Folders\Workers Compensation Contact\workers compensation company contacts.pdf` (NCRB WC Assigned Risk Carrier Contact List, revised 08/26/2024). The remaining six entries came from the dashboard's existing carrier resources, with Nationwide customer service set to `1-800-243-2642` and claims set to `1-800-421-3535` per Bill.
 - **Carrier Portals** — collapsible drawer, state in `matrix-pro-show-carrier-gateway`, list is `DEFAULT_INSURANCE_PORTALS` in `constants.ts`
 - Search counter resets per calendar day (`matrix-pro-search-log` stores `{day, count}`)
 
@@ -241,11 +247,13 @@ constants.ts                  portals, mode meta, county GIS, carrier data, (dor
 types.ts
 vite.config.ts / tailwind.config.js / postcss.config.js
 components/SearchCard.tsx           Unified Search  ← highest-traffic component
+components/ContactLookup.tsx        live company-contact result panel
 components/ProgramLauncher.tsx      launcher; PROGRAMS is the source of truth
 components/QuickImageLinksCard.tsx  image uploader
 components/QuickSearchPopup.tsx     Ctrl+M popup
 components/Modal.tsx / Toast.tsx
 services/imageHostService.ts        BLI Image Host client + presets
+data/carrierContacts.ts             editable carrier phone/fax/email directory
 hooks/useLocalStorage.tsx
 functions/_middleware.ts            password gate
 public/                             hosted tools + carrier logo images
@@ -278,6 +286,7 @@ public/                             hosted tools + carrier logo images
 8. Verify desktop **and** dark mode; keep the carrier-logo light plate (§5).
 9. Never expose secrets in code, docs, screenshots, or chat.
 10. If a change affects shared launcher targets, check the staff dashboard too.
+11. Add or correct company contact details in `data/carrierContacts.ts`; keep the Contact Numbers UI data-driven.
 
 ---
 

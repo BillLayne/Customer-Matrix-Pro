@@ -138,7 +138,8 @@ export const MODE_META: Record<SearchMode, { placeholder: string; showTax: boole
   web: { placeholder:'Search the web…', showTax:false },
   realestate: { placeholder:'Enter NC property address for NC Insurance Tools…', showTax:true },
   people: { placeholder:'Enter name, phone, or address…', showTax:false },
-  onedrive: { placeholder:'Search Client Folder by name…', showTax:false }
+  onedrive: { placeholder:'Search Client Folder by name…', showTax:false },
+  contacts: { placeholder:'Start typing an insurance company name…', showTax:false }
 };
 
 /* ============================================================================

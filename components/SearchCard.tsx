@@ -6,6 +6,7 @@ import Modal from './Modal';
 import { generateContent } from '../services/geminiService';
 import { GoogleGenAI } from "@google/genai";
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import ContactLookup from './ContactLookup';
 
 interface SearchCardProps {
   addToast: (message: string, type?: 'success' | 'warning' | 'danger' | 'info') => void;
@@ -114,6 +115,9 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
           url = `https://drive.google.com/drive/u/1/search?q=${encodeURIComponent(historicQuery.trim())}`;
           break;
         }
+        case 'contacts':
+          addToast('Saved company contacts are shown below.', 'info');
+          return;
       }
       window.open(url, '_blank');
       addToast(mode === 'realestate' ? 'Opening NC Insurance Tools with this address...' : `Searching ${mode}...`, 'info');
@@ -158,6 +162,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
               case 'h': newMode = 'realestate'; modeName = 'Real Estate'; break;
               case 'p': newMode = 'people'; modeName = 'People Search'; break;
               case 'f': newMode = 'onedrive'; modeName = 'Client Folder'; break;
+              case 'c': newMode = 'contacts'; modeName = 'Contact Numbers'; break;
           }
           if (newMode) {
               e.preventDefault();
@@ -188,6 +193,12 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
       return;
     }
     const trimmedQuery = query.trim();
+    if (mode === 'contacts') {
+      onSearch();
+      addToast('Saved company contact matches are shown below.', 'info');
+      return;
+    }
+
     setSearchHistory((prev) => {
       const filtered = prev.filter((q) => q.toLowerCase() !== trimmedQuery.toLowerCase());
       return [trimmedQuery, ...filtered].slice(0, 6);
@@ -213,6 +224,8 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
         url = `https://drive.google.com/drive/u/1/search?q=${encodeURIComponent(clientName)}`;
         break;
       }
+      case 'contacts':
+        return;
     }
     window.open(url, '_blank');
     addToast(mode === 'realestate' ? 'Opening NC Insurance Tools with this address...' : `Searching ${mode}...`, 'info');
@@ -633,6 +646,7 @@ Return ONLY a JSON object in this exact shape:
     { mode: 'realestate', icon: 'fa-solid fa-house', label: 'Real Estate', shortcut: 'Alt + H' },
     { mode: 'people', icon: 'fa-solid fa-user', label: 'People', shortcut: 'Alt + P' },
     { mode: 'onedrive', icon: 'fa-brands fa-google-drive', label: 'Client Folder', shortcut: 'Alt + F' },
+    { mode: 'contacts', icon: 'fa-solid fa-address-book', label: 'Contact Numbers', shortcut: 'Alt + C' },
   ];
 
   return (
@@ -718,7 +732,15 @@ Return ONLY a JSON object in this exact shape:
              {modeButtons.map(btn => (
                 <button
                   key={btn.mode}
-                  onClick={() => setMode(btn.mode)}
+                  onClick={() => {
+                    setMode(btn.mode);
+                    if (btn.mode === 'contacts') {
+                      requestAnimationFrame(() => {
+                        inputRef.current?.focus();
+                        inputRef.current?.select();
+                      });
+                    }
+                  }}
                   className={`group relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border px-3.5 py-2 text-sm font-semibold transition-all duration-200 ${
                     mode === btn.mode
                       ? 'border-[#003f87] bg-[#003f87] text-white shadow-sm'
@@ -739,8 +761,10 @@ Return ONLY a JSON object in this exact shape:
           </div>
           </div>
 
+          {mode === 'contacts' && <ContactLookup query={query} onQueryChange={setQuery} addToast={addToast} />}
+
           {/* Recent Searches History */}
-          {searchHistory.length > 0 && (
+          {mode !== 'contacts' && searchHistory.length > 0 && (
             <div className="mt-2.5 flex flex-wrap items-center gap-2 animate-fade-in pl-1">
               <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Recent</span>
               {searchHistory.map((historicQuery, idx) => (
@@ -765,7 +789,7 @@ Return ONLY a JSON object in this exact shape:
         <div className="relative z-10 flex flex-wrap items-center gap-2">
           <button onClick={handleSearch} className="inline-flex items-center gap-2 rounded-lg bg-[#003f87] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#0076d3] hover:shadow-md active:scale-95">
               <i className="fa-solid fa-magnifying-glass text-xs"></i>
-              Search
+              {mode === 'contacts' ? 'Find Contact' : 'Search'}
           </button>
 
           <button onClick={handleNewFolder} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:border-[#0076d3]/50 hover:text-[#003f87] hover:shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white">
