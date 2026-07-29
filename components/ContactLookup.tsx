@@ -24,6 +24,7 @@ interface ManualContactEntry {
   label: string;
   value: string;
   createdAt: number;
+  replacesDetail?: ContactDetail;
 }
 
 interface ManualContactForm {
@@ -31,6 +32,12 @@ interface ManualContactForm {
   kind: ContactDetailKind;
   label: string;
   value: string;
+}
+
+interface EditingDetail {
+  entryId?: string;
+  originalDetail: ContactDetail;
+  currentDetail: ContactDetail;
 }
 
 const MANUAL_CONTACTS_STORAGE_KEY = 'matrix-pro-manual-company-contacts';
@@ -68,6 +75,11 @@ const detailIcon: Record<ContactDetailKind, string> = {
 const mobileDetailLabel = (label: string) =>
   label === 'Workers comp phone' ? 'WC phone' : label;
 
+const detailsMatch = (left: ContactDetail, right: ContactDetail) =>
+  left.kind === right.kind
+  && left.label.toLowerCase() === right.label.toLowerCase()
+  && left.value.toLowerCase() === right.value.toLowerCase();
+
 const mergeManualContacts = (manualEntries: ManualContactEntry[]): CompanyContact[] => {
   const directory = COMPANY_CONTACTS.map((contact) => ({
     ...contact,
@@ -94,11 +106,23 @@ const mergeManualContacts = (manualEntries: ManualContactEntry[]): CompanyContac
       directory.push(contact);
     }
 
-    contact.details.push({
+    const savedDetail: ContactDetail = {
       label: entry.label,
       value: entry.value,
       kind: entry.kind,
-    });
+    };
+
+    if (entry.replacesDetail) {
+      const replacedIndex = contact.details.findIndex((detail) =>
+        detailsMatch(detail, entry.replacesDetail as ContactDetail)
+      );
+      if (replacedIndex >= 0) {
+        contact.details[replacedIndex] = savedDetail;
+        return;
+      }
+    }
+
+    contact.details.push(savedDetail);
   });
 
   return directory;
@@ -108,9 +132,27 @@ const ContactLookup: React.FC<ContactLookupProps> = ({ query, onQueryChange, add
   const [manualEntries, setManualEntries] = useLocalStorage<ManualContactEntry[]>(MANUAL_CONTACTS_STORAGE_KEY, []);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [manualForm, setManualForm] = useState<ManualContactForm>(EMPTY_MANUAL_FORM);
+  const [managedCompany, setManagedCompany] = useState<string | null>(null);
+  const [editingDetail, setEditingDetail] = useState<EditingDetail | null>(null);
 
   const directory = useMemo(() => mergeManualContacts(manualEntries), [manualEntries]);
   const matches = useMemo(() => findCompanyContacts(query, directory), [query, directory]);
+  const managedContact = useMemo(() => {
+    if (!managedCompany) return null;
+    const normalizedCompany = normalizeCompanyName(managedCompany);
+    return directory.find((contact) =>
+      [contact.company, ...contact.aliases]
+        .map(normalizeCompanyName)
+        .includes(normalizedCompany)
+    ) || null;
+  }, [directory, managedCompany]);
+  const visibleSavedEntries = useMemo(() => {
+    if (!managedCompany) return manualEntries;
+    const normalizedCompany = normalizeCompanyName(managedCompany);
+    return manualEntries.filter((entry) =>
+      normalizeCompanyName(entry.company) === normalizedCompany
+    );
+  }, [managedCompany, manualEntries]);
   const hasQuery = query.trim().length > 0;
 
   const copyValue = async (label: string, value: string) => {
@@ -122,13 +164,55 @@ const ContactLookup: React.FC<ContactLookupProps> = ({ query, onQueryChange, add
     }
   };
 
-  const openAddModal = () => {
-    const suggestedCompany = matches.length === 1 ? matches[0].company : '';
-    setManualForm((current) => ({
-      ...current,
-      company: current.company || suggestedCompany,
-    }));
+  const openAddModal = (companyName?: string) => {
+    const suggestedCompany = companyName || (matches.length === 1 ? matches[0].company : '');
+    setManagedCompany(companyName || null);
+    setEditingDetail(null);
+    setManualForm({
+      company: suggestedCompany,
+      kind: 'phone',
+      label: DEFAULT_LABELS.phone,
+      value: '',
+    });
     setIsAddModalOpen(true);
+  };
+
+  const closeAddModal = () => {
+    setIsAddModalOpen(false);
+    setManagedCompany(null);
+    setEditingDetail(null);
+  };
+
+  const resetDetailForm = (company: string) => {
+    setEditingDetail(null);
+    setManualForm({
+      company,
+      kind: 'phone',
+      label: DEFAULT_LABELS.phone,
+      value: '',
+    });
+  };
+
+  const beginEditDetail = (company: string, detail: ContactDetail) => {
+    const normalizedCompany = normalizeCompanyName(company);
+    const savedEntry = manualEntries.find((entry) =>
+      normalizeCompanyName(entry.company) === normalizedCompany
+      && entry.kind === detail.kind
+      && entry.label.toLowerCase() === detail.label.toLowerCase()
+      && entry.value.toLowerCase() === detail.value.toLowerCase()
+    );
+
+    setEditingDetail({
+      entryId: savedEntry?.id,
+      originalDetail: savedEntry?.replacesDetail || detail,
+      currentDetail: detail,
+    });
+    setManualForm({
+      company,
+      kind: detail.kind,
+      label: detail.label,
+      value: detail.value,
+    });
   };
 
   const handleKindChange = (kind: ContactDetailKind) => {
@@ -155,15 +239,43 @@ const ContactLookup: React.FC<ContactLookupProps> = ({ query, onQueryChange, add
       return;
     }
 
-    const duplicate = manualEntries.some((entry) =>
-      normalizeCompanyName(entry.company) === normalizeCompanyName(company)
-      && entry.kind === manualForm.kind
-      && entry.label.toLowerCase() === label.toLowerCase()
-      && entry.value.toLowerCase() === value.toLowerCase()
+    const companyContact = directory.find((contact) =>
+      [contact.company, ...contact.aliases]
+        .map(normalizeCompanyName)
+        .includes(normalizeCompanyName(company))
+    );
+    const savedDetail: ContactDetail = { kind: manualForm.kind, label, value };
+    const duplicate = companyContact?.details.some((detail) =>
+      detailsMatch(detail, savedDetail)
+      && (!editingDetail || !detailsMatch(detail, editingDetail.currentDetail))
     );
 
     if (duplicate) {
       addToast('That contact detail is already saved.', 'warning');
+      return;
+    }
+
+    if (editingDetail) {
+      if (editingDetail.entryId) {
+        setManualEntries((current) => current.map((entry) =>
+          entry.id === editingDetail.entryId
+            ? { ...entry, company, kind: manualForm.kind, label, value }
+            : entry
+        ));
+      } else {
+        setManualEntries((current) => [{
+          id: globalThis.crypto?.randomUUID?.() || `contact-${Date.now()}`,
+          company,
+          kind: manualForm.kind,
+          label,
+          value,
+          createdAt: Date.now(),
+          replacesDetail: editingDetail.originalDetail,
+        }, ...current]);
+      }
+      onQueryChange(company);
+      resetDetailForm(company);
+      addToast(`${label} updated for ${company}.`, 'success');
       return;
     }
 
@@ -178,19 +290,26 @@ const ContactLookup: React.FC<ContactLookupProps> = ({ query, onQueryChange, add
 
     setManualEntries((current) => [newEntry, ...current]);
     onQueryChange(company);
-    setManualForm({
-      company,
-      kind: 'phone',
-      label: DEFAULT_LABELS.phone,
-      value: '',
-    });
+    resetDetailForm(company);
     addToast(`${label} added to ${company}.`, 'success');
   };
 
   const removeManualEntry = (entryId: string) => {
     const entry = manualEntries.find((candidate) => candidate.id === entryId);
     setManualEntries((current) => current.filter((candidate) => candidate.id !== entryId));
-    addToast(entry ? `${entry.label} removed from ${entry.company}.` : 'Contact detail removed.', 'info');
+    if (editingDetail?.entryId === entryId) {
+      resetDetailForm(managedCompany || entry?.company || '');
+    }
+    if (!entry) {
+      addToast('Contact detail removed.', 'info');
+      return;
+    }
+    addToast(
+      entry.replacesDetail
+        ? `${entry.label} restored to the original value for ${entry.company}.`
+        : `${entry.label} removed from ${entry.company}.`,
+      'info',
+    );
   };
 
   const categoryLabel = (category: CompanyContact['category']) => {
@@ -218,7 +337,7 @@ const ContactLookup: React.FC<ContactLookupProps> = ({ query, onQueryChange, add
           </div>
           <button
             type="button"
-            onClick={openAddModal}
+            onClick={() => openAddModal()}
             className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#003f87] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0076d3] hover:shadow-md"
           >
             <i className="fa-solid fa-plus"></i>
@@ -261,9 +380,20 @@ const ContactLookup: React.FC<ContactLookupProps> = ({ query, onQueryChange, add
                         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{contact.address}</p>
                       )}
                     </div>
-                    <span className="shrink-0 rounded-md bg-blue-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#003f87] dark:bg-blue-500/10 dark:text-blue-200">
-                      {categoryLabel(contact.category)}
-                    </span>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <span className="rounded-md bg-blue-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#003f87] dark:bg-blue-500/10 dark:text-blue-200">
+                        {categoryLabel(contact.category)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => openAddModal(contact.company)}
+                        title={`Add or edit contact details for ${contact.company}`}
+                        aria-label={`Add or edit contact details for ${contact.company}`}
+                        className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-[#003f87] shadow-sm transition hover:border-[#0076d3]/50 hover:bg-blue-50 hover:text-[#0076d3] dark:border-white/10 dark:bg-white/5 dark:text-blue-200 dark:hover:bg-white/10"
+                      >
+                        <i className="fa-solid fa-plus text-[10px]"></i>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">
@@ -317,8 +447,8 @@ const ContactLookup: React.FC<ContactLookupProps> = ({ query, onQueryChange, add
       {createPortal(
         <Modal
           isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          title="Add Company Contact"
+          onClose={closeAddModal}
+          title={managedContact ? `Manage ${managedContact.company}` : 'Add Company Contact'}
           maxWidthClass="max-w-lg"
         >
           <div className="max-h-[calc(100vh-9rem)] overflow-y-auto pr-1 [scrollbar-gutter:stable]">
@@ -332,10 +462,65 @@ const ContactLookup: React.FC<ContactLookupProps> = ({ query, onQueryChange, add
                 type="text"
                 value={manualForm.company}
                 onChange={(event) => setManualForm((current) => ({ ...current, company: event.target.value }))}
+                readOnly={Boolean(managedCompany)}
                 placeholder="Example: Nationwide"
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-[#0076d3] dark:border-white/10 dark:bg-white/5 dark:text-white"
+                className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-[#0076d3] dark:border-white/10 dark:text-white ${
+                  managedCompany ? 'cursor-default bg-slate-100 dark:bg-white/10' : 'bg-white dark:bg-white/5'
+                }`}
               />
             </div>
+
+            {managedContact && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/5">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Current Details</h4>
+                  <span className="text-xs text-slate-400">{managedContact.details.length} saved</span>
+                </div>
+                <div className="max-h-44 space-y-2 overflow-y-auto overscroll-contain pr-1 [scrollbar-gutter:stable]">
+                  {managedContact.details.map((detail, detailIndex) => (
+                    <div
+                      key={`${detail.kind}-${detail.label}-${detail.value}-${detailIndex}`}
+                      className={`flex min-w-0 items-center gap-2 rounded-md border px-2.5 py-2 ${
+                        editingDetail && detailsMatch(detail, editingDetail.currentDetail)
+                          ? 'border-[#0076d3] bg-blue-50 dark:border-blue-400/60 dark:bg-blue-500/10'
+                          : 'border-slate-200 bg-white dark:border-white/10 dark:bg-white/5'
+                      }`}
+                    >
+                      <i className={`fa-solid ${detailIcon[detail.kind]} w-4 shrink-0 text-center text-xs text-slate-400`}></i>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{detail.label}</p>
+                        <p className="truncate text-sm font-semibold text-slate-800 dark:text-white">{detail.value}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => beginEditDetail(managedContact.company, detail)}
+                        title={`Edit ${detail.label.toLowerCase()}`}
+                        aria-label={`Edit ${detail.label.toLowerCase()} for ${managedContact.company}`}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-blue-50 hover:text-[#003f87] dark:hover:bg-white/10 dark:hover:text-blue-200"
+                      >
+                        <i className="fa-solid fa-pen text-xs"></i>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {editingDetail && (
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-400/30 dark:bg-blue-500/10">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#003f87] dark:text-blue-200">Editing Detail</p>
+                  <p className="truncate text-sm font-semibold text-slate-800 dark:text-white">{editingDetail.currentDetail.label}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => resetDetailForm(manualForm.company)}
+                  className="shrink-0 rounded-md px-2.5 py-1.5 text-xs font-semibold text-[#003f87] transition hover:bg-white dark:text-blue-200 dark:hover:bg-white/10"
+                >
+                  Cancel Edit
+                </button>
+              </div>
+            )}
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
@@ -388,7 +573,7 @@ const ContactLookup: React.FC<ContactLookupProps> = ({ query, onQueryChange, add
             <div className="flex flex-wrap justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={closeAddModal}
                 className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
               >
                 Close
@@ -397,36 +582,38 @@ const ContactLookup: React.FC<ContactLookupProps> = ({ query, onQueryChange, add
                 type="submit"
                 className="inline-flex items-center gap-2 rounded-lg bg-[#003f87] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0076d3]"
               >
-                <i className="fa-solid fa-plus"></i>
-                Save Detail
+                <i className={`fa-solid ${editingDetail ? 'fa-check' : 'fa-plus'}`}></i>
+                {editingDetail ? 'Update Detail' : 'Save Detail'}
               </button>
             </div>
           </form>
 
-          {manualEntries.length > 0 && (
+          {visibleSavedEntries.length > 0 && (
             <div className="mt-5 border-t border-slate-200 pt-4 dark:border-white/10">
               <div className="mb-2 flex items-center justify-between">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Manually Added</h4>
-                <span className="text-xs text-slate-400">{manualEntries.length} saved</span>
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Saved Changes</h4>
+                <span className="text-xs text-slate-400">{visibleSavedEntries.length} saved</span>
               </div>
               <div className="max-h-44 space-y-2 overflow-y-auto overscroll-contain pr-1 [scrollbar-gutter:stable]">
-                {manualEntries.map((entry) => (
+                {visibleSavedEntries.map((entry) => (
                   <div key={entry.id} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-2.5 dark:border-white/10 dark:bg-white/5">
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white text-[#003f87] shadow-sm dark:bg-white/10 dark:text-blue-200">
                       <i className={`fa-solid ${detailIcon[entry.kind]} text-xs`}></i>
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-slate-800 dark:text-white">{entry.company}</p>
-                      <p className="truncate text-xs text-slate-500 dark:text-slate-400">{entry.label}: {entry.value}</p>
+                      <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                        {entry.replacesDetail ? 'Edited' : entry.label}: {entry.value}
+                      </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => removeManualEntry(entry.id)}
-                      title={`Remove ${entry.label.toLowerCase()} from ${entry.company}`}
-                      aria-label={`Remove ${entry.label.toLowerCase()} from ${entry.company}`}
+                      title={entry.replacesDetail ? `Restore the original ${entry.label.toLowerCase()}` : `Remove ${entry.label.toLowerCase()} from ${entry.company}`}
+                      aria-label={entry.replacesDetail ? `Restore the original ${entry.label.toLowerCase()} for ${entry.company}` : `Remove ${entry.label.toLowerCase()} from ${entry.company}`}
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
                     >
-                      <i className="fa-solid fa-trash-can text-xs"></i>
+                      <i className={`fa-solid ${entry.replacesDetail ? 'fa-rotate-left' : 'fa-trash-can'} text-xs`}></i>
                     </button>
                   </div>
                 ))}
@@ -435,7 +622,7 @@ const ContactLookup: React.FC<ContactLookupProps> = ({ query, onQueryChange, add
           )}
 
           <p className="mt-4 text-xs text-slate-400">
-            Manually added contacts are saved in this browser on this computer.
+            Added and edited contacts are saved in this browser on this computer.
           </p>
           </div>
         </Modal>,

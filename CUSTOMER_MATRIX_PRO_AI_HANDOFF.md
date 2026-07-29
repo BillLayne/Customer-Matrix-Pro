@@ -25,7 +25,7 @@ Separate, do not confuse: the staff dashboard at `Playground\Agency-Staff-Dashbo
 ### Live state right now
 
 - Latest production release: **July 29, 2026**.
-- This release includes the Quick Image Links format picker, the Real Estate → NC Insurance Tools address handoff, and Contact Numbers lookup with manual browser-saved entries.
+- This release includes the Quick Image Links format picker, the Real Estate → NC Insurance Tools address handoff, and Contact Numbers lookup with a per-company add/edit/restore manager for browser-saved entries and corrections.
 - GitHub still does not auto-deploy this project. Pushing does nothing to the live site; someone must run the deploy command in §3.
 
 ---
@@ -126,8 +126,8 @@ Agency Matrix mode auto-picks `selection=Address` when the query contains a digi
 - **Audit Memo studio** (Alt + N or Ctrl + Shift + M) — an E&O compliance memo builder. Paste notes or attach a PDF/image, Gemini formats an audit-ready CRM memo, then "Execute Sync & Matrix" copies it and opens the customer in Agency Matrix.
 - **Real Estate / NC Tools handoff** — typing an address and pressing Enter, the arrow button, or the **NC Tools** button opens `https://26d5834f.nc-insurance-tools-gemini.pages.dev/?address=...`. The NC Insurance Tools app reads `address` / `q` from the URL and auto-runs the lookup inside `PropertyTab.tsx`.
 - **Contact Numbers** — selecting the mode focuses the main input. Results appear while Bill types a company name, inside a contained scrolling panel. Phone numbers use `tel:` links; phone, fax, email, and website rows each have a copy button. The built-in directory has 17 companies.
-- **Manual contact editor** — **Add Contact** opens a compact modal for company, type, label, and value. Repeated saves can add several details to one company. Manually added entries merge into a matching built-in company or create a new searchable company; the editor also lists and deletes manual entries.
-- **Manual contact storage** — `matrix-pro-manual-company-contacts` in `localStorage`. These entries persist only in that browser on that computer; they do not sync across devices because this app has no database.
+- **Manual contact editor** — **Add Contact** opens a compact modal for a new company, while the **+** icon on each company card opens a manager with that company prefilled. The manager lists current details with pencil controls. A built-in detail can be corrected without changing `data/carrierContacts.ts`; removing that saved correction restores the original built-in value. Newly added details remain editable and removable.
+- **Manual contact storage** — `matrix-pro-manual-company-contacts` in `localStorage`. Added details and built-in overrides persist only in that browser on that computer; they do not sync across devices because this app has no database.
 - **Contact directory source of truth** — `data/carrierContacts.ts`. Add future phone, fax, email, website, alias, or address records there; do not hardcode them in `SearchCard.tsx` or `ContactLookup.tsx`.
 - **Workers compensation source** — all 11 entries were transcribed and visually checked against `C:\Users\bill\My Drive (docs@billlayneinsurance.com)\2025 SOCIAL MEDIA CENTER\Bill layne insurance\Client Folders\Workers Compensation Contact\workers compensation company contacts.pdf` (NCRB WC Assigned Risk Carrier Contact List, revised 08/26/2024). The remaining six entries came from the dashboard's existing carrier resources, with Nationwide customer service set to `1-800-243-2642` and claims set to `1-800-421-3535` per Bill.
 - **Carrier Portals** — collapsible drawer, state in `matrix-pro-show-carrier-gateway`, list is `DEFAULT_INSURANCE_PORTALS` in `constants.ts`
