@@ -238,7 +238,7 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
           }}
           onDragLeave={() => setDragActive(false)}
           onDrop={handleDrop}
-          className={`rounded-[1.35rem] border-2 border-dashed p-6 transition ${
+          className={`self-start rounded-2xl border-2 border-dashed p-4 transition ${
             dragActive
               ? 'border-[#0076d3] bg-blue-50/80 dark:bg-cyan-500/10'
               : 'border-slate-200 bg-slate-50/80 dark:border-white/10 dark:bg-white/5'
@@ -252,41 +252,41 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
             onChange={handleFileChange}
           />
           {hasAccessCode ? (
-            <div className="flex flex-col items-center text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-gradient-to-br from-slate-950 via-[#003f87] to-[#0076d3] text-white shadow-xl shadow-blue-900/20">
-                <i className={`fa-solid ${isUploading ? 'fa-spinner fa-spin' : 'fa-cloud-arrow-up'} text-2xl`}></i>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-950 via-[#003f87] to-[#0076d3] text-white shadow-lg shadow-blue-900/20">
+                <i className={`fa-solid ${isUploading ? 'fa-spinner fa-spin' : 'fa-cloud-arrow-up'} text-base`}></i>
               </div>
-              <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
-                {isUploading ? 'Uploading image...' : 'Fast image link uploader'}
-              </h3>
-              <p className="mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-300">
-                Click to pick a file or drag one here — uploading as{' '}
-                <span className="font-bold text-slate-700 dark:text-slate-100">
-                  {activePreset.label}
-                </span>{' '}
-                ({activePreset.hint}). The link copies automatically.
-              </p>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  {isUploading ? 'Uploading image...' : 'Drop an image here, or choose a file'}
+                </h3>
+                <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-300">
+                  Uploads as <span className="font-bold text-slate-700 dark:text-slate-100">{activePreset.label}</span> — link copies automatically.
+                </p>
+              </div>
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-[#003f87] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-cyan-300"
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#003f87] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-cyan-300"
               >
                 <i className="fa-solid fa-image"></i>
                 Choose Image
               </button>
             </div>
           ) : (
-            <div className="flex flex-col items-center text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-gradient-to-br from-slate-950 via-[#003f87] to-[#0076d3] text-white shadow-xl shadow-blue-900/20">
-                <i className="fa-solid fa-lock text-2xl"></i>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-950 via-[#003f87] to-[#0076d3] text-white shadow-lg shadow-blue-900/20">
+                <i className="fa-solid fa-lock text-base"></i>
               </div>
-              <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
-                Unlock the image host
-              </h3>
-              <p className="mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-300">
-                Enter the agency access code once — it's remembered on this device.
-              </p>
-              <div className="mt-5 flex w-full max-w-sm flex-col gap-3 sm:flex-row">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Unlock the image host
+                </h3>
+                <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-300">
+                  Enter the agency access code once — it's remembered on this device.
+                </p>
+              </div>
+              <div className="flex w-full min-w-0 gap-2 sm:w-auto">
                 <input
                   type="password"
                   value={codeDraft}
@@ -295,12 +295,12 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
                     if (e.key === 'Enter') void handleSaveCode();
                   }}
                   placeholder="Access code"
-                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#0076d3] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#0076d3] dark:border-white/10 dark:bg-white/5 dark:text-slate-200 sm:w-40"
                 />
                 <button
                   onClick={() => void handleSaveCode()}
                   disabled={isSavingCode || !codeDraft.trim()}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0076d3] px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-[#003f87] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0076d3] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#003f87] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <i className={`fa-solid ${isSavingCode ? 'fa-spinner fa-spin' : 'fa-unlock'}`}></i>
                   Unlock
@@ -310,7 +310,7 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
           )}
 
           {latestLink && (
-            <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#0b1727]/80">
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#0b1727]/80">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
                 Latest image link
               </p>

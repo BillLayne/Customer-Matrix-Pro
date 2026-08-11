@@ -586,7 +586,10 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
   const [pinnedProgramIds, setPinnedProgramIds] = useLocalStorage<string[]>(PINNED_PROGRAMS_KEY, DEFAULT_PINNED);
   const [seenVersion, setSeenVersion] = useLocalStorage<number>(LAUNCHER_VERSION_KEY, 1);
   const [filterQuery, setFilterQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<ProgramCategory | 'All'>('All');
+  const [storedCategory, setActiveCategory] = useLocalStorage<ProgramCategory | 'All'>('matrix-pro-launcher-category', 'All');
+  // Guard against stale persisted values if a category is ever renamed.
+  const activeCategory: ProgramCategory | 'All' =
+    storedCategory === 'All' || CATEGORY_ORDER.includes(storedCategory) ? storedCategory : 'All';
   const [newProgramIds, setNewProgramIds] = useState<string[]>([]);
   const filterInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -694,7 +697,6 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
     const newWindow = window.open(destination, '_blank', 'noopener,noreferrer');
     if (newWindow) {
       setRecentProgramIds((prev) => [program.id, ...prev.filter((item) => item !== program.id)].slice(0, 8));
-      addToast(`Opening ${program.title}...`, 'info');
       return;
     }
 

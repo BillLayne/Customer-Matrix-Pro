@@ -19,105 +19,6 @@ interface SearchLog {
   count: number;
 }
 
-const quickActions = [
-  {
-    label: 'Matrix Home',
-    description: 'Open the main agent portal.',
-    href: 'https://agents.agencymatrix.com/#/',
-    icon: 'fa-solid fa-house-chimney-window',
-  },
-  {
-    label: 'New Prospect',
-    description: 'Jump straight into a new customer record.',
-    href: 'https://agents.agencymatrix.com/customerEdit.php?id=0',
-    icon: 'fa-solid fa-user-plus',
-  },
-  {
-    label: 'Reports',
-    description: 'Open the Matrix reports page.',
-    href: 'https://agents.agencymatrix.com/#/reports',
-    icon: 'fa-solid fa-chart-column',
-  },
-  {
-    label: 'Carrier Contacts',
-    description: 'Open carrier and agency contact pages.',
-    href: 'https://insurance-card-generator-2026-color-edition.pages.dev/contact-page-index',
-    icon: 'fa-solid fa-address-book',
-  },
-  {
-    label: 'Customer Reference',
-    description: 'Build the insurance customer reference card.',
-    href: 'https://insurance-card-generator-2026-color-edition.pages.dev/?builder=policy-reference&agency=1',
-    icon: 'fa-solid fa-clipboard-list',
-  },
-  {
-    label: 'Renewal Gmail',
-    description: 'Open the renewal Gmail program.',
-    href: 'https://renewal-gmail-program.pages.dev/',
-    icon: 'fa-solid fa-envelope-circle-check',
-  },
-  {
-    label: 'Hosted Links',
-    description: 'Create hosted quote and customer links.',
-    href: 'https://agency-quote-link-host.bill-7e3.workers.dev/',
-    icon: 'fa-solid fa-link',
-  },
-  {
-    label: 'Task Board',
-    description: 'Open the BLI docs task board.',
-    href: 'https://bli-task-board.bill-7e3.workers.dev/',
-    icon: 'fa-solid fa-clipboard-check',
-  },
-  {
-    label: 'Mail Gateway',
-    description: 'Open the BLI mail gateway sender.',
-    href: 'https://www.billlayneinsurance.com/mail-gateway/',
-    icon: 'fa-solid fa-paper-plane',
-  },
-  {
-    label: 'Claude Designer',
-    description: 'Open the Claude Designer home workspace.',
-    href: 'https://claude.ai/design',
-    icon: 'fa-solid fa-pen-nib',
-  },
-  {
-    label: 'Claude Quotes',
-    description: 'Open the Claude quotes design project.',
-    href: 'https://claude.ai/design/p/d400fd7a-9a6e-4086-acb5-e0997ea223f5',
-    icon: 'fa-solid fa-file-invoice-dollar',
-  },
-  {
-    label: 'Claude Gmail',
-    description: 'Open the Claude Gmail design project.',
-    href: 'https://claude.ai/design/p/2d67b336-76a7-40c8-803f-68a57c3d947c',
-    icon: 'fa-solid fa-envelope-open-text',
-  },
-  {
-    label: 'Hazard Collages',
-    description: 'Create hazard observation photo collages.',
-    href: 'https://chatgpt.com/g/g-p-6a0c8997403c8191897c34fba8e553e7-observation-hazard-photo-collage-generator/project',
-    icon: 'fa-solid fa-triangle-exclamation',
-  },
-  {
-    label: 'DL123 Maker',
-    description: 'Open the DL123 certification maker.',
-    href: '/dl123-generator/index.html',
-    icon: 'fa-solid fa-file-shield',
-  },
-  {
-    label: 'PDF Studio',
-    description: 'Split, combine, and reorder PDF and image pages.',
-    href: 'https://www.billlayneinsurance.com/pdf-tools/',
-    icon: 'fa-solid fa-file-pdf',
-  },
-  {
-    label: 'No Loss Forms',
-    description: 'Open the no-loss form agent portal.',
-    href: 'https://mynolossform.com/agent-portal.html',
-    icon: 'fa-solid fa-file-signature',
-  },
-];
-
 export default function App() {
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -161,14 +62,6 @@ export default function App() {
     });
   };
 
-  const openExternalLink = useCallback(
-    (label: string, href: string) => {
-      window.open(href, '_blank');
-      addToast(`Opening ${label}...`, 'info');
-    },
-    [addToast]
-  );
-
   const scrollToSection = useCallback((targetRef: React.RefObject<HTMLElement | null>) => {
     targetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
@@ -179,9 +72,8 @@ export default function App() {
       const url = `https://agents.agencymatrix.com/#/customer/search?selection=${selection}&query=${encodeURIComponent(query)}`;
       window.open(url, '_blank');
       handleSearchIncrement();
-      addToast('Searching Agency Matrix...', 'info');
     },
-    [addToast]
+    []
   );
 
   useEffect(() => {
@@ -294,25 +186,6 @@ export default function App() {
       <main className="mx-auto max-w-[1400px] space-y-4 px-4 pb-16 pt-4 sm:px-6">
         <section>
           <SearchCard addToast={addToast} searchCount={searchCount} onSearch={handleSearchIncrement} />
-        </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-white/5 sm:p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Quick Links
-            </span>
-            {quickActions.map((action) => (
-              <button
-                key={action.label}
-                onClick={() => openExternalLink(action.label, action.href)}
-                title={action.description}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-[#0076d3]/50 hover:bg-white hover:text-[#003f87] hover:shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-              >
-                <i className={`${action.icon} text-xs text-[#0069bd] dark:text-sky-300`}></i>
-                {action.label}
-              </button>
-            ))}
-          </div>
         </section>
 
         <section ref={launcherSectionRef} className="scroll-mt-20">

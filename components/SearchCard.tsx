@@ -120,7 +120,6 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
           return;
       }
       window.open(url, '_blank');
-      addToast(mode === 'realestate' ? 'Opening NC Insurance Tools with this address...' : `Searching ${mode}...`, 'info');
     }, 50);
   };
 
@@ -149,26 +148,23 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
           }
           setIsNotesModalOpen(true);
           setIsNotesMinimized(false);
-          addToast('Audit Memo Studio Opened', 'info');
           return;
       }
 
       if (e.altKey) {
           const key = e.key.toLowerCase();
           let newMode: SearchMode | null = null;
-          let modeName = '';
           switch(key) {
-              case 'w': newMode = 'web'; modeName = 'Web Search'; break;
-              case 'h': newMode = 'realestate'; modeName = 'Real Estate'; break;
-              case 'p': newMode = 'people'; modeName = 'People Search'; break;
-              case 'f': newMode = 'onedrive'; modeName = 'Client Folder'; break;
-              case 'c': newMode = 'contacts'; modeName = 'Contact Numbers'; break;
+              case 'w': newMode = 'web'; break;
+              case 'h': newMode = 'realestate'; break;
+              case 'p': newMode = 'people'; break;
+              case 'f': newMode = 'onedrive'; break;
+              case 'c': newMode = 'contacts'; break;
           }
           if (newMode) {
               e.preventDefault();
               setMode(newMode);
               inputRef.current?.focus();
-              addToast(`Switched to ${modeName}`, 'info');
           }
       }
     };
@@ -228,7 +224,6 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
         return;
     }
     window.open(url, '_blank');
-    addToast(mode === 'realestate' ? 'Opening NC Insurance Tools with this address...' : `Searching ${mode}...`, 'info');
     setQuery('');
   };
 
@@ -808,6 +803,24 @@ Return ONLY a JSON object in this exact shape:
                   NC Tools
               </button>
           )}
+
+          {/* Agency Matrix destinations — absorbed from the old Quick Links section so
+              favorites live in ONE place (the launcher's Pinned row). */}
+          <span className="mx-1 hidden h-6 w-px bg-slate-200 dark:bg-white/10 sm:block"></span>
+          {[
+            { label: 'Matrix Home', href: 'https://agents.agencymatrix.com/#/', icon: 'fa-solid fa-house-chimney-window' },
+            { label: 'New Prospect', href: 'https://agents.agencymatrix.com/customerEdit.php?id=0', icon: 'fa-solid fa-user-plus' },
+            { label: 'Reports', href: 'https://agents.agencymatrix.com/#/reports', icon: 'fa-solid fa-chart-column' },
+          ].map((link) => (
+            <button
+              key={link.label}
+              onClick={() => window.open(link.href, '_blank')}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:border-[#0076d3]/50 hover:text-[#003f87] hover:shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white"
+            >
+              <i className={`${link.icon} text-xs text-slate-400`}></i>
+              {link.label}
+            </button>
+          ))}
         </div>
 
 
