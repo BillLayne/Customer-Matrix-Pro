@@ -33,6 +33,18 @@ export const PROGRAMS: ProgramEntry[] = [
     targetType: 'web',
   },
   {
+    id: 'bli-auto-rater',
+    title: 'BLI Auto Rater',
+    category: 'Operations',
+    description: 'Rate NC personal auto quotes and build quote packets for Progressive and National General.',
+    target: 'https://rater.billlayneinsurance.com/',
+    hostedTarget: 'https://rater.billlayneinsurance.com/',
+    icon: 'fa-solid fa-car',
+    accent: 'from-blue-900 to-cyan-500',
+    note: 'Live rater app',
+    targetType: 'web',
+  },
+  {
     id: 'quote-follow-up',
     title: 'Quote Drip Follow Up',
     category: 'Operations',
@@ -551,14 +563,16 @@ const LAUNCHER_VERSION_KEY = 'matrix-pro-launcher-version';
  * list the new ids here: on next load they are pinned once and badged NEW. Unpinning still
  * sticks, because the version has already been recorded by then.
  */
-const LAUNCHER_VERSION = 3;
+const LAUNCHER_VERSION = 4;
 const NEW_IN_VERSION: Record<number, string[]> = {
   2: ['bli-task-board', 'bli-mail-gateway', 'claude-quotes', 'claude-gmail'],
   3: ['pdf-studio'],
+  4: ['bli-auto-rater'],
 };
 
 const DEFAULT_PINNED: string[] = [
   'send-docs',
+  'bli-auto-rater',
   'sms-command-center',
   'bli-task-board',
   'bli-mail-gateway',

@@ -180,7 +180,7 @@ It had grown to 16 chips duplicating the launcher's Pinned section — two hand-
 2. **Bump `LAUNCHER_VERSION`**
 3. **Add the new ids under that version number in `NEW_IN_VERSION`**
 
-On next load those ids get pinned once and badged **NEW**. Unpinning still sticks afterwards, because the version has already been recorded. Currently `LAUNCHER_VERSION = 2`; version 2 introduced `bli-task-board`, `bli-mail-gateway`, `claude-quotes`, `claude-gmail`.
+On next load those ids get pinned once and badged **NEW**. Unpinning still sticks afterwards, because the version has already been recorded. Currently `LAUNCHER_VERSION = 4` (v2: task board, mail gateway, Claude Quotes/Gmail · v3: `pdf-studio` · v4: `bli-auto-rater`).
 
 (The old "also add a Quick Links chip" step is gone — the chip row was removed 2026-08-05. Pinning via the version stamp is the only placement step now.)
 
