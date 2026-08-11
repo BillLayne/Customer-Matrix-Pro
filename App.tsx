@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import SearchCard from './components/SearchCard';
-import QuickSearchPopup from './components/QuickSearchPopup';
+import CommandPalette from './components/CommandPalette';
 import ProgramLauncher from './components/ProgramLauncher';
 import QuickImageLinksCard from './components/QuickImageLinksCard';
 import Toast from './components/Toast';
@@ -23,7 +23,7 @@ export default function App() {
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [searchLog, setSearchLog] = useLocalStorage<SearchLog>('matrix-pro-search-log', { day: todayKey(), count: 0 });
-  const [showQuickSearch, setShowQuickSearch] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
   const [showShortcutModal, setShowShortcutModal] = useState(false);
   const launcherSectionRef = useRef<HTMLElement | null>(null);
   const imagesSectionRef = useRef<HTMLElement | null>(null);
@@ -78,18 +78,21 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm' && !e.shiftKey) {
+      // Ctrl+K is the palette's home; Ctrl+M stays as an alias for muscle memory
+      // (on Bill's PC the global AutoHotkey Ctrl+M usually swallows it first).
+      const key = e.key.toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (key === 'k' || key === 'm')) {
         e.preventDefault();
-        setShowQuickSearch(true);
+        setShowPalette(true);
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+      if ((e.ctrlKey || e.metaKey) && key === 'd') {
         e.preventDefault();
         toggleTheme();
       }
 
       if (e.key === 'Escape') {
-        setShowQuickSearch(false);
+        setShowPalette(false);
       }
     };
 
@@ -156,13 +159,13 @@ export default function App() {
 
           <div className="flex shrink-0 items-center gap-2">
             <button
-              onClick={() => setShowQuickSearch(true)}
+              onClick={() => setShowPalette(true)}
               className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-[#0076d3]/50 hover:text-[#003f87] sm:flex dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:text-white"
             >
               <i className="fa-solid fa-bolt text-xs"></i>
-              Quick Search
+              Search or Launch
               <kbd className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-400 dark:bg-white/10 dark:text-slate-400">
-                Ctrl M
+                Ctrl K
               </kbd>
             </button>
             <button
@@ -197,10 +200,10 @@ export default function App() {
         </section>
       </main>
 
-      <QuickSearchPopup
-        isOpen={showQuickSearch}
-        onClose={() => setShowQuickSearch(false)}
-        onSearch={handleQuickSearch}
+      <CommandPalette
+        isOpen={showPalette}
+        onClose={() => setShowPalette(false)}
+        onClientSearch={handleQuickSearch}
         addToast={addToast}
       />
 
@@ -221,8 +224,8 @@ export default function App() {
                 <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">/</kbd>
               </div>
               <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
-                <span>Quick Search Popup</span>
-                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Ctrl + M</kbd>
+                <span>Command Palette</span>
+                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Ctrl + K</kbd>
               </div>
               <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
                 <span>Toggle Dark Mode</span>

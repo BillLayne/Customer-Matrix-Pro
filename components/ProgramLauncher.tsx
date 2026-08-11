@@ -5,9 +5,9 @@ interface ProgramLauncherProps {
   addToast: (message: string, type?: 'success' | 'warning' | 'danger' | 'info') => void;
 }
 
-type ProgramCategory = 'Operations' | 'Documents & Forms' | 'AI' | 'Property & Coverage';
+export type ProgramCategory = 'Operations' | 'Documents & Forms' | 'AI' | 'Property & Coverage';
 
-interface ProgramEntry {
+export interface ProgramEntry {
   id: string;
   title: string;
   category: ProgramCategory;
@@ -20,7 +20,7 @@ interface ProgramEntry {
   targetType: 'local' | 'web';
 }
 
-const PROGRAMS: ProgramEntry[] = [
+export const PROGRAMS: ProgramEntry[] = [
   {
     id: 'send-docs',
     title: 'Send Documents',
@@ -517,7 +517,7 @@ const CATEGORY_ICONS: Record<ProgramCategory, string> = {
   'Property & Coverage': 'fa-solid fa-house-circle-check',
 };
 
-const CATEGORY_STYLES: Record<ProgramCategory, { iconBg: string; iconText: string }> = {
+export const CATEGORY_STYLES: Record<ProgramCategory, { iconBg: string; iconText: string }> = {
   Operations: {
     iconBg: 'bg-blue-50 dark:bg-blue-500/15',
     iconText: 'text-[#0069bd] dark:text-sky-300',
@@ -541,8 +541,8 @@ const byProgramTitle = (a: ProgramEntry, b: ProgramEntry) =>
 
 const sortProgramsByTitle = (programs: ProgramEntry[]) => [...programs].sort(byProgramTitle);
 
-const RECENT_PROGRAMS_KEY = 'matrix-pro-recent-programs';
-const PINNED_PROGRAMS_KEY = 'matrix-pro-pinned-programs';
+export const RECENT_PROGRAMS_KEY = 'matrix-pro-recent-programs';
+export const PINNED_PROGRAMS_KEY = 'matrix-pro-pinned-programs';
 const LAUNCHER_VERSION_KEY = 'matrix-pro-launcher-version';
 
 /**
@@ -577,11 +577,27 @@ const DEFAULT_PINNED: string[] = [
 
 const toFileUrl = (windowsPath: string) => encodeURI(`file:///${windowsPath.replace(/\\/g, '/')}`);
 
+const isHostedDashboard = () =>
+  window.location.protocol.startsWith('http') &&
+  window.location.hostname !== 'localhost' &&
+  window.location.hostname !== '127.0.0.1';
+
+/**
+ * Where a program actually opens right now — hosted target on the live site,
+ * file:/// locally. Returns null for a local-only tool viewed on the hosted
+ * dashboard. Shared with the command palette so both open tools identically.
+ */
+export const resolveProgramDestination = (program: ProgramEntry): string | null => {
+  const hosted = isHostedDashboard();
+  if (hosted && program.targetType === 'local' && !program.hostedTarget) return null;
+  return hosted && program.hostedTarget
+    ? program.hostedTarget
+    : program.targetType === 'web'
+      ? program.target
+      : toFileUrl(program.target);
+};
+
 const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
-  const isHostedDashboard =
-    window.location.protocol.startsWith('http') &&
-    window.location.hostname !== 'localhost' &&
-    window.location.hostname !== '127.0.0.1';
   const [recentProgramIds, setRecentProgramIds] = useLocalStorage<string[]>(RECENT_PROGRAMS_KEY, []);
   const [pinnedProgramIds, setPinnedProgramIds] = useLocalStorage<string[]>(PINNED_PROGRAMS_KEY, DEFAULT_PINNED);
   const [seenVersion, setSeenVersion] = useLocalStorage<number>(LAUNCHER_VERSION_KEY, 1);
@@ -684,16 +700,11 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
   const openProgram = (program: ProgramEntry) => {
     setNewProgramIds((prev) => prev.filter((id) => id !== program.id));
 
-    if (isHostedDashboard && program.targetType === 'local' && !program.hostedTarget) {
+    const destination = resolveProgramDestination(program);
+    if (!destination) {
       addToast(`${program.title} is a local-only tool. Open it from the local dashboard on this computer.`, 'warning');
       return;
     }
-
-    const destination = isHostedDashboard && program.hostedTarget
-      ? program.hostedTarget
-      : program.targetType === 'web'
-        ? program.target
-        : toFileUrl(program.target);
     const newWindow = window.open(destination, '_blank', 'noopener,noreferrer');
     if (newWindow) {
       setRecentProgramIds((prev) => [program.id, ...prev.filter((item) => item !== program.id)].slice(0, 8));
