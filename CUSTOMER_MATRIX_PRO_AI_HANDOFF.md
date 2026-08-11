@@ -1,6 +1,6 @@
 # Agency Command Center — Live Handoff
 
-**Last verified against the code: July 29, 2026.**
+**Last verified against the code: August 5, 2026.**
 
 This document describes the dashboard **as it actually exists right now**. It replaces the June 10, 2026 handoff, which described a tabbed layout and a Gmail Engineering workspace that no longer exist in the UI.
 
@@ -24,8 +24,8 @@ Separate, do not confuse: the staff dashboard at `Playground\Agency-Staff-Dashbo
 
 ### Live state right now
 
-- Latest production release: **July 29, 2026**.
-- This release includes the Quick Image Links format picker, the Real Estate → NC Insurance Tools address handoff, and Contact Numbers lookup with a per-company add/edit/restore manager for browser-saved entries and corrections.
+- Latest production release: **August 5, 2026** (image-library search, PDF Studio tile, single-favorites cleanup, Ctrl+K command palette).
+- Earlier July 29 release added Contact Numbers lookup with the per-company add/edit/restore manager.
 - GitHub still does not auto-deploy this project. Pushing does nothing to the live site; someone must run the deploy command in §3.
 
 ---
@@ -41,11 +41,12 @@ A single-page internal dashboard Bill opens every day. Two jobs dominate:
 
 ### Page structure (top to bottom, `App.tsx`)
 
-1. **Sticky header** — logo, in-page nav (Search / Tools / Images), Quick Search button, shortcuts modal, light/dark toggle
-2. **Unified Search** (`components/SearchCard.tsx`) — includes the collapsible Carrier Portals drawer
-3. **Quick Links** — one row of 15 chips (`quickActions` array in `App.tsx`)
-4. **Program Launcher** (`components/ProgramLauncher.tsx`)
-5. **Quick Image Links** (`components/QuickImageLinksCard.tsx`)
+1. **Sticky header** — logo, in-page nav (Search / Tools / Images), "Search or Launch" palette button (Ctrl+K), shortcuts modal, light/dark toggle
+2. **Unified Search** (`components/SearchCard.tsx`) — action row includes the Matrix Home / New Prospect / Reports strip; collapsible Carrier Portals drawer
+3. **Program Launcher** (`components/ProgramLauncher.tsx`)
+4. **Quick Image Links** (`components/QuickImageLinksCard.tsx`)
+
+Plus the **Command Palette** overlay (§6). The old Quick Links chip row was removed 2026-08-05.
 
 There are **no tabs**. The Search/Gmail/Tools tab system and the `matrix-pro-layout-mode` key were removed in `9b1a351`.
 
@@ -137,11 +138,22 @@ Agency Matrix mode auto-picks `selection=Address` when the query contains a digi
 
 ---
 
-## 6. Quick Links row — `App.tsx`
+## 6. Command Palette — `components/CommandPalette.tsx` (2026-08-05)
 
-A flat, hardcoded array called `quickActions`. **This is a separate list from the Program Launcher** — adding a tool to the launcher does NOT add a chip here, and vice versa. Update by hand when a tool deserves top-level placement.
+**Ctrl+K** (or the header's "Search or Launch" button; Ctrl+M is kept as an alias, though the global AutoHotkey Ctrl+M usually swallows that key on Bill's PC) opens one overlay that reaches everything:
 
-Current 15 chips: Matrix Home · New Prospect · Reports · Carrier Contacts · Customer Reference · Renewal Gmail · Hosted Links · Task Board · Mail Gateway · Claude Designer · Claude Quotes · Claude Gmail · Hazard Collages · DL123 Maker · No Loss Forms
+- **Tools** — filters all `PROGRAMS` (word-match on title/description/category/note, title hits ranked first). Opens through the same exported `resolveProgramDestination()` the launcher uses, and updates `matrix-pro-recent-programs`.
+- **Client search** — a "Search Agency Matrix for …" row is always present on a non-empty query (first row when no tool matched), using the same digit→Address rule. So `cert ⏎` opens Certificates and `john smith ⏎` searches Matrix.
+- **Carrier numbers** — matches the built-in `COMPANY_CONTACTS` (phone/fax rows); Enter/click copies the number, with a toast that shows the number itself if the clipboard write fails. Browser-saved manual contacts are NOT searched here — those live only in Contact Numbers mode.
+- Empty query shows recent-then-pinned tools (max 8). ↑↓ + Enter, Esc closes, mouse works.
+
+`QuickSearchPopup.tsx` was replaced by the palette and is now dormant in the repo (like `AiAssistant.tsx`).
+
+### The old Quick Links chip row is GONE (2026-08-05)
+
+It had grown to 16 chips duplicating the launcher's Pinned section — two hand-maintained favorites lists. The three genuinely Matrix-owned links (**Matrix Home · New Prospect · Reports**) moved into the Search card's action row behind a divider; every other shortcut lives in **Pinned only**. Do not reintroduce a second chip list; pin instead.
+
+**Toast policy (2026-08-05):** opening tools, running searches, and switching modes no longer toast — the new tab or visible state change is the feedback. Toasts are reserved for outcomes: copies, saves, errors, popup-blocked, GIS/report results.
 
 ---
 
@@ -154,9 +166,11 @@ Current 15 chips: Matrix Home · New Prospect · Reports · Carrier Contacts · 
 **How you find things:**
 
 - **Filter box** — type to search title/description/category/note; `/` focuses it
-- **Category pills** — All / Operations / Documents & Forms / AI / Property & Coverage, with counts
+- **Category pills** — All / Operations / Documents & Forms / AI / Property & Coverage, with counts; the selection persists per browser in `matrix-pro-launcher-category`
 - **Pinned** — star any tile to keep it at the top (`matrix-pro-pinned-programs`)
 - **Recent** — last 6 opened, as chips (`matrix-pro-recent-programs`)
+- **Enter in the filter box opens the first match**; Escape clears it
+- The module now **exports** `PROGRAMS`, `ProgramEntry`, `CATEGORY_STYLES`, the two storage keys, and `resolveProgramDestination()` for the command palette — keep those exports intact
 
 ### ⚠️ Adding a new tool — the version-stamp protocol
 
@@ -168,7 +182,7 @@ Current 15 chips: Matrix Home · New Prospect · Reports · Carrier Contacts · 
 
 On next load those ids get pinned once and badged **NEW**. Unpinning still sticks afterwards, because the version has already been recorded. Currently `LAUNCHER_VERSION = 2`; version 2 introduced `bli-task-board`, `bli-mail-gateway`, `claude-quotes`, `claude-gmail`.
 
-Then decide separately whether it also deserves a Quick Links chip in `App.tsx` (§6).
+(The old "also add a Quick Links chip" step is gone — the chip row was removed 2026-08-05. Pinning via the version stamp is the only placement step now.)
 
 ### Local vs hosted targets
 
@@ -210,8 +224,10 @@ Migrated off Imgur on 2026-07-23 (`0d3e131`, `9a10f64`). Uploads now go to **BLI
 | `matrix-pro-search-history` | last 6 search queries |
 | `matrix-pro-show-carrier-gateway` | Carrier Portals drawer open/closed |
 | `matrix-pro-pinned-programs` | pinned launcher tool ids |
-| `matrix-pro-recent-programs` | recently opened tool ids |
+| `matrix-pro-recent-programs` | recently opened tool ids (launcher + palette) |
 | `matrix-pro-launcher-version` | last launcher version this browser saw |
+| `matrix-pro-launcher-category` | last selected launcher category pill |
+| `matrix-pro-manual-company-contacts` | browser-saved contact additions/corrections |
 | `quick-image-preset` | selected image format preset |
 | `quicklink-upload-history` | recent image uploads |
 | `bliImgAccessCode` | BLI Image Host access code |
@@ -253,7 +269,7 @@ components/SearchCard.tsx           Unified Search  ← highest-traffic componen
 components/ContactLookup.tsx        live company-contact result panel
 components/ProgramLauncher.tsx      launcher; PROGRAMS is the source of truth
 components/QuickImageLinksCard.tsx  image uploader
-components/QuickSearchPopup.tsx     Ctrl+M popup
+components/CommandPalette.tsx       Ctrl+K palette: tools + client search + carrier numbers
 components/Modal.tsx / Toast.tsx
 services/imageHostService.ts        BLI Image Host client + presets
 data/carrierContacts.ts             editable carrier phone/fax/email directory
@@ -262,7 +278,7 @@ functions/_middleware.ts            password gate
 public/                             hosted tools + carrier logo images
 ```
 
-**Dormant — kept intentionally, not imported by the app:** `components/AiAssistant.tsx`, `Favorites.tsx`, `Header.tsx`, `PortalsCard.tsx`, `QuickActions.tsx`, `NeedsAnalysisCard.tsx`, `PdfParserCard.tsx`, `QuoteAssistantCard.tsx`, `TaskMatrixCard.tsx`; `services/geminiService.ts` (still used by SearchCard), `emailEngine.ts`, `emailDesignSystemV2.ts`, `poiTemplate.ts`.
+**Dormant — kept intentionally, not imported by the app:** `components/AiAssistant.tsx`, `QuickSearchPopup.tsx` (replaced by the palette 2026-08-05), `Favorites.tsx`, `Header.tsx`, `PortalsCard.tsx`, `QuickActions.tsx`, `NeedsAnalysisCard.tsx`, `PdfParserCard.tsx`, `QuoteAssistantCard.tsx`, `TaskMatrixCard.tsx`; `services/geminiService.ts` (still used by SearchCard), `emailEngine.ts`, `emailDesignSystemV2.ts`, `poiTemplate.ts`.
 
 ---
 
