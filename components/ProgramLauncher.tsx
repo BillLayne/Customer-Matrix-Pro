@@ -329,6 +329,18 @@ const PROGRAMS: ProgramEntry[] = [
     targetType: 'web',
   },
   {
+    id: 'pdf-studio',
+    title: 'PDF Studio',
+    category: 'Documents & Forms',
+    description: 'Split, combine, and reorder PDF and image pages right in the browser — nothing leaves your computer.',
+    target: 'https://www.billlayneinsurance.com/pdf-tools/',
+    hostedTarget: 'https://www.billlayneinsurance.com/pdf-tools/',
+    icon: 'fa-solid fa-file-pdf',
+    accent: 'from-rose-800 to-orange-500',
+    note: 'Live on agency site',
+    targetType: 'web',
+  },
+  {
     id: 'hazard-collages',
     title: 'ChatGPT Hazard Collage',
     category: 'AI',
@@ -539,9 +551,10 @@ const LAUNCHER_VERSION_KEY = 'matrix-pro-launcher-version';
  * list the new ids here: on next load they are pinned once and badged NEW. Unpinning still
  * sticks, because the version has already been recorded by then.
  */
-const LAUNCHER_VERSION = 2;
+const LAUNCHER_VERSION = 3;
 const NEW_IN_VERSION: Record<number, string[]> = {
   2: ['bli-task-board', 'bli-mail-gateway', 'claude-quotes', 'claude-gmail'],
+  3: ['pdf-studio'],
 };
 
 const DEFAULT_PINNED: string[] = [
@@ -554,6 +567,7 @@ const DEFAULT_PINNED: string[] = [
   'insurance-cards',
   'dl123-generator',
   'pdf-quote-creator',
+  'pdf-studio',
   'no-loss',
   'agency-quote-link-host',
   'claude-designer',

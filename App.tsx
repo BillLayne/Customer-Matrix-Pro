@@ -105,6 +105,12 @@ const quickActions = [
     icon: 'fa-solid fa-file-shield',
   },
   {
+    label: 'PDF Studio',
+    description: 'Split, combine, and reorder PDF and image pages.',
+    href: 'https://www.billlayneinsurance.com/pdf-tools/',
+    icon: 'fa-solid fa-file-pdf',
+  },
+  {
     label: 'No Loss Forms',
     description: 'Open the no-loss form agent portal.',
     href: 'https://mynolossform.com/agent-portal.html',
