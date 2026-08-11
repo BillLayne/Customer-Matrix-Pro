@@ -5,10 +5,11 @@ import {
   IMAGE_PRESETS,
   checkAccessCode,
   getAccessCode,
+  listAllHostedImages,
   setAccessCode,
   uploadImage,
 } from '../services/imageHostService';
-import type { ImagePresetId } from '../services/imageHostService';
+import type { ImageHostLibraryItem, ImagePresetId } from '../services/imageHostService';
 import type { HistoryItem, ToastMessage } from '../types';
 
 interface QuickImageLinksCardProps {
@@ -24,11 +25,35 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
   const [codeDraft, setCodeDraft] = useState('');
   const [isSavingCode, setIsSavingCode] = useState(false);
   const [presetId, setPresetId] = useLocalStorage<ImagePresetId>('quick-image-preset', 'gmail');
+  const [libraryQuery, setLibraryQuery] = useState('');
+  const [libraryImages, setLibraryImages] = useState<ImageHostLibraryItem[]>([]);
+  const [isLibraryLoading, setIsLibraryLoading] = useState(false);
+  const [isLibraryLoaded, setIsLibraryLoaded] = useState(false);
+  const [libraryError, setLibraryError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activePreset = IMAGE_PRESETS.find((p) => p.id === presetId) ?? IMAGE_PRESETS[0];
 
   const recentUploads = useMemo(() => history, [history]);
+  const libraryMatches = useMemo(() => {
+    const terms = libraryQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!terms.length || !isLibraryLoaded) return [];
+
+    return libraryImages.filter((image) => {
+      const searchable = [
+        image.originalName,
+        image.label,
+        image.key,
+        image.url,
+      ].filter(Boolean).join(' ').toLowerCase();
+      return terms.every((term) => searchable.includes(term));
+    });
+  }, [isLibraryLoaded, libraryImages, libraryQuery]);
+
+  const formatLibraryDate = (uploaded: string) => {
+    const date = new Date(uploaded);
+    return Number.isNaN(date.getTime()) ? 'Date unavailable' : date.toLocaleDateString();
+  };
 
   const copyLink = async (link: string) => {
     await navigator.clipboard.writeText(link);
@@ -55,6 +80,16 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
       };
 
       setHistory((prev) => [newItem, ...prev].slice(0, 25));
+      if (isLibraryLoaded) {
+        setLibraryImages((prev) => [{
+          key: result.key,
+          url: result.url,
+          size: result.size,
+          uploaded: new Date().toISOString(),
+          originalName: file.name,
+          label: '',
+        }, ...prev.filter((image) => image.key !== result.key)]);
+      }
       setLatestLink(result.url);
       await navigator.clipboard.writeText(result.url);
       addToast('Uploaded — link copied.', 'success');
@@ -77,6 +112,9 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
       if (await checkAccessCode(draft)) {
         setAccessCode(draft);
         setHasAccessCode(true);
+        setIsLibraryLoaded(false);
+        setLibraryImages([]);
+        setLibraryError('');
         setCodeDraft('');
         addToast('Image host unlocked.', 'success');
       } else {
@@ -104,6 +142,42 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
     if (file) {
       await handleUpload(file);
     }
+  };
+
+  const handleLibrarySearch = async (event?: React.FormEvent, forceRefresh = false) => {
+    event?.preventDefault();
+    if (!libraryQuery.trim()) {
+      addToast('Enter an image name or label to search.', 'warning');
+      return;
+    }
+    if (!hasAccessCode) {
+      addToast('Unlock the image host to search the full library.', 'warning');
+      return;
+    }
+    if (isLibraryLoaded && !forceRefresh) return;
+
+    setIsLibraryLoading(true);
+    setLibraryError('');
+    try {
+      const images = await listAllHostedImages();
+      setLibraryImages(images);
+      setIsLibraryLoaded(true);
+      addToast(`${images.length} hosted images ready to search.`, 'success');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not load the image library.';
+      if (message.toLowerCase().includes('access code')) {
+        setHasAccessCode(false);
+      }
+      setLibraryError(message);
+      addToast(message, 'danger');
+    } finally {
+      setIsLibraryLoading(false);
+    }
+  };
+
+  const clearLibrarySearch = () => {
+    setLibraryQuery('');
+    setLibraryError('');
   };
 
   return (
@@ -259,46 +333,173 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
         </div>
 
         <div className="rounded-[1.35rem] border border-slate-200/80 bg-white/90 p-4 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.8)] dark:border-white/10 dark:bg-[#0b1727]/80">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h3 className="text-sm font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">
-              Recent Uploads
-            </h3>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-sm font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">
+                {libraryQuery.trim() ? 'Image Library' : 'Recent Uploads'}
+              </h3>
+              <p className="mt-1 truncate text-xs text-slate-400 dark:text-slate-500">
+                {libraryQuery.trim()
+                  ? isLibraryLoaded
+                    ? `Searching ${libraryImages.length} hosted images`
+                    : 'Search every image stored on the BLI Image Host'
+                  : 'Newest links saved on this browser'}
+              </p>
+            </div>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:bg-white/10 dark:text-slate-300">
-              {recentUploads.length} saved
+              {libraryQuery.trim()
+                ? isLibraryLoaded
+                  ? `${libraryMatches.length} found`
+                  : isLibraryLoading
+                    ? 'Loading'
+                    : 'Full library'
+                : `${recentUploads.length} saved`}
             </span>
           </div>
 
-          <div
-            aria-label="Recent uploaded image links"
-            data-testid="quick-image-recent-uploads-scroll"
-            className="max-h-[26rem] min-h-0 space-y-3 overflow-y-auto overscroll-contain pr-1 touch-pan-y custom-scrollbar"
-          >
-            {recentUploads.length > 0 ? (
-              recentUploads.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/5"
+          <form onSubmit={handleLibrarySearch} className="my-4 flex gap-2">
+            <div className="relative min-w-0 flex-1">
+              <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+              <input
+                type="search"
+                value={libraryQuery}
+                onChange={(event) => setLibraryQuery(event.target.value)}
+                disabled={!hasAccessCode}
+                placeholder={hasAccessCode ? 'Search all hosted images...' : 'Unlock image host to search...'}
+                aria-label="Search all hosted images"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-9 text-sm font-semibold text-slate-800 outline-none transition focus:border-[#0076d3] focus:bg-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:bg-white/10"
+              />
+              {libraryQuery && (
+                <button
+                  type="button"
+                  onClick={clearLibrarySearch}
+                  title="Clear image search"
+                  aria-label="Clear image search"
+                  className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
                 >
-                  <img src={item.link} alt={item.name} className="h-14 w-14 rounded-xl object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{item.name}</p>
-                    <p className="truncate text-xs text-slate-500 dark:text-slate-300">{item.link}</p>
-                  </div>
-                  <button
-                    onClick={() => copyLink(item.link)}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-[#0076d3] hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-                    title="Copy image link"
-                  >
-                    <i className="fa-solid fa-copy"></i>
-                  </button>
-                </div>
-              ))
-            ) : (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-10 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                Your uploaded image links will show here.
-              </div>
+                  <i className="fa-solid fa-xmark text-xs"></i>
+                </button>
+              )}
+            </div>
+            {isLibraryLoaded && libraryQuery.trim() && (
+              <button
+                type="button"
+                onClick={() => void handleLibrarySearch(undefined, true)}
+                disabled={isLibraryLoading}
+                title="Refresh hosted image library"
+                aria-label="Refresh hosted image library"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-[#0076d3] hover:text-[#003f87] disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+              >
+                <i className={`fa-solid ${isLibraryLoading ? 'fa-spinner fa-spin' : 'fa-rotate'} text-xs`}></i>
+              </button>
             )}
-          </div>
+            <button
+              type="submit"
+              disabled={!hasAccessCode || !libraryQuery.trim() || isLibraryLoading}
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#003f87] px-3.5 text-xs font-bold text-white transition hover:bg-[#0076d3] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <i className={`fa-solid ${isLibraryLoading ? 'fa-spinner fa-spin' : isLibraryLoaded ? 'fa-check' : 'fa-magnifying-glass'} text-[11px]`}></i>
+              <span className="hidden sm:inline">{isLibraryLoaded ? 'Loaded' : 'Search'}</span>
+            </button>
+          </form>
+
+          {libraryError && (
+            <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-400/30 dark:bg-rose-500/10 dark:text-rose-200">
+              {libraryError}
+            </div>
+          )}
+
+          {libraryQuery.trim() ? (
+            <div
+              aria-label="Hosted image library search results"
+              data-testid="quick-image-library-search-scroll"
+              className="max-h-[26rem] min-h-0 space-y-3 overflow-y-auto overscroll-contain pr-1 touch-pan-y custom-scrollbar"
+            >
+              {isLibraryLoading ? (
+                <div className="flex items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-10 text-sm font-semibold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                  <i className="fa-solid fa-spinner fa-spin text-[#0076d3]"></i>
+                  Loading the complete image library...
+                </div>
+              ) : !isLibraryLoaded ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-10 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                  Press Search to find this name across every hosted image.
+                </div>
+              ) : libraryMatches.length > 0 ? (
+                libraryMatches.map((image) => {
+                  const imageName = image.originalName || image.key.split('/').pop() || 'Hosted image';
+                  return (
+                    <div
+                      key={image.key}
+                      className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/5"
+                    >
+                      <a href={image.url} target="_blank" rel="noreferrer" className="shrink-0" title={`Open ${imageName}`}>
+                        <img
+                          src={image.url}
+                          alt={imageName}
+                          loading="lazy"
+                          className="h-14 w-14 rounded-xl bg-white object-contain dark:bg-white/5"
+                        />
+                      </a>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{imageName}</p>
+                        <p className="truncate text-xs text-slate-500 dark:text-slate-300">
+                          {image.label ? `${image.label} - ` : ''}{formatLibraryDate(image.uploaded)}
+                        </p>
+                        <p className="truncate text-[11px] text-slate-400">{image.url}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => copyLink(image.url)}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-[#0076d3] hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+                        title="Copy image link"
+                        aria-label={`Copy image link for ${imageName}`}
+                      >
+                        <i className="fa-solid fa-copy"></i>
+                      </button>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-10 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                  No hosted images match "{libraryQuery.trim()}".
+                </div>
+              )}
+            </div>
+          ) : (
+            <div
+              aria-label="Recent uploaded image links"
+              data-testid="quick-image-recent-uploads-scroll"
+              className="max-h-[26rem] min-h-0 space-y-3 overflow-y-auto overscroll-contain pr-1 touch-pan-y custom-scrollbar"
+            >
+              {recentUploads.length > 0 ? (
+                recentUploads.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/5"
+                  >
+                    <img src={item.link} alt={item.name} className="h-14 w-14 rounded-xl object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{item.name}</p>
+                      <p className="truncate text-xs text-slate-500 dark:text-slate-300">{item.link}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyLink(item.link)}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-[#0076d3] hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+                      title="Copy image link"
+                      aria-label={`Copy image link for ${item.name}`}
+                    >
+                      <i className="fa-solid fa-copy"></i>
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-10 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                  Your uploaded image links will show here.
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

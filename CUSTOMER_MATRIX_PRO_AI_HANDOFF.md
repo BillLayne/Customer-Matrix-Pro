@@ -194,7 +194,10 @@ Migrated off Imgur on 2026-07-23 (`0d3e131`, `9a10f64`). Uploads now go to **BLI
 
 - Images are optimized **client-side** (canvas) before the POST. GIF and SVG always pass through. JPEG flattens transparency onto white. If the re-encode would not shrink the file, the original is uploaded instead.
 - Upload is `POST /api/upload?filename=…` with the blob as the body; the returned URL is copied to the clipboard automatically
-- Upload history (last 25) lives in `quicklink-upload-history`
+- **Recent Uploads** is browser-local convenience history only. It keeps the last 25 links in `quicklink-upload-history` and remains independently scrollable.
+- **Image Library search** queries the permanent BLI Image Host through authenticated, paginated `GET /api/list` requests. `listAllHostedImages()` follows every returned cursor, de-duplicates objects by key, and sorts them newest-first.
+- Full-library search matches every typed word against the original filename, optional host label, stored object key, and hosted URL. Results have thumbnails plus open and copy-link actions. Clearing the search returns to Recent Uploads.
+- The full-library search uses the same device-level `bliImgAccessCode`; no second credential is stored and no image-host secret is committed to this repo.
 
 ---
 

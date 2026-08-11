@@ -66,6 +66,21 @@ export interface ImageHostUpload {
   size: number;
 }
 
+export interface ImageHostLibraryItem {
+  key: string;
+  url: string;
+  size: number;
+  uploaded: string;
+  originalName: string;
+  label: string;
+}
+
+interface ImageHostLibraryPage {
+  objects?: ImageHostLibraryItem[];
+  cursor?: string | null;
+  error?: string;
+}
+
 export const getAccessCode = (): string => {
   try {
     return window.localStorage.getItem(ACCESS_CODE_STORAGE_KEY) ?? '';
@@ -166,4 +181,55 @@ export const uploadImage = async (file: File, preset: ImagePreset): Promise<Imag
     );
   }
   return data as ImageHostUpload;
+};
+
+export const listAllHostedImages = async (): Promise<ImageHostLibraryItem[]> => {
+  const code = getAccessCode();
+  if (!code) {
+    throw new Error('Enter the image host access code first.');
+  }
+
+  const images: ImageHostLibraryItem[] = [];
+  const seenCursors = new Set<string>();
+  let cursor = '';
+
+  for (let page = 0; page < 100; page += 1) {
+    const endpoint = cursor
+      ? `${IMAGE_HOST_BASE}/api/list?cursor=${encodeURIComponent(cursor)}`
+      : `${IMAGE_HOST_BASE}/api/list`;
+    const response = await fetch(endpoint, {
+      headers: { 'x-access-code': code },
+    });
+    const data = await response.json().catch(() => ({})) as ImageHostLibraryPage;
+
+    if (!response.ok) {
+      throw new Error(
+        data.error
+        || (response.status === 401
+          ? 'Image host access code was rejected.'
+          : `Could not load the image library (HTTP ${response.status}).`)
+      );
+    }
+
+    if (Array.isArray(data.objects)) {
+      images.push(...data.objects);
+    }
+
+    const nextCursor = typeof data.cursor === 'string' ? data.cursor : '';
+    if (!nextCursor) break;
+    if (seenCursors.has(nextCursor)) {
+      throw new Error('The image library returned a repeated page cursor.');
+    }
+    seenCursors.add(nextCursor);
+    cursor = nextCursor;
+
+    if (page === 99) {
+      throw new Error('The image library is too large to load in one search.');
+    }
+  }
+
+  return [...new Map(images.map((image) => [image.key, image])).values()]
+    .sort((left, right) =>
+      new Date(right.uploaded).getTime() - new Date(left.uploaded).getTime()
+    );
 };
