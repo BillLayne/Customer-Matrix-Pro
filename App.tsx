@@ -116,8 +116,8 @@ export default function App() {
   }, [addToast]);
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9] text-slate-900 transition-colors duration-300 dark:bg-[#0b1220] dark:text-slate-100">
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-xl dark:border-white/10 dark:bg-[#0b1220]/95">
+    <div className="app-shell min-h-screen text-slate-900 transition-colors duration-300 dark:text-slate-100">
+      <header className="sticky top-0 z-50 border-b border-slate-200/90 bg-white/95 shadow-[0_8px_24px_-22px_rgba(15,23,42,0.8)] backdrop-blur-xl dark:border-white/10 dark:bg-[#0b1220]/95">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#003f87] text-white shadow-sm">

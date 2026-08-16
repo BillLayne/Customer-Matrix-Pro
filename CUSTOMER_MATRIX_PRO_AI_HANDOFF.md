@@ -1,6 +1,6 @@
 # Agency Command Center — Live Handoff
 
-**Last verified against the code: August 16, 2026** (HEAD `7cd468d`).
+**Last verified against the code: August 16, 2026** (premium UX release; production baseline before this work was `dd4534b`).
 
 This describes the dashboard **as it actually exists right now**. If anything here disagrees with the code, the code wins — re-verify and fix this file in the same commit.
 
@@ -63,7 +63,7 @@ Before this rewrite, §13 still instructed maintainers to update a "Quick Links 
 
 Separate, do not confuse: the staff dashboard at `Playground\Agency-Staff-Dashboard` → https://agency-staff-dashboard.pages.dev/. If a launcher target changes for both people, check whether the staff dashboard needs the same edit.
 
-**Current state:** HEAD `7cd468d` (2026-08-11), pushed and deployed. Last release added the Ctrl+K command palette, the single-favorites cleanup, PDF Studio, BLI Auto Rater, and full image-library search.
+**Current state:** This commit adds the premium UX pass described throughout this handoff. It was built and browser-tested locally; it has **not** been pushed or deployed as part of this change. The production baseline before this work was `dd4534b`.
 
 ---
 
@@ -79,7 +79,7 @@ A single-page internal dashboard Bill opens every day. Two jobs dominate:
 ### Page structure (top to bottom, `App.tsx`)
 
 1. **Sticky header** — logo, in-page nav (Search / Tools / Images), "Search or Launch" palette button (Ctrl+K), shortcuts modal, light/dark toggle
-2. **Unified Search** (`components/SearchCard.tsx`) — search modes, action row (incl. the Matrix Home / New Prospect / Reports strip), collapsible Carrier Portals drawer
+2. **Unified Search** (`components/SearchCard.tsx`) — search modes, one primary Search control, grouped Workspace / Agency Matrix actions, collapsible Carrier Portals drawer
 3. **Program Launcher** (`components/ProgramLauncher.tsx`)
 4. **Quick Image Links** (`components/QuickImageLinksCard.tsx`)
 
@@ -161,8 +161,10 @@ Agency Matrix mode picks `selection=Address` when the query contains a digit, el
 
 - `/` focuses the search input from anywhere (unless already typing)
 - Recent searches (last 6) as chips — `matrix-pro-search-history`
-- Action row: Search · Cloud Folder · Audit Memo · **NC Tools** (Real Estate mode only) · divider · **Matrix Home · New Prospect · Reports**
-- **Audit Memo studio** (Alt+N or Ctrl+Shift+M) — E&O compliance memo builder. Paste notes or attach a PDF/image; Gemini formats an audit-ready CRM memo; "Execute Sync & Matrix" copies it and opens the customer in Agency Matrix.
+- One primary **Search / Find** control lives inside the query field; do not add a second Search button below it.
+- Secondary action row is grouped by intent: **Workspace** (Cloud Folder · Audit Memo · **NC Tools** in Real Estate mode) and **Agency Matrix** (Matrix Home · New Prospect · Reports).
+- **Audit Memo studio** (Alt+N or Ctrl+Shift+M) — E&O compliance memo builder. The three plain-language steps are Customer name → Interaction notes or email thread → Save memo to workflow. Paste notes or attach a PDF/image; Gemini formats an audit-ready CRM memo; "Copy Memo & Open Matrix" copies it and opens the customer in Agency Matrix.
+- **County Property Map and Property Risk Report** use the same shared premium modal shell as Audit Memo. Keep their wording plain and their actions descriptive.
 - **Real Estate → NC Tools handoff** — Enter, the arrow button, or the NC Tools button opens NC Insurance Tools with `?address=…`, which auto-runs the lookup in its `PropertyTab.tsx`.
 - **Contact Numbers** — results appear as Bill types, in a contained scrolling panel. `tel:` links; copy buttons on phone/fax/email/website. 17 companies built in.
 - **Manual contact editor** — "Add Contact" for a new company; the **+** on a company card opens a manager prefilled. Built-in details can be corrected without editing `data/carrierContacts.ts`; removing a saved correction restores the original.
@@ -185,7 +187,7 @@ Agency Matrix mode picks `selection=Address` when the query contains a digit, el
 - **Tools** — filters all `PROGRAMS` (word-match on title/description/category/note; title hits ranked first). Opens via the exported `resolveProgramDestination()` so behavior matches the launcher exactly, and updates `matrix-pro-recent-programs`.
 - **Client search** — a "Search Agency Matrix for …" row is always present on a non-empty query, and is the *first* row when nothing else matched. So `cert ⏎` opens Certificates; `john smith ⏎` searches Matrix.
 - **Carrier numbers** — matches built-in `COMPANY_CONTACTS` (phone/fax); Enter or click copies the number, with a toast that shows the number itself if the clipboard write fails. Browser-saved *manual* contacts are **not** searched here — those live only in Contact Numbers mode.
-- Empty query lists recent-then-pinned tools (max 8). ↑↓ + Enter, Esc closes, mouse works throughout.
+- Empty query lists recent-then-pinned tools (max 8). On a fresh browser it falls back to exported `DEFAULT_PINNED`, while an intentionally saved empty pin list remains empty. ↑↓ + Enter, Esc closes, mouse works throughout.
 
 `QuickSearchPopup.tsx` was replaced by the palette and is now dormant.
 
@@ -203,16 +205,16 @@ Opening tools, running searches, and switching modes **do not toast** — the ne
 
 **The `PROGRAMS` array here is the single source of truth for every launcher target.** Wrong link? Fix it here.
 
-**42 tools in 4 categories:** Operations (11) · Documents & Forms (15) · AI (12) · Property & Coverage (4). Sorted alphabetically within each section.
+**42 tools in 4 categories:** Operations (12) · Documents & Forms (15) · AI (11) · Property & Coverage (4). Sorted alphabetically within each section. **Agency Password Vault belongs in Operations.**
 
 **How Bill finds things:**
 
 - **Filter box** — matches title/description/category/note; `/` focuses it; **Enter opens the first match**; Escape clears
-- **Category pills** — All / Operations / Documents & Forms / AI / Property & Coverage with counts; selection persists in `matrix-pro-launcher-category`
-- **Pinned** — star any tile to keep it on top (`matrix-pro-pinned-programs`)
+- **Category pills** — All / Operations / Documents & Forms / AI / Property & Coverage with counts; the strip stays visible while browsing the tool list and selection persists in `matrix-pro-launcher-category`
+- **Pinned** — star any tile to keep it on top (`matrix-pro-pinned-programs`). The first 8 show by default; **Show all / Show fewer** expands and condenses the area without changing the saved pins.
 - **Recent** — last 6 opened, as chips (`matrix-pro-recent-programs`)
 
-**Exports the palette depends on — keep them:** `PROGRAMS`, `ProgramEntry`, `ProgramCategory`, `CATEGORY_STYLES`, `RECENT_PROGRAMS_KEY`, `PINNED_PROGRAMS_KEY`, `resolveProgramDestination()`.
+**Exports the palette depends on — keep them:** `PROGRAMS`, `ProgramEntry`, `ProgramCategory`, `CATEGORY_STYLES`, `DEFAULT_PINNED`, `RECENT_PROGRAMS_KEY`, `PINNED_PROGRAMS_KEY`, `resolveProgramDestination()`.
 
 ### ⚠️ Adding a new tool — the version-stamp protocol
 
@@ -242,6 +244,7 @@ Tools hosted inside this repo's `public/`: `/html-studio.html`, `/nc-grange-down
 Migrated off Imgur 2026-07-23. Uploads go to **BLI Image Host** at `https://img.billlayneinsurance.com`. The Imgur service and Client-ID were deleted from this repo.
 
 - **Access code** entered once per device → `localStorage` `bliImgAccessCode`, verified via `GET /api/check` with an `x-access-code` header
+- **Locked state is intentionally compact.** Until the access code is verified, show the unlock card at full width and do not render an empty Recent Uploads / Image Library panel beside it.
 - **Format presets, chosen before upload** (persisted in `quick-image-preset`, default **Gmail**):
 
 | Preset | Output | Why |
@@ -327,10 +330,8 @@ public/                             hosted tools + carrier logo images
 
 ## 12. Known issues / open items
 
-- **Older modals are off-brand.** The Audit Memo studio, GIS popup, and Risk Intel viewer still carry the *previous* design: a teal `#2080a0` accent used nowhere else, black pill buttons, heavy uppercase labels ("Retina Audit Active", "Parse DNA"). They work, but look like a different app. A contained restyle into the navy/slate system is the one paint job worth doing.
 - **Carrier logos still load from Imgur.** `DEFAULT_INSURANCE_PORTALS` (and `AGENCY_LOGO`, `CARRIER_LOGOS`) point at `i.imgur.com` even though matching PNGs sit in `public/` and the agency runs its own image host. The newer `MORE_CARRIER_PORTALS` already use local paths.
 - **`SITE_PASSWORD` has a committed fallback literal** in `functions/_middleware.ts`. Should fail closed.
-- **`agency-password-vault` is categorized `AI`** in `PROGRAMS`; it's a password vault and probably belongs in Operations.
 - **`README.md` is still the stock AI Studio scaffold** and doesn't describe this project.
 - Bundle is ~604 kB (~148 kB gzipped) in one chunk — fine for an internal tool, but that's the chunk-size warning on every build.
 - The dormant Gmail/Task/Quote components still type-check on every lint, so a breaking change to `constants.ts` or the services can fail the build from code nothing renders.
@@ -348,7 +349,7 @@ public/                             hosted tools + carrier logo images
 7. **Don't delete the dormant Gmail files.** They're staged for a rebuild.
 8. **Push ≠ deploy**, and a deploy ships the working folder (§0, §3). 401-from-curl is normal.
 9. Run `npm run lint` and `npm run build` before deploying.
-10. Verify desktop **and** dark mode; keep the carrier-logo light plate (§5).
+10. Verify desktop, a narrower viewport, **and** dark mode; keep the carrier-logo light plate (§5).
 11. Add carrier contact details to `data/carrierContacts.ts`, portals to `constants.ts` — keep the UI data-driven.
 12. Never expose secrets in code, docs, screenshots, or chat.
 13. If a change affects shared launcher targets, check the staff dashboard too.
@@ -363,7 +364,7 @@ public/                             hosted tools + carrier logo images
 >
 > **Stack:** React 19 + TypeScript + Vite 6, Tailwind compiled at build time, no database (state is localStorage), Cloudflare Pages Function password gate.
 >
-> **Layout — one scrolling page, no tabs:** Unified Search (must stay visible without scrolling) → Program Launcher → Quick Image Links, plus a Ctrl+K command palette overlay.
+> **Layout — one scrolling page, no tabs:** Unified Search (must stay visible without scrolling) → Program Launcher → Quick Image Links, plus a Ctrl+K command palette overlay. Pinned shows 8 tools until expanded; launcher categories stay visible while browsing; the locked image-host state stays compact.
 >
 > **Critical rules:**
 > 1. Another AI may be working in this repo — run `git status --short` before editing AND before deploying; if it's dirty and not yours, ask Bill. Commit your work before handing back.
@@ -382,6 +383,8 @@ public/                             hosted tools + carrier logo images
 ## 15. Commit history (newest first)
 
 ```
+This commit  2026-08-16  Premium UX pass: search, modals, launcher, palette, and image-host states
+dd4534b  2026-08-16  Handoff: rewrite for multi-assistant work; fix stale rules
 7cd468d  2026-08-11  Add BLI Auto Rater to the launcher (v4)
 df6d4cf  2026-08-11  Handoff: document palette, single-favorites cleanup, quieter toasts
 3e17c40  2026-08-11  Add Ctrl+K command palette: clients, tools, and carrier numbers

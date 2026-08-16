@@ -681,14 +681,16 @@ Return ONLY a JSON object in this exact shape:
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder={MODE_META[mode].placeholder}
-                className="w-full rounded-xl border-2 border-slate-200 bg-white py-3.5 pl-11 pr-16 text-base font-semibold text-slate-800 shadow-inner outline-none transition-all placeholder:font-normal placeholder:text-slate-400 focus:border-primary/60 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-accent/50 sm:text-lg"
+                className="w-full rounded-xl border-2 border-slate-200 bg-white py-3.5 pl-11 pr-28 text-base font-semibold text-slate-800 shadow-inner outline-none transition-all placeholder:font-normal placeholder:text-slate-400 focus:border-primary/60 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-accent/50 sm:text-lg"
               />
               <div className="absolute inset-y-0 right-2 flex items-center">
                   <button
+                    type="button"
                     onClick={handleSearch}
-                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-light text-white shadow-sm transition-all hover:scale-105 hover:shadow-primary/30 active:scale-95"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-primary to-primary-light px-4 text-sm font-bold text-white shadow-sm transition-all hover:shadow-primary/30 active:scale-95"
                   >
-                      <i className="fa-solid fa-arrow-right text-base"></i>
+                      <i className="fa-solid fa-magnifying-glass text-xs"></i>
+                      {mode === 'contacts' ? 'Find' : 'Search'}
                   </button>
               </div>
           </div>
@@ -781,12 +783,10 @@ Return ONLY a JSON object in this exact shape:
           )}
         </div>
         
-        <div className="relative z-10 flex flex-wrap items-center gap-2">
-          <button onClick={handleSearch} className="inline-flex items-center gap-2 rounded-lg bg-[#003f87] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#0076d3] hover:shadow-md active:scale-95">
-              <i className="fa-solid fa-magnifying-glass text-xs"></i>
-              {mode === 'contacts' ? 'Find Contact' : 'Search'}
-          </button>
-
+        <div className="relative z-10 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-2 dark:border-white/10 dark:bg-white/[0.035]">
+          <span className="hidden px-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 lg:inline-flex dark:text-slate-500">
+            Workspace
+          </span>
           <button onClick={handleNewFolder} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:border-[#0076d3]/50 hover:text-[#003f87] hover:shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white">
               <i className="fa-brands fa-google-drive text-xs text-slate-400"></i>
               Cloud Folder
@@ -807,6 +807,9 @@ Return ONLY a JSON object in this exact shape:
           {/* Agency Matrix destinations — absorbed from the old Quick Links section so
               favorites live in ONE place (the launcher's Pinned row). */}
           <span className="mx-1 hidden h-6 w-px bg-slate-200 dark:bg-white/10 sm:block"></span>
+          <span className="hidden px-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 lg:inline-flex dark:text-slate-500">
+            Agency Matrix
+          </span>
           {[
             { label: 'Matrix Home', href: 'https://agents.agencymatrix.com/#/', icon: 'fa-solid fa-house-chimney-window' },
             { label: 'New Prospect', href: 'https://agents.agencymatrix.com/customerEdit.php?id=0', icon: 'fa-solid fa-user-plus' },
@@ -895,35 +898,44 @@ Return ONLY a JSON object in this exact shape:
         </div>
       </div>
 
-      <Modal isOpen={isGisModalOpen} onClose={() => setIsGisModalOpen(false)} title="County GIS Architecture">
+      <Modal isOpen={isGisModalOpen} onClose={() => setIsGisModalOpen(false)} title="County Property Map">
           {gisInfo && (
-              <div className="text-center p-4">
-                  <p className="mb-8 text-xl font-medium">GIS mapping identified for <span className="font-black text-[#2080a0] uppercase">{gisInfo.county}</span>.</p>
-                  <a href={gisInfo.url} target="_blank" rel="noopener noreferrer" className="inline-block w-full bg-[#000000] text-white font-black py-5 px-8 rounded-[20px] shadow-2xl hover:bg-[#2080a0] transition-all uppercase tracking-widest text-xs">Access Official Map <i className="fa-solid fa-arrow-up-right-from-square ml-2"></i></a>
+              <div className="space-y-5">
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-center dark:border-blue-400/20 dark:bg-blue-500/10">
+                      <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#003f87] text-white shadow-sm">
+                          <i className="fa-solid fa-map-location-dot"></i>
+                      </span>
+                      <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">Official mapping source identified for</p>
+                      <p className="mt-1 font-outfit text-xl font-bold text-slate-900 dark:text-white">{gisInfo.county}</p>
+                      {gisInfo.note && <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{gisInfo.note}</p>}
+                  </div>
+                  <a href={gisInfo.url} target="_blank" rel="noopener noreferrer" className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#003f87] px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0076d3]">
+                      Open Official County Map <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                  </a>
               </div>
           )}
       </Modal>
 
-      <Modal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} title={reportSubject || 'Engineering Risk Intel...'} maxWidthClass="max-w-5xl">
+      <Modal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} title={reportSubject || 'Property Risk Report'} maxWidthClass="max-w-5xl">
         {isGeneratingReport && !reportHtml ? (
-            <div className="flex flex-col items-center justify-center h-96 text-text-secondary-light">
-                <div className="relative w-28 h-28 mb-8">
-                    <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
-                    <div className="absolute inset-0 border-4 border-[#2080a0] rounded-full border-t-transparent animate-spin"></div>
-                    <i className="fa-solid fa-home absolute inset-0 flex items-center justify-center text-4xl text-[#2080a0]"></i>
+            <div className="flex h-80 flex-col items-center justify-center text-center">
+                <div className="relative mb-6 h-20 w-20">
+                    <div className="absolute inset-0 rounded-full border-4 border-slate-100 dark:border-white/10"></div>
+                    <div className="absolute inset-0 animate-spin rounded-full border-4 border-[#0076d3] border-t-transparent"></div>
+                    <i className="fa-solid fa-house-circle-check absolute inset-0 flex items-center justify-center text-2xl text-[#003f87] dark:text-sky-300"></i>
                 </div>
-                <p className="font-black text-2xl text-[#000000] uppercase tracking-tighter">Parsing Property DNA...</p>
-                <p className="text-[10px] mt-3 text-slate-400 uppercase tracking-[0.3em] font-black">Merging Zillow, GIS & FEMA Vectors</p>
+                <p className="font-outfit text-2xl font-bold text-slate-900 dark:text-white">Building the property report…</p>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Reviewing property, GIS, flood, and carrier information.</p>
             </div>
         ) : (
             <div>
-                <div className="w-full h-[650px] bg-white border border-slate-100 rounded-[32px] overflow-hidden mb-8 shadow-inner">
+                <div className="mb-5 h-[min(62vh,650px)] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-inner dark:border-white/10">
                     <iframe srcDoc={reportHtml} title="AI Property Report" className="w-full h-full border-0" sandbox="allow-same-origin" />
                 </div>
-                <div className="flex items-center justify-end gap-4">
-                    <button onClick={handleReportDownload} className="px-6 py-3 text-[10px] font-black uppercase tracking-widest border-2 rounded-2xl hover:bg-gray-50 flex items-center gap-2"><i className="fa-solid fa-download"></i> Save HTML</button>
-                    <button onClick={handleReportPrint} className="px-6 py-3 text-[10px] font-black uppercase tracking-widest border-2 rounded-2xl hover:bg-gray-50 flex items-center gap-2"><i className="fa-solid fa-print"></i> Print</button>
-                    <button onClick={handleReportEmail} className="px-8 py-3 text-xs font-black uppercase tracking-widest bg-[#000000] text-white rounded-2xl shadow-2xl hover:bg-[#2080a0] flex items-center gap-2"><i className="fa-solid fa-paper-plane"></i> Finalize for Gmail</button>
+                <div className="flex flex-wrap items-center justify-end gap-3">
+                    <button onClick={handleReportDownload} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-[#0076d3]/50 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"><i className="fa-solid fa-download text-xs"></i> Save HTML</button>
+                    <button onClick={handleReportPrint} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-[#0076d3]/50 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"><i className="fa-solid fa-print text-xs"></i> Print</button>
+                    <button onClick={handleReportEmail} className="inline-flex items-center gap-2 rounded-xl bg-[#003f87] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0076d3]"><i className="fa-solid fa-paper-plane text-xs"></i> Prepare Gmail Draft</button>
                 </div>
             </div>
         )}
@@ -932,51 +944,60 @@ Return ONLY a JSON object in this exact shape:
       {isNotesModalOpen && !isNotesMinimized && (
         <Modal isOpen={true} onClose={handleNotesClose} title="Audit-Safe Compliance Memo" maxWidthClass="max-w-2xl">
             <div className="space-y-5">
-                <div className="flex items-center justify-between mb-2">
-                    <button onClick={() => setIsNotesMinimized(true)} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#2080a0] transition-colors flex items-center gap-2"><i className="fa-solid fa-window-minimize"></i> Minimize Studio</button>
-                    <span className="text-[9px] font-black uppercase text-white bg-rose-500 px-3 py-1 rounded-full shadow-lg">Retina Audit Active</span>
-                </div>
-                <div className="relative group">
-                    <i className="fa-solid fa-user absolute left-5 top-1/2 -translate-y-1/2 text-[#2080a0] text-sm"></i>
-                    <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Client Primary Key" className="w-full bg-[#f8fafc] dark:bg-bg-dark border-2 border-transparent focus:border-[#2080a0] rounded-2xl py-4 pl-12 pr-4 font-black uppercase text-sm tracking-widest outline-none transition-all shadow-inner" />
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Turn raw notes, emails, PDFs, or images into a clear Matrix memo.</p>
+                    <button onClick={() => setIsNotesMinimized(true)} className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-[#003f87] dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"><i className="fa-solid fa-window-minimize"></i> Minimize</button>
                 </div>
                 <div>
-                    <div className="flex items-center justify-between mb-3">
-                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Interaction Source / Context</label>
-                        <div className="flex gap-2">
+                    <label className="mb-2 flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 text-[10px] text-[#003f87] dark:bg-blue-500/15 dark:text-sky-300">1</span>
+                        Customer name
+                    </label>
+                    <div className="relative">
+                        <i className="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400"></i>
+                        <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Enter the customer name" className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-[#0076d3] focus:bg-white dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:bg-white/10" />
+                    </div>
+                </div>
+                <div>
+                    <div className="mb-3 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 text-[10px] text-[#003f87] dark:bg-blue-500/15 dark:text-sky-300">2</span>
+                            Interaction notes or email thread
+                        </label>
+                        <div className="flex w-full gap-2 sm:w-auto">
                             <button 
                                 onClick={() => notesFileInputRef.current?.click()} 
-                                className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest border-2 rounded-xl flex items-center gap-2 transition-all ${stagedNotesFile ? 'bg-[#2080a0] text-white border-transparent shadow-lg' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-500 hover:border-[#2080a0]'}`}
-                                title="Attach doc twin"
+                                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition sm:flex-none ${stagedNotesFile ? 'border-[#0076d3] bg-blue-50 text-[#003f87] dark:bg-blue-500/15 dark:text-sky-200' : 'border-slate-200 bg-white text-slate-600 hover:border-[#0076d3]/50 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200'}`}
+                                title="Attach a PDF or image"
                             >
                                 <i className={`fa-solid ${stagedNotesFile ? 'fa-file-circle-check' : 'fa-paperclip'}`}></i>
-                                {stagedNotesFile ? 'Source Ready' : 'Stage Doc'}
+                                {stagedNotesFile ? 'File ready' : 'Attach file'}
                             </button>
                             <input type="file" ref={notesFileInputRef} onChange={handleNotesFileChange} accept=".pdf,image/*" className="hidden" />
                             
-                            <button onClick={handleOrganizeNotes} disabled={isOrganizingNotes} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-[#000000] text-white border-none rounded-xl flex items-center gap-2 hover:bg-[#2080a0] transition-all shadow-lg">
+                            <button onClick={handleOrganizeNotes} disabled={isOrganizingNotes} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#003f87] px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#0076d3] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none">
                                 {isOrganizingNotes ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-wand-magic-sparkles"></i>}
-                                Build Audit
+                                Organize notes
                             </button>
                         </div>
                     </div>
                     
                     {stagedNotesFile && (
-                        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl flex items-center justify-between animate-fade-in">
+                        <div className="mb-4 flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50 p-3 animate-fade-in dark:border-blue-400/20 dark:bg-blue-500/10">
                             <div className="flex items-center gap-3">
-                                <i className="fa-solid fa-file-invoice text-[#2080a0] text-lg"></i>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-[#2080a0] truncate max-w-[200px]">{stagedNotesFile.name}</span>
+                                <i className="fa-solid fa-file-invoice text-lg text-[#003f87] dark:text-sky-300"></i>
+                                <span className="max-w-[220px] truncate text-xs font-semibold text-slate-700 dark:text-slate-200">{stagedNotesFile.name}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <button 
                                     onClick={handleProcessNotesAi} 
                                     disabled={isProcessingNotesFile}
-                                    className="px-4 py-1.5 bg-[#2080a0] text-white text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-[#1a6882] transition-all flex items-center gap-2 shadow-md"
+                                    className="inline-flex items-center gap-2 rounded-lg bg-[#003f87] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0076d3] disabled:opacity-60"
                                 >
                                     {isProcessingNotesFile ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-shield-halved"></i>}
-                                    Parse DNA
+                                    Extract notes
                                 </button>
-                                <button onClick={() => setStagedNotesFile(null)} className="text-slate-400 hover:text-rose-500 px-1 transition-colors"><i className="fa-solid fa-times"></i></button>
+                                <button onClick={() => setStagedNotesFile(null)} aria-label="Remove attached file" className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white hover:text-rose-500 dark:hover:bg-white/10"><i className="fa-solid fa-times"></i></button>
                             </div>
                         </div>
                     )}
@@ -984,17 +1005,23 @@ Return ONLY a JSON object in this exact shape:
                     <textarea 
                         value={customerNotes} 
                         onChange={(e) => setCustomerNotes(e.target.value)} 
-                        placeholder="Paste email thread or raw action notes..." 
-                        rows={10} 
-                        className="w-full bg-[#f8fafc] dark:bg-bg-dark border-2 border-transparent focus:border-[#2080a0] rounded-[24px] py-5 px-6 font-bold text-sm outline-none transition-all resize-none shadow-inner custom-scrollbar" 
+                        placeholder="Paste the email thread, call notes, or action details here…"
+                        rows={8}
+                        className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium leading-relaxed text-slate-800 outline-none transition focus:border-[#0076d3] focus:bg-white dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:bg-white/10 custom-scrollbar"
                     />
                 </div>
-                <div className="flex items-center gap-4 pt-3">
-                    <button onClick={handleNotesSave} className="flex-1 bg-[#000000] text-white font-black py-4 rounded-[20px] shadow-2xl hover:bg-[#2080a0] hover:-translate-y-1 transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-xs">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.035]">
+                    <div className="mb-3 flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 text-[10px] text-[#003f87] dark:bg-blue-500/15 dark:text-sky-300">3</span>
+                        Save the memo to your workflow
+                    </div>
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <button onClick={handleNotesClose} className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10">Cancel</button>
+                    <button onClick={handleNotesSave} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#003f87] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#0076d3]">
                         <i className="fa-solid fa-share-from-square"></i>
-                        Execute Sync & Matrix
+                        Copy Memo & Open Matrix
                     </button>
-                    <button onClick={handleNotesClose} className="px-8 py-4 text-[10px] font-black uppercase tracking-widest border-2 rounded-[20px] hover:bg-gray-50 transition-colors">Discard</button>
+                    </div>
                 </div>
             </div>
         </Modal>

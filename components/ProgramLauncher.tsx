@@ -367,7 +367,7 @@ export const PROGRAMS: ProgramEntry[] = [
   {
     id: 'agency-password-vault',
     title: 'Agency Password Vault',
-    category: 'AI',
+    category: 'Operations',
     description: 'Open the agency password vault for protected internal login references.',
     target: 'https://agency-password-vault.bill-7e3.workers.dev/',
     hostedTarget: 'https://agency-password-vault.bill-7e3.workers.dev/',
@@ -570,7 +570,7 @@ const NEW_IN_VERSION: Record<number, string[]> = {
   4: ['bli-auto-rater'],
 };
 
-const DEFAULT_PINNED: string[] = [
+export const DEFAULT_PINNED: string[] = [
   'send-docs',
   'bli-auto-rater',
   'sms-command-center',
@@ -588,6 +588,8 @@ const DEFAULT_PINNED: string[] = [
   'hazard-collages',
   'carrier-contact-pages',
 ];
+
+const PINNED_PREVIEW_LIMIT = 8;
 
 const toFileUrl = (windowsPath: string) => encodeURI(`file:///${windowsPath.replace(/\\/g, '/')}`);
 
@@ -616,6 +618,7 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
   const [pinnedProgramIds, setPinnedProgramIds] = useLocalStorage<string[]>(PINNED_PROGRAMS_KEY, DEFAULT_PINNED);
   const [seenVersion, setSeenVersion] = useLocalStorage<number>(LAUNCHER_VERSION_KEY, 1);
   const [filterQuery, setFilterQuery] = useState('');
+  const [showAllPinned, setShowAllPinned] = useState(false);
   const [storedCategory, setActiveCategory] = useLocalStorage<ProgramCategory | 'All'>('matrix-pro-launcher-category', 'All');
   // Guard against stale persisted values if a category is ever renamed.
   const activeCategory: ProgramCategory | 'All' =
@@ -665,6 +668,11 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
         .filter((program): program is ProgramEntry => Boolean(program)),
     [programMap, pinnedProgramIds]
   );
+
+  const visiblePinnedPrograms = showAllPinned
+    ? pinnedPrograms
+    : pinnedPrograms.slice(0, PINNED_PREVIEW_LIMIT);
+  const hiddenPinnedCount = Math.max(0, pinnedPrograms.length - PINNED_PREVIEW_LIMIT);
 
   const recentPrograms = useMemo(
     () =>
@@ -785,7 +793,7 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="flex items-center gap-2.5 font-outfit text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#003f87] text-white shadow-sm">
               <i className="fa-solid fa-table-cells-large text-sm"></i>
             </span>
             Program Launcher
@@ -857,14 +865,30 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
         <div className="space-y-5">
           {pinnedPrograms.length > 0 && (
             <section>
-              <div className="mb-2.5 flex items-center gap-2">
-                <i className="fa-solid fa-star text-xs text-amber-500"></i>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Pinned
-                </h3>
+              <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <i className="fa-solid fa-star text-xs text-amber-500"></i>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Pinned
+                  </h3>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-white/10 dark:text-slate-300">
+                    {pinnedPrograms.length}
+                  </span>
+                </div>
+                {hiddenPinnedCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllPinned((current) => !current)}
+                    aria-expanded={showAllPinned}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-[#003f87] transition hover:bg-blue-50 dark:text-cyan-200 dark:hover:bg-white/10"
+                  >
+                    {showAllPinned ? 'Show fewer' : `Show all ${pinnedPrograms.length}`}
+                    <i className={`fa-solid ${showAllPinned ? 'fa-chevron-up' : 'fa-chevron-down'} text-[9px]`}></i>
+                  </button>
+                )}
               </div>
               <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {pinnedPrograms.map(renderTile)}
+                {visiblePinnedPrograms.map(renderTile)}
               </div>
             </section>
           )}
@@ -893,7 +917,7 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
           )}
 
           <section>
-            <div className="mb-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4 dark:border-white/10">
+            <div className="sticky top-[4.25rem] z-20 -mx-1 mb-3 flex flex-wrap items-center gap-2 rounded-xl border-t border-slate-100 bg-white/95 px-1 py-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-[#151f2f]/95">
               <h3 className="mr-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 All Tools
               </h3>
@@ -904,7 +928,7 @@ const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
                   onClick={() => setActiveCategory(category)}
                   className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
                     activeCategory === category
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                      ? 'bg-[#003f87] text-white shadow-sm dark:bg-[#0076d3]'
                       : 'border border-slate-200 bg-white text-slate-500 hover:border-[#0076d3]/40 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white'
                   }`}
                 >

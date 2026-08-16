@@ -5,9 +5,26 @@
 /* Previously inlined in index.html alongside the Tailwind CDN script. */
 body {
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  min-width: 320px;
+  background: #edf3f8;
 }
 .dark body {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) fixed;
+  background: #08111f;
+}
+.app-shell {
+  background-color: #edf3f8;
+  background-image:
+    radial-gradient(circle at 8% 2%, rgba(0, 118, 211, 0.08), transparent 28rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(241, 245, 249, 0.9));
+}
+.dark .app-shell {
+  background-color: #08111f;
+  background-image:
+    radial-gradient(circle at 8% 0%, rgba(0, 118, 211, 0.16), transparent 30rem),
+    linear-gradient(180deg, #0a1424, #08111f 72%);
+}
+::selection {
+  background: rgba(0, 118, 211, 0.24);
 }
 .glass-card {
   background: rgba(255, 255, 255, 0.08);

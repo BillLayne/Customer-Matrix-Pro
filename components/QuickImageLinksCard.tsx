@@ -185,7 +185,7 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
       <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="flex items-center gap-2.5 font-outfit text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#003f87] text-white shadow-sm">
               <i className="fa-solid fa-image text-sm"></i>
             </span>
             Quick Image Links
@@ -230,7 +230,7 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
         </span>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">
+      <div className={hasAccessCode ? 'grid gap-4 xl:grid-cols-[1.35fr_0.95fr]' : 'block'}>
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -332,6 +332,7 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
           )}
         </div>
 
+        {hasAccessCode && (
         <div className="rounded-[1.35rem] border border-slate-200/80 bg-white/90 p-4 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.8)] dark:border-white/10 dark:bg-[#0b1727]/80">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -501,6 +502,7 @@ const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) =
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

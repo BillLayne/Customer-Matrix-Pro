@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CATEGORY_STYLES,
+  DEFAULT_PINNED,
   PINNED_PROGRAMS_KEY,
   PROGRAMS,
   RECENT_PROGRAMS_KEY,
@@ -30,9 +31,11 @@ const rowKey = (row: PaletteRow) =>
       ? 'client-search'
       : `contact-${row.company.id}-${row.detail.label}`;
 
-const readStoredIds = (key: string): string[] => {
+const readStoredIds = (key: string, fallback: string[] = []): string[] => {
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(key) ?? '[]');
+    const raw = window.localStorage.getItem(key);
+    if (raw === null) return fallback;
+    const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
   } catch {
     return [];
@@ -73,7 +76,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onClie
     // reaches for anyway, now zero scrolling away.
     if (!trimmed) {
       const programById = Object.fromEntries(PROGRAMS.map((p) => [p.id, p]));
-      const ids = [...readStoredIds(RECENT_PROGRAMS_KEY), ...readStoredIds(PINNED_PROGRAMS_KEY)];
+      const ids = [
+        ...readStoredIds(RECENT_PROGRAMS_KEY),
+        ...readStoredIds(PINNED_PROGRAMS_KEY, DEFAULT_PINNED),
+      ];
       const seen = new Set<string>();
       const suggestions: PaletteRow[] = [];
       for (const id of ids) {
@@ -118,7 +124,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onClie
     return tools.length === 0 && contacts.length === 0
       ? [client]
       : [...tools, client, ...contacts];
-  }, [query]);
+  }, [isOpen, query]);
 
   useEffect(() => {
     setSelectedIndex(0);
