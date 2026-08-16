@@ -1,6 +1,6 @@
 # Agency Command Center — Live Handoff
 
-**Last verified against the code: August 16, 2026** (premium UX release; production baseline before this work was `dd4534b`).
+**Last verified against the code: August 16, 2026** (premium UX release `42c49a8`, pushed and deployed).
 
 This describes the dashboard **as it actually exists right now**. If anything here disagrees with the code, the code wins — re-verify and fix this file in the same commit.
 
@@ -63,7 +63,7 @@ Before this rewrite, §13 still instructed maintainers to update a "Quick Links 
 
 Separate, do not confuse: the staff dashboard at `Playground\Agency-Staff-Dashboard` → https://agency-staff-dashboard.pages.dev/. If a launcher target changes for both people, check whether the staff dashboard needs the same edit.
 
-**Current state:** This commit adds the premium UX pass described throughout this handoff. It was built and browser-tested locally; it has **not** been pushed or deployed as part of this change. The production baseline before this work was `dd4534b`.
+**Current state:** Premium UX release `42c49a8` is pushed to `main` and deployed to the production Cloudflare Pages project. It passed TypeScript/build checks plus responsive browser testing in light and dark modes.
 
 ---
 
@@ -383,7 +383,7 @@ public/                             hosted tools + carrier logo images
 ## 15. Commit history (newest first)
 
 ```
-This commit  2026-08-16  Premium UX pass: search, modals, launcher, palette, and image-host states
+42c49a8  2026-08-16  Premium UX pass: search, modals, launcher, palette, and image-host states
 dd4534b  2026-08-16  Handoff: rewrite for multi-assistant work; fix stale rules
 7cd468d  2026-08-11  Add BLI Auto Rater to the launcher (v4)
 df6d4cf  2026-08-11  Handoff: document palette, single-favorites cleanup, quieter toasts
