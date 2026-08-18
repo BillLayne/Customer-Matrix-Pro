@@ -59,6 +59,31 @@ const parseJsonFromText = <T,>(text: string): T => {
   return JSON.parse(candidate.slice(firstBrace, lastBrace + 1)) as T;
 };
 
+/**
+ * Google Drive "Client Folders" — one sub-folder per client, where the agency's
+ * document automation files everything. Verified 2026-08-16: this folder is owned
+ * by billlayneinsurance@gmail.com, which is account index u/1 in Bill's browser.
+ * If Drive ever opens on the wrong account, that index is the thing to change.
+ */
+const DRIVE_ACCOUNT_INDEX = '1';
+const CLIENT_FOLDERS_ID = '1lqq_4WpQgydfChWVKZRB-PBNWTZy8ulz';
+
+/** Browse every client folder. */
+const clientFoldersRootUrl = () =>
+  `https://drive.google.com/drive/u/${DRIVE_ACCOUNT_INDEX}/folders/${CLIENT_FOLDERS_ID}`;
+
+/**
+ * Find one client's folder by name.
+ *
+ * Drive's web UI supports `title:` but NOT `parent:` — a parent-scoped query was
+ * tested against this Drive and returned zero results, so there is no way to pin a
+ * web search to one folder. `title:` is the next best thing: it matches folder and
+ * file NAMES only, so the client's own folder ranks at the top instead of being
+ * buried under every PDF that merely mentions their name.
+ */
+const clientFolderSearchUrl = (name: string) =>
+  `https://drive.google.com/drive/u/${DRIVE_ACCOUNT_INDEX}/search?q=${encodeURIComponent(`title:${name.trim()}`)}`;
+
 const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch }) => {
   const [mode, setMode] = useState<SearchMode>('agency');
   const [query, setQuery] = useState('');
@@ -112,7 +137,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
           url = `https://www.truepeoplesearch.com/results?name=${encodeURIComponent(historicQuery)}`;
           break;
         case 'onedrive': {
-          url = `https://drive.google.com/drive/u/1/search?q=${encodeURIComponent(historicQuery.trim())}`;
+          url = clientFolderSearchUrl(historicQuery);
           break;
         }
         case 'contacts':
@@ -123,10 +148,6 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
     }, 50);
   };
 
-  const GOOGLE_DRIVE_CONSTANTS = {
-      agencyEmail: 'docs@billlayneinsurance.com',
-      clientsFolderId: '11O0Cm9gOdgXp_j8OXMO4Pm5tqh18uXd5'
-  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -216,8 +237,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
         url = `https://www.truepeoplesearch.com/results?name=${encodeURIComponent(query)}`;
         break;
       case 'onedrive': {
-        const clientName = query.trim();
-        url = `https://drive.google.com/drive/u/1/search?q=${encodeURIComponent(clientName)}`;
+        url = clientFolderSearchUrl(query);
         break;
       }
       case 'contacts':
@@ -449,13 +469,9 @@ Return ONLY a JSON object in this exact shape:
       window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(reportSubject)}`, '_blank');
   };
 
+  // With a name typed, jump to that client's folder; empty, browse them all.
   const handleNewFolder = () => {
-    if (query.trim()) {
-        const clientName = query.trim();
-        window.open(`https://drive.google.com/drive/u/1/search?q=${encodeURIComponent(clientName)}`, '_blank');
-    } else {
-        window.open(`https://drive.google.com/drive/u/1/folders/1lqq_4WpQgydfChWVKZRB-PBNWTZy8ulz`, '_blank');
-    }
+    window.open(query.trim() ? clientFolderSearchUrl(query) : clientFoldersRootUrl(), '_blank');
   };
 
   const handleNotesOpen = () => {

@@ -152,7 +152,7 @@ The highest-traffic component in the app. Treat it carefully.
 | Web Search | Google | Alt + W |
 | Real Estate | NC Insurance Tools property lookup, `?address=` prefilled | Alt + H |
 | People | TruePeopleSearch | Alt + P |
-| Client Folder | Google Drive search | Alt + F |
+| Client Folder | Google Drive `title:` search over the agency's client folders | Alt + F |
 | Contact Numbers | Local carrier contact directory, live matching | Alt + C |
 
 Agency Matrix mode picks `selection=Address` when the query contains a digit, else `selection=Name`. **The command palette repeats this rule — keep the two in sync.**
@@ -162,6 +162,11 @@ Agency Matrix mode picks `selection=Address` when the query contains a digit, el
 - `/` focuses the search input from anywhere (unless already typing)
 - Recent searches (last 6) as chips — `matrix-pro-search-history`
 - One primary **Search / Find** control lives inside the query field; do not add a second Search button below it.
+- **Client Folder / Cloud Folder → Google Drive (verified 2026-08-16).** Both live in `SearchCard.tsx` via `clientFolderSearchUrl()` / `clientFoldersRootUrl()`.
+  - The real destination is the **"Client Folders"** folder, id `1lqq_4WpQgydfChWVKZRB-PBNWTZy8ulz`, which holds **one sub-folder per client**. It is owned by `billlayneinsurance@gmail.com` = **account index `u/1`** in Bill's browser. `DRIVE_ACCOUNT_INDEX` is the knob if Drive ever opens on the wrong account.
+  - Searching uses **`title:`**, e.g. `…/u/1/search?q=title:Scott%20Norris`, so the client's own folder ranks first instead of being buried under every PDF that merely mentions the name. Percent-encoding the colon is fine — Drive normalizes `title%3A` back to `title:`.
+  - **`parent:` does NOT work in the Drive web UI.** It was tested against this Drive and returned zero results, and the Location filter only offers Anywhere / My Drive / Shared with me / Starred / Trashed. There is no URL that pins a Drive web search to one folder — `title:` is the closest available.
+  - **Cloud Folder** button: with a name typed it runs the same `title:` search; empty, it opens the Client Folders root to browse everyone.
 - Secondary action row is grouped by intent: **Workspace** (Cloud Folder · Audit Memo · **NC Tools** in Real Estate mode) and **Agency Matrix** (Matrix Home · New Prospect · Reports).
 - **Audit Memo studio** (Alt+N or Ctrl+Shift+M) — E&O compliance memo builder. The three plain-language steps are Customer name → Interaction notes or email thread → Save memo to workflow. Paste notes or attach a PDF/image; Gemini formats an audit-ready CRM memo; "Copy Memo & Open Matrix" copies it and opens the customer in Agency Matrix.
 - **County Property Map and Property Risk Report** use the same shared premium modal shell as Audit Memo. Keep their wording plain and their actions descriptive.
