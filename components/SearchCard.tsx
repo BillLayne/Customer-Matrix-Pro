@@ -60,29 +60,45 @@ const parseJsonFromText = <T,>(text: string): T => {
 };
 
 /**
- * Google Drive "Client Folders" — one sub-folder per client, where the agency's
- * document automation files everything. Verified 2026-08-16: this folder is owned
- * by billlayneinsurance@gmail.com, which is account index u/1 in Bill's browser.
- * If Drive ever opens on the wrong account, that index is the thing to change.
+ * Google Drive — the agency's "BLI Clients" SHARED DRIVE, one sub-folder per client
+ * (named "Last, First"), where the document automation files everything. This is the
+ * same drive Bill sees locally as H:\Shared drives\BLI Clients.
+ *
+ * Verified 2026-08-16 against the live Drive.
  */
-const DRIVE_ACCOUNT_INDEX = '1';
-const CLIENT_FOLDERS_ID = '1lqq_4WpQgydfChWVKZRB-PBNWTZy8ulz';
+const BLI_CLIENTS_DRIVE_ID = '0AHhWG49MZdQjUk9PVA';
 
-/** Browse every client folder. */
+/**
+ * Addressed by EMAIL, not by a /u/N/ index. Only this account is a member of the
+ * shared drive, and the numeric index is not stable — Bill has three Google accounts
+ * signed in, and a /u/3/ link was observed silently redirecting to /u/0/. `authuser=`
+ * pins the right account no matter what order they are signed in.
+ */
+const DRIVE_ACCOUNT_EMAIL = 'Bill@billlayneinsurance.com';
+
+const withAuthUser = (url: string) =>
+  `${url}${url.includes('?') ? '&' : '?'}authuser=${encodeURIComponent(DRIVE_ACCOUNT_EMAIL)}`;
+
+/** Browse every client folder in the shared drive. */
 const clientFoldersRootUrl = () =>
-  `https://drive.google.com/drive/u/${DRIVE_ACCOUNT_INDEX}/folders/${CLIENT_FOLDERS_ID}`;
+  withAuthUser(`https://drive.google.com/drive/folders/${BLI_CLIENTS_DRIVE_ID}`);
 
 /**
  * Find one client's folder by name.
  *
- * Drive's web UI supports `title:` but NOT `parent:` — a parent-scoped query was
- * tested against this Drive and returned zero results, so there is no way to pin a
- * web search to one folder. `title:` is the next best thing: it matches folder and
- * file NAMES only, so the client's own folder ranks at the top instead of being
- * buried under every PDF that merely mentions their name.
+ * Uses `title:`, which matches folder and file NAMES only, so the client's own folder
+ * ranks first instead of being buried under every PDF that merely mentions the name.
+ * Word order does not matter — typing "Brian Johnson" finds the "Johnson, Brian"
+ * folder, because Drive tokenizes titles.
+ *
+ * `parent:` was tried first and does NOT work in the Drive web UI (tested: zero
+ * results), and the Location filter offers no arbitrary folder, so no URL can pin a
+ * web search to a single folder. `title:` is the closest available.
  */
 const clientFolderSearchUrl = (name: string) =>
-  `https://drive.google.com/drive/u/${DRIVE_ACCOUNT_INDEX}/search?q=${encodeURIComponent(`title:${name.trim()}`)}`;
+  withAuthUser(
+    `https://drive.google.com/drive/search?q=${encodeURIComponent(`title:${name.trim()}`)}`
+  );
 
 const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch }) => {
   const [mode, setMode] = useState<SearchMode>('agency');
