@@ -518,6 +518,18 @@ export const PROGRAMS: ProgramEntry[] = [
     note: 'Local site entry',
     targetType: 'local',
   },
+  {
+    id: 'nc-grange-new-business',
+    title: 'NC Grange New Business App & Photo Link',
+    category: 'Documents & Forms',
+    description: 'Open the NC Grange agent workflow for new-business applications and customer photo links.',
+    target: 'https://sign.billlayneinsurance.com/agent',
+    hostedTarget: 'https://sign.billlayneinsurance.com/agent',
+    icon: 'fa-solid fa-file-circle-plus',
+    accent: 'from-emerald-800 to-teal-500',
+    note: 'New business app and photo links',
+    targetType: 'web',
+  },
 ];
 
 const CATEGORY_ORDER: ProgramCategory[] = ['Operations', 'Documents & Forms', 'AI', 'Property & Coverage'];
@@ -563,11 +575,12 @@ const LAUNCHER_VERSION_KEY = 'matrix-pro-launcher-version';
  * list the new ids here: on next load they are pinned once and badged NEW. Unpinning still
  * sticks, because the version has already been recorded by then.
  */
-const LAUNCHER_VERSION = 4;
+const LAUNCHER_VERSION = 5;
 const NEW_IN_VERSION: Record<number, string[]> = {
   2: ['bli-task-board', 'bli-mail-gateway', 'claude-quotes', 'claude-gmail'],
   3: ['pdf-studio'],
   4: ['bli-auto-rater'],
+  5: ['nc-grange-new-business'],
 };
 
 export const DEFAULT_PINNED: string[] = [
