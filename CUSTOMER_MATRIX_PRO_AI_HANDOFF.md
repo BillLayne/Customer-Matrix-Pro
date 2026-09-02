@@ -1,6 +1,6 @@
 # Agency Command Center — Live Handoff
 
-**Last verified against the code: August 28, 2026** (NC Grange New Business launcher update).
+**Last verified against the code: September 2, 2026** (Sign Forms launcher update).
 
 This describes the dashboard **as it actually exists right now**. If anything here disagrees with the code, the code wins — re-verify and fix this file in the same commit.
 
@@ -63,7 +63,7 @@ Before this rewrite, §13 still instructed maintainers to update a "Quick Links 
 
 Separate, do not confuse: the staff dashboard at `Playground\Agency-Staff-Dashboard` → https://agency-staff-dashboard.pages.dev/. If a launcher target changes for both people, check whether the staff dashboard needs the same edit.
 
-**Current state:** The premium UX release is live, including the NC Grange New Business App & Photo Link launcher container. The current build passed TypeScript/build checks and targeted launcher verification.
+**Current state:** The premium UX release is live, including the NC Grange New Business App & Photo Link and Sign Forms launcher containers. The current build passed TypeScript/build checks and targeted launcher verification.
 
 ---
 
@@ -72,7 +72,7 @@ Separate, do not confuse: the staff dashboard at `Playground\Agency-Staff-Dashbo
 A single-page internal dashboard Bill opens every day. Two jobs dominate:
 
 1. **Search Agency Matrix** for a customer by name or address — the first action of most tasks.
-2. **Launch one of 43 agency tools** without hunting through bookmarks.
+2. **Launch one of 44 agency tools** without hunting through bookmarks.
 
 **The governing UX rule: Unified Search stays at the top and must be usable without scrolling.** Never push content above it.
 
@@ -214,7 +214,7 @@ Opening tools, running searches, and switching modes **do not toast** — the ne
 
 **The `PROGRAMS` array here is the single source of truth for every launcher target.** Wrong link? Fix it here.
 
-**43 tools in 4 categories:** Operations (12) · Documents & Forms (16) · AI (11) · Property & Coverage (4). Sorted alphabetically within each section. **Agency Password Vault belongs in Operations.**
+**44 tools in 4 categories:** Operations (12) · Documents & Forms (17) · AI (11) · Property & Coverage (4). Sorted alphabetically within each section. **Agency Password Vault belongs in Operations.**
 
 **How Bill finds things:**
 
@@ -236,7 +236,7 @@ Opening tools, running searches, and switching modes **do not toast** — the ne
 
 On next load those ids are pinned once and badged **NEW**; unpinning afterwards still sticks, because the version was already recorded.
 
-**Currently `LAUNCHER_VERSION = 5`** — v2: task board, mail gateway, Claude Quotes/Gmail · v3: `pdf-studio` · v4: `bli-auto-rater` · v5: `nc-grange-new-business`. *(Verify in the file before bumping — see §0.)*
+**Currently `LAUNCHER_VERSION = 6`** — v2: task board, mail gateway, Claude Quotes/Gmail · v3: `pdf-studio` · v4: `bli-auto-rater` · v5: `nc-grange-new-business` · v6: `sign-forms`. *(Verify in the file before bumping — see §0.)*
 
 **How to test it properly:** in the browser console, set `matrix-pro-launcher-version` to the *previous* version and remove the new id from `matrix-pro-pinned-programs`, then reload. The tile should auto-pin and show a NEW badge.
 
