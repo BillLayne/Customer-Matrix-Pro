@@ -448,14 +448,27 @@ export const PROGRAMS: ProgramEntry[] = [
     targetType: 'web',
   },
   {
+    id: 'cancellation-request',
+    title: 'Cancellation Request',
+    category: 'Documents & Forms',
+    description: 'Open the agency e-signature workflow to prepare and send cancellation requests.',
+    target: 'https://esign.billlayneinsurance.com/agent',
+    hostedTarget: 'https://esign.billlayneinsurance.com/agent',
+    icon: 'fa-solid fa-file-circle-xmark',
+    accent: 'from-rose-700 to-orange-500',
+    note: 'Agency e-signature portal',
+    targetType: 'web',
+  },
+  {
     id: 'no-loss',
     title: 'No Loss Form Generator',
     category: 'Documents & Forms',
-    description: 'Build live no-loss statement links from the agent portal.',
-    target: 'https://mynolossform.com/agent-portal.html',
+    description: 'Open the agency e-signature workflow to prepare and send no-loss forms.',
+    target: 'https://esign.billlayneinsurance.com/agent',
+    hostedTarget: 'https://esign.billlayneinsurance.com/agent',
     icon: 'fa-solid fa-file-signature',
     accent: 'from-slate-700 to-slate-500',
-    note: 'Live agent portal',
+    note: 'Agency e-signature portal',
     targetType: 'web',
   },
   {
@@ -587,13 +600,14 @@ const LAUNCHER_VERSION_KEY = 'matrix-pro-launcher-version';
  * list the new ids here: on next load they are pinned once and badged NEW. Unpinning still
  * sticks, because the version has already been recorded by then.
  */
-const LAUNCHER_VERSION = 6;
+const LAUNCHER_VERSION = 7;
 const NEW_IN_VERSION: Record<number, string[]> = {
   2: ['bli-task-board', 'bli-mail-gateway', 'claude-quotes', 'claude-gmail'],
   3: ['pdf-studio'],
   4: ['bli-auto-rater'],
   5: ['nc-grange-new-business'],
   6: ['sign-forms'],
+  7: ['cancellation-request'],
 };
 
 export const DEFAULT_PINNED: string[] = [
