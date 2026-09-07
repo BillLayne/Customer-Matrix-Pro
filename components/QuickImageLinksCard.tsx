@@ -1,511 +1,301 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LOCAL_STORAGE_HISTORY_KEY } from '../constants';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import {
-  IMAGE_PRESETS,
-  checkAccessCode,
-  getAccessCode,
-  listAllHostedImages,
-  setAccessCode,
-  uploadImage,
+  IMAGE_PRESETS, checkAccessCode, getAccessCode, getCachedHostedImages,
+  listAllHostedImages, setAccessCode, uploadImage, validateImage,
 } from '../services/imageHostService';
 import type { ImageHostLibraryItem, ImagePresetId } from '../services/imageHostService';
 import type { HistoryItem, ToastMessage } from '../types';
 
 interface QuickImageLinksCardProps {
   addToast: (message: string, type?: ToastMessage['type']) => void;
+  active?: boolean;
 }
+type RecentImage = HistoryItem & { size?: number; contentType?: string };
+const errorMessage = (error: unknown) => error instanceof Error ? error.message : 'The image host could not be reached. Please retry.';
+const formatDate = (value: string | number) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString();
+};
+const buttonClass = 'inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/10';
+const primaryClass = buttonClass + ' bg-[#003f87] !text-white hover:!bg-[#0076d3] dark:hover:!bg-[#0076d3]';
+const fieldClass = 'w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-60 dark:border-white/20 dark:bg-white/5 dark:text-white';
 
-const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast }) => {
-  const [history, setHistory] = useLocalStorage<HistoryItem[]>(LOCAL_STORAGE_HISTORY_KEY, []);
+const QuickImageLinksCard: React.FC<QuickImageLinksCardProps> = ({ addToast, active = true }) => {
+  const [history, setHistory] = useLocalStorage<RecentImage[]>(LOCAL_STORAGE_HISTORY_KEY, []);
+  const [view, setView] = useState<'upload' | 'library'>('library');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState('');
+  const [uploadError, setUploadError] = useState('');
   const [latestLink, setLatestLink] = useState('');
+  const [copyingLink, setCopyingLink] = useState('');
+  const [copyState, setCopyState] = useState<{ link: string; error: boolean; message: string } | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [hasAccessCode, setHasAccessCode] = useState(() => Boolean(getAccessCode()));
   const [codeDraft, setCodeDraft] = useState('');
   const [isSavingCode, setIsSavingCode] = useState(false);
+  const [authError, setAuthError] = useState('');
   const [presetId, setPresetId] = useLocalStorage<ImagePresetId>('quick-image-preset', 'gmail');
   const [libraryQuery, setLibraryQuery] = useState('');
-  const [libraryImages, setLibraryImages] = useState<ImageHostLibraryItem[]>([]);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [libraryImages, setLibraryImages] = useState<ImageHostLibraryItem[]>(() => getCachedHostedImages() || []);
+  const [isLibraryLoaded, setIsLibraryLoaded] = useState(() => getCachedHostedImages() !== null);
   const [isLibraryLoading, setIsLibraryLoading] = useState(false);
-  const [isLibraryLoaded, setIsLibraryLoaded] = useState(false);
   const [libraryError, setLibraryError] = useState('');
+  const [progress, setProgress] = useState({ count: 0, pages: 0 });
+  const [visibleCount, setVisibleCount] = useState(60);
+  const [dimensions, setDimensions] = useState<Record<string, { width: number; height: number }>>({});
+  const [brokenPreviews, setBrokenPreviews] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const libraryRequest = useRef<AbortController | null>(null);
+  const uploadRequest = useRef<AbortController | null>(null);
+  const authRequest = useRef<AbortController | null>(null);
+  const retryFile = useRef<File | null>(null);
+  const copyPending = useRef(false);
+  const mounted = useRef(true);
+  const activePreset = IMAGE_PRESETS.find(preset => preset.id === presetId) || IMAGE_PRESETS[0];
+  const recentUploads = useMemo(() => (Array.isArray(history) ? history : []).filter(item => item && typeof item.link === 'string').slice(0, 25), [history]);
 
-  const activePreset = IMAGE_PRESETS.find((p) => p.id === presetId) ?? IMAGE_PRESETS[0];
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      libraryRequest.current?.abort(); uploadRequest.current?.abort(); authRequest.current?.abort();
+    };
+  }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { setDebouncedQuery(libraryQuery); setVisibleCount(60); }, 200);
+    return () => clearTimeout(timer);
+  }, [libraryQuery]);
 
-  const recentUploads = useMemo(() => history, [history]);
+  const cancelLibrary = useCallback(() => {
+    libraryRequest.current?.abort(); libraryRequest.current = null; setIsLibraryLoading(false);
+  }, []);
+  const loadLibrary = useCallback(async (forceRefresh = false) => {
+    libraryRequest.current?.abort();
+    const controller = new AbortController();
+    libraryRequest.current = controller;
+    setIsLibraryLoading(true); setLibraryError(''); setProgress({ count: 0, pages: 0 });
+    try {
+      const images = await listAllHostedImages({
+        signal: controller.signal, forceRefresh,
+        onProgress: (count, pages) => {
+          if (mounted.current && !controller.signal.aborted) setProgress({ count, pages });
+        },
+      });
+      if (!mounted.current || controller.signal.aborted || libraryRequest.current !== controller) return;
+      setLibraryImages(images); setIsLibraryLoaded(true);
+    } catch (error) {
+      if (!mounted.current || controller.signal.aborted || libraryRequest.current !== controller) return;
+      const message = errorMessage(error);
+      if (message.toLowerCase().includes('access code')) { setHasAccessCode(false); setAuthError(message); }
+      setLibraryError(message);
+    } finally {
+      if (libraryRequest.current === controller) {
+        libraryRequest.current = null;
+        if (mounted.current) setIsLibraryLoading(false);
+      }
+    }
+  }, []);
+  useEffect(() => {
+    if (!active || !hasAccessCode || view !== 'library') return;
+    const timer = window.setTimeout(() => void loadLibrary(), 200);
+    return () => { clearTimeout(timer); cancelLibrary(); };
+  }, [active, hasAccessCode, view, loadLibrary, cancelLibrary]);
+
   const libraryMatches = useMemo(() => {
-    const terms = libraryQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    if (!terms.length || !isLibraryLoaded) return [];
-
-    return libraryImages.filter((image) => {
-      const searchable = [
-        image.originalName,
-        image.label,
-        image.key,
-        image.url,
-      ].filter(Boolean).join(' ').toLowerCase();
-      return terms.every((term) => searchable.includes(term));
+    const terms = debouncedQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    return libraryImages.filter(image => {
+      const searchable = [image.originalName, image.label, image.key, image.url].filter(Boolean).join(' ').toLowerCase();
+      return terms.every(term => searchable.includes(term));
     });
-  }, [isLibraryLoaded, libraryImages, libraryQuery]);
-
-  const formatLibraryDate = (uploaded: string) => {
-    const date = new Date(uploaded);
-    return Number.isNaN(date.getTime()) ? 'Date unavailable' : date.toLocaleDateString();
-  };
+  }, [libraryImages, debouncedQuery]);
 
   const copyLink = async (link: string) => {
-    await navigator.clipboard.writeText(link);
-    addToast('Image link copied.', 'success');
-  };
-
-  const handleUpload = async (file: File) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
-    if (!allowedTypes.includes(file.type)) {
-      addToast('Use JPG, PNG, WEBP, GIF, or SVG only.', 'warning');
-      return;
-    }
-
-    setIsUploading(true);
+    if (copyPending.current) return;
+    copyPending.current = true; setCopyingLink(link); setCopyState(null);
     try {
-      const result = await uploadImage(file, activePreset);
-      const newItem: HistoryItem = {
-        id: String(Date.now()),
-        link: result.url,
-        key: result.key,
-        name: file.name,
-        createdAt: Date.now(),
-        groups: [],
-      };
-
-      setHistory((prev) => [newItem, ...prev].slice(0, 25));
-      if (isLibraryLoaded) {
-        setLibraryImages((prev) => [{
-          key: result.key,
-          url: result.url,
-          size: result.size,
-          uploaded: new Date().toISOString(),
-          originalName: file.name,
-          label: '',
-        }, ...prev.filter((image) => image.key !== result.key)]);
-      }
-      setLatestLink(result.url);
-      await navigator.clipboard.writeText(result.url);
-      addToast('Uploaded — link copied.', 'success');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Upload failed.';
-      if (message.toLowerCase().includes('access code')) {
-        setHasAccessCode(false);
-      }
-      addToast(message, 'danger');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleSaveCode = async () => {
-    const draft = codeDraft.trim();
-    if (!draft) return;
-    setIsSavingCode(true);
-    try {
-      if (await checkAccessCode(draft)) {
-        setAccessCode(draft);
-        setHasAccessCode(true);
-        setIsLibraryLoaded(false);
-        setLibraryImages([]);
-        setLibraryError('');
-        setCodeDraft('');
-        addToast('Image host unlocked.', 'success');
-      } else {
-        addToast('Access code rejected.', 'danger');
-      }
+      await navigator.clipboard.writeText(link);
+      if (mounted.current) { setCopyState({ link, error: false, message: 'Image link copied.' }); addToast('Image link copied.', 'success'); }
     } catch {
-      addToast('Could not reach the image host.', 'danger');
+      if (mounted.current) setCopyState({ link, error: true, message: 'Clipboard access failed. Retry, or select and copy this link manually.' });
     } finally {
-      setIsSavingCode(false);
+      copyPending.current = false;
+      if (mounted.current) setCopyingLink('');
     }
   };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      await handleUpload(file);
-    }
-    e.target.value = '';
-  };
-
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setDragActive(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      await handleUpload(file);
-    }
-  };
-
-  const handleLibrarySearch = async (event?: React.FormEvent, forceRefresh = false) => {
-    event?.preventDefault();
-    if (!libraryQuery.trim()) {
-      addToast('Enter an image name or label to search.', 'warning');
-      return;
-    }
-    if (!hasAccessCode) {
-      addToast('Unlock the image host to search the full library.', 'warning');
-      return;
-    }
-    if (isLibraryLoaded && !forceRefresh) return;
-
-    setIsLibraryLoading(true);
-    setLibraryError('');
+  const handleUpload = async (file: File) => {
+    if (uploadRequest.current || !hasAccessCode) return;
+    setUploadError(''); setUploadSuccess(''); setCopyState(null);
+    try { validateImage(file); } catch (error) { retryFile.current = null; setUploadError(errorMessage(error)); return; }
+    retryFile.current = file;
+    const controller = new AbortController();
+    uploadRequest.current = controller; setIsUploading(true);
     try {
-      const images = await listAllHostedImages();
-      setLibraryImages(images);
-      setIsLibraryLoaded(true);
-      addToast(`${images.length} hosted images ready to search.`, 'success');
+      const result = await uploadImage(file, activePreset, controller.signal);
+      if (!mounted.current || controller.signal.aborted || uploadRequest.current !== controller) return;
+      const newItem: RecentImage = {
+        id: crypto.randomUUID(), link: result.url, key: result.key, name: file.name,
+        createdAt: Date.now(), groups: [], size: result.size,
+      };
+      setHistory(prev => [newItem, ...(Array.isArray(prev) ? prev : [])].slice(0, 25));
+      setLatestLink(result.url); retryFile.current = null;
+      setUploadSuccess('Uploaded successfully: ' + file.name);
+      const cached = getCachedHostedImages();
+      if (cached) { setLibraryImages(cached); setIsLibraryLoaded(true); }
+      else if (isLibraryLoaded) setLibraryImages(prev => [{
+        key: result.key, url: result.url, size: result.size,
+        uploaded: new Date().toISOString(), originalName: file.name, label: '',
+      }, ...prev.filter(image => image.key !== result.key)]);
+      addToast('Image uploaded successfully.', 'success');
+      // A clipboard denial is not an upload failure.
+      await copyLink(result.url);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not load the image library.';
-      if (message.toLowerCase().includes('access code')) {
-        setHasAccessCode(false);
-      }
-      setLibraryError(message);
-      addToast(message, 'danger');
+      if (!mounted.current || controller.signal.aborted || uploadRequest.current !== controller) return;
+      const message = errorMessage(error);
+      if (message.toLowerCase().includes('access code')) { setHasAccessCode(false); setAuthError(message); }
+      setUploadError(message + ' Check the library before retrying if the upload may have reached the host.');
     } finally {
-      setIsLibraryLoading(false);
+      if (uploadRequest.current === controller) {
+        uploadRequest.current = null;
+        if (mounted.current) setIsUploading(false);
+      }
+    }
+  };
+  const cancelUpload = () => {
+    uploadRequest.current?.abort(); uploadRequest.current = null; setIsUploading(false);
+    setUploadError('Upload cancelled locally. An upload already received by the host may still finish; check the library before retrying.');
+  };
+  const handleSaveCode = async () => {
+    if (!codeDraft.trim() || authRequest.current) return;
+    const controller = new AbortController();
+    authRequest.current = controller; setIsSavingCode(true); setAuthError('');
+    try {
+      if (!(await checkAccessCode(codeDraft.trim(), controller.signal))) throw new Error('Access code rejected. Check the code and retry.');
+      if (!mounted.current || controller.signal.aborted) return;
+      setAccessCode(codeDraft);
+      if (!getAccessCode()) throw new Error('Browser storage is blocked. Allow local storage to keep the access code.');
+      setHasAccessCode(true); setCodeDraft(''); setLibraryImages([]); setIsLibraryLoaded(false); setLibraryError('');
+    } catch (error) {
+      if (mounted.current && !controller.signal.aborted) setAuthError(errorMessage(error));
+    } finally {
+      if (authRequest.current === controller) { authRequest.current = null; if (mounted.current) setIsSavingCode(false); }
     }
   };
 
-  const clearLibrarySearch = () => {
-    setLibraryQuery('');
-    setLibraryError('');
+  const renderImage = (image: ImageHostLibraryItem) => {
+    const name = image.originalName || image.key.split('/').pop() || 'Hosted image';
+    const size = dimensions[image.url] || (image.width && image.height ? { width: image.width, height: image.height } : null);
+    const extension = (image.contentType?.split('/')[1] || image.url.split('?')[0].split('.').pop() || '').toUpperCase();
+    const metadata = [
+      size ? size.width + ' x ' + size.height : '',
+      extension.length < 10 ? extension : '',
+      image.size ? image.size >= 1024 * 1024 ? (image.size / (1024 * 1024)).toFixed(1) + ' MiB' : Math.ceil(image.size / 1024) + ' KiB' : '',
+      formatDate(image.uploaded),
+    ].filter(Boolean).join(' | ');
+    return <article key={image.key} className="flex min-w-0 items-center gap-3 border-b border-slate-200 py-3 dark:border-white/10">
+      <a href={image.url} target="_blank" rel="noopener noreferrer" title={'Open ' + name}
+        className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+        {brokenPreviews[image.url] ? <span className="px-1 text-center text-xs text-slate-500">Preview unavailable</span> :
+          <img src={image.url} alt={name} loading="lazy" className="h-full w-full object-contain"
+            onLoad={event => { const img = event.currentTarget; if (img.naturalWidth) setDimensions(prev => ({ ...prev, [image.url]: { width: img.naturalWidth, height: img.naturalHeight } })); }}
+            onError={() => setBrokenPreviews(prev => ({ ...prev, [image.url]: true }))} />}
+      </a>
+      <div className="min-w-0 flex-1">
+        <a href={image.url} target="_blank" rel="noopener noreferrer" className="block truncate text-sm font-semibold text-slate-900 hover:underline dark:text-white" title={name}>{name}</a>
+        {image.label && <p className="truncate text-xs text-slate-500 dark:text-slate-400">{image.label}</p>}
+        <p className="mt-1 break-words text-xs text-slate-500 dark:text-slate-400">{metadata}</p>
+        <p className="mt-1 truncate text-xs text-slate-400" title={image.url}>{image.url}</p>
+      </div>
+      <button className={buttonClass + ' !h-10 !w-10 !p-0'} disabled={Boolean(copyingLink)} title={'Copy image link for ' + name}
+        aria-label={'Copy image link for ' + name} onClick={() => void copyLink(image.url)}>
+        <i className={'fa-solid ' + (copyingLink === image.url ? 'fa-spinner fa-spin' : 'fa-copy')} aria-hidden="true" />
+      </button>
+    </article>;
   };
-
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5 sm:p-5">
-      <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h2 className="flex items-center gap-2.5 font-outfit text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#003f87] text-white shadow-sm">
-              <i className="fa-solid fa-image text-sm"></i>
-            </span>
-            Quick Image Links
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Optimized and hosted on img.billlayneinsurance.com — the link copies automatically.
-          </p>
-        </div>
-        <a
-          href="https://img.billlayneinsurance.com"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex shrink-0 items-center gap-2 self-start rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-[#0076d3]/50 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:text-white lg:self-auto"
-        >
-          <i className="fa-solid fa-images"></i>
-          Open Library
-        </a>
-      </div>
-
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-          Format
-        </span>
-        {IMAGE_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            onClick={() => setPresetId(preset.id)}
-            title={preset.hint}
-            aria-pressed={preset.id === activePreset.id}
-            className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-bold transition ${
-              preset.id === activePreset.id
-                ? 'border-[#0076d3] bg-blue-50 text-[#003f87] shadow-sm dark:border-cyan-300/60 dark:bg-cyan-500/10 dark:text-cyan-200'
-                : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-[#0076d3]/50 hover:bg-white hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white'
-            }`}
-          >
-            <i className={`fa-solid ${preset.icon} text-[11px]`}></i>
-            {preset.label}
-          </button>
-        ))}
-        <span className="hidden text-xs text-slate-400 sm:inline dark:text-slate-500">
-          {activePreset.hint}
-        </span>
-      </div>
-
-      <div className={hasAccessCode ? 'grid gap-4 xl:grid-cols-[1.35fr_0.95fr]' : 'block'}>
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragActive(true);
-          }}
-          onDragLeave={() => setDragActive(false)}
-          onDrop={handleDrop}
-          className={`self-start rounded-2xl border-2 border-dashed p-4 transition ${
-            dragActive
-              ? 'border-[#0076d3] bg-blue-50/80 dark:bg-cyan-500/10'
-              : 'border-slate-200 bg-slate-50/80 dark:border-white/10 dark:bg-white/5'
-          }`}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".jpg,.jpeg,.png,.webp,.gif,.svg,image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          {hasAccessCode ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-950 via-[#003f87] to-[#0076d3] text-white shadow-lg shadow-blue-900/20">
-                <i className={`fa-solid ${isUploading ? 'fa-spinner fa-spin' : 'fa-cloud-arrow-up'} text-base`}></i>
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  {isUploading ? 'Uploading image...' : 'Drop an image here, or choose a file'}
-                </h3>
-                <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-300">
-                  Uploads as <span className="font-bold text-slate-700 dark:text-slate-100">{activePreset.label}</span> — link copies automatically.
-                </p>
-              </div>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#003f87] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-cyan-300"
-              >
-                <i className="fa-solid fa-image"></i>
-                Choose Image
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-950 via-[#003f87] to-[#0076d3] text-white shadow-lg shadow-blue-900/20">
-                <i className="fa-solid fa-lock text-base"></i>
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Unlock the image host
-                </h3>
-                <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-300">
-                  Enter the agency access code once — it's remembered on this device.
-                </p>
-              </div>
-              <div className="flex w-full min-w-0 gap-2 sm:w-auto">
-                <input
-                  type="password"
-                  value={codeDraft}
-                  onChange={(e) => setCodeDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') void handleSaveCode();
-                  }}
-                  placeholder="Access code"
-                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#0076d3] dark:border-white/10 dark:bg-white/5 dark:text-slate-200 sm:w-40"
-                />
-                <button
-                  onClick={() => void handleSaveCode()}
-                  disabled={isSavingCode || !codeDraft.trim()}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0076d3] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#003f87] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <i className={`fa-solid ${isSavingCode ? 'fa-spinner fa-spin' : 'fa-unlock'}`}></i>
-                  Unlock
-                </button>
-              </div>
-            </div>
-          )}
-
-          {latestLink && (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#0b1727]/80">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
-                Latest image link
-              </p>
-              <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-                <input
-                  readOnly
-                  value={latestLink}
-                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 outline-none dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-                />
-                <button
-                  onClick={() => copyLink(latestLink)}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0076d3] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-[#003f87]"
-                >
-                  <i className="fa-solid fa-copy"></i>
-                  Copy
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {hasAccessCode && (
-        <div className="rounded-[1.35rem] border border-slate-200/80 bg-white/90 p-4 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.8)] dark:border-white/10 dark:bg-[#0b1727]/80">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="text-sm font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">
-                {libraryQuery.trim() ? 'Image Library' : 'Recent Uploads'}
-              </h3>
-              <p className="mt-1 truncate text-xs text-slate-400 dark:text-slate-500">
-                {libraryQuery.trim()
-                  ? isLibraryLoaded
-                    ? `Searching ${libraryImages.length} hosted images`
-                    : 'Search every image stored on the BLI Image Host'
-                  : 'Newest links saved on this browser'}
-              </p>
-            </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:bg-white/10 dark:text-slate-300">
-              {libraryQuery.trim()
-                ? isLibraryLoaded
-                  ? `${libraryMatches.length} found`
-                  : isLibraryLoading
-                    ? 'Loading'
-                    : 'Full library'
-                : `${recentUploads.length} saved`}
-            </span>
-          </div>
-
-          <form onSubmit={handleLibrarySearch} className="my-4 flex gap-2">
-            <div className="relative min-w-0 flex-1">
-              <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
-              <input
-                type="search"
-                value={libraryQuery}
-                onChange={(event) => setLibraryQuery(event.target.value)}
-                disabled={!hasAccessCode}
-                placeholder={hasAccessCode ? 'Search all hosted images...' : 'Unlock image host to search...'}
-                aria-label="Search all hosted images"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-9 text-sm font-semibold text-slate-800 outline-none transition focus:border-[#0076d3] focus:bg-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:bg-white/10"
-              />
-              {libraryQuery && (
-                <button
-                  type="button"
-                  onClick={clearLibrarySearch}
-                  title="Clear image search"
-                  aria-label="Clear image search"
-                  className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
-                >
-                  <i className="fa-solid fa-xmark text-xs"></i>
-                </button>
-              )}
-            </div>
-            {isLibraryLoaded && libraryQuery.trim() && (
-              <button
-                type="button"
-                onClick={() => void handleLibrarySearch(undefined, true)}
-                disabled={isLibraryLoading}
-                title="Refresh hosted image library"
-                aria-label="Refresh hosted image library"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-[#0076d3] hover:text-[#003f87] disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-              >
-                <i className={`fa-solid ${isLibraryLoading ? 'fa-spinner fa-spin' : 'fa-rotate'} text-xs`}></i>
-              </button>
-            )}
-            <button
-              type="submit"
-              disabled={!hasAccessCode || !libraryQuery.trim() || isLibraryLoading}
-              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#003f87] px-3.5 text-xs font-bold text-white transition hover:bg-[#0076d3] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <i className={`fa-solid ${isLibraryLoading ? 'fa-spinner fa-spin' : isLibraryLoaded ? 'fa-check' : 'fa-magnifying-glass'} text-[11px]`}></i>
-              <span className="hidden sm:inline">{isLibraryLoaded ? 'Loaded' : 'Search'}</span>
-            </button>
-          </form>
-
-          {libraryError && (
-            <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-400/30 dark:bg-rose-500/10 dark:text-rose-200">
-              {libraryError}
-            </div>
-          )}
-
-          {libraryQuery.trim() ? (
-            <div
-              aria-label="Hosted image library search results"
-              data-testid="quick-image-library-search-scroll"
-              className="max-h-[26rem] min-h-0 space-y-3 overflow-y-auto overscroll-contain pr-1 touch-pan-y custom-scrollbar"
-            >
-              {isLibraryLoading ? (
-                <div className="flex items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-10 text-sm font-semibold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                  <i className="fa-solid fa-spinner fa-spin text-[#0076d3]"></i>
-                  Loading the complete image library...
-                </div>
-              ) : !isLibraryLoaded ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-10 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                  Press Search to find this name across every hosted image.
-                </div>
-              ) : libraryMatches.length > 0 ? (
-                libraryMatches.map((image) => {
-                  const imageName = image.originalName || image.key.split('/').pop() || 'Hosted image';
-                  return (
-                    <div
-                      key={image.key}
-                      className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/5"
-                    >
-                      <a href={image.url} target="_blank" rel="noreferrer" className="shrink-0" title={`Open ${imageName}`}>
-                        <img
-                          src={image.url}
-                          alt={imageName}
-                          loading="lazy"
-                          className="h-14 w-14 rounded-xl bg-white object-contain dark:bg-white/5"
-                        />
-                      </a>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{imageName}</p>
-                        <p className="truncate text-xs text-slate-500 dark:text-slate-300">
-                          {image.label ? `${image.label} - ` : ''}{formatLibraryDate(image.uploaded)}
-                        </p>
-                        <p className="truncate text-[11px] text-slate-400">{image.url}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => copyLink(image.url)}
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-[#0076d3] hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-                        title="Copy image link"
-                        aria-label={`Copy image link for ${imageName}`}
-                      >
-                        <i className="fa-solid fa-copy"></i>
-                      </button>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-10 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                  No hosted images match "{libraryQuery.trim()}".
-                </div>
-              )}
-            </div>
-          ) : (
-            <div
-              aria-label="Recent uploaded image links"
-              data-testid="quick-image-recent-uploads-scroll"
-              className="max-h-[26rem] min-h-0 space-y-3 overflow-y-auto overscroll-contain pr-1 touch-pan-y custom-scrollbar"
-            >
-              {recentUploads.length > 0 ? (
-                recentUploads.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/5"
-                  >
-                    <img src={item.link} alt={item.name} className="h-14 w-14 rounded-xl object-cover" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{item.name}</p>
-                      <p className="truncate text-xs text-slate-500 dark:text-slate-300">{item.link}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => copyLink(item.link)}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-[#0076d3] hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-                      title="Copy image link"
-                      aria-label={`Copy image link for ${item.name}`}
-                    >
-                      <i className="fa-solid fa-copy"></i>
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-10 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                  Your uploaded image links will show here.
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        )}
-      </div>
+  return <section aria-label="Quick Image Links" className="min-w-0 border-b border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/5 sm:p-5">
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <h2 className="flex items-center gap-2 font-outfit text-lg font-bold text-slate-900 dark:text-white"><i className="fa-solid fa-image text-[#0076d3]" aria-hidden="true" />Quick Image Links</h2>
+      <a href="https://img.billlayneinsurance.com" target="_blank" rel="noopener noreferrer" className={buttonClass} title="Open image host" aria-label="Open image host"><i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" /></a>
     </div>
-  );
+    <div role="tablist" aria-label="Image workspace" className="mb-4 flex gap-1 border-b border-slate-200 pb-2 dark:border-white/10">
+      {(['library', 'upload'] as const).map(tab => <button key={tab} id={'image-tab-' + tab} role="tab" aria-selected={view === tab}
+        aria-controls={'image-panel-' + tab} tabIndex={view === tab ? 0 : -1} className={view === tab ? primaryClass : buttonClass}
+        onKeyDown={event => {
+          if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+            event.preventDefault();
+            const next = event.key === 'Home' ? 'library' : event.key === 'End' ? 'upload' : view === 'library' ? 'upload' : 'library';
+            setView(next); document.getElementById('image-tab-' + next)?.focus();
+          }
+        }} onClick={() => setView(tab)}><i className={'fa-solid ' + (tab === 'library' ? 'fa-images' : 'fa-cloud-arrow-up')} aria-hidden="true" />{tab === 'library' ? 'Library' : 'Upload'}</button>)}
+    </div>
+    {!hasAccessCode ? <form onSubmit={event => { event.preventDefault(); void handleSaveCode(); }} className="max-w-lg">
+      <label htmlFor="image-access-code" className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Image host access code</label>
+      <div className="flex min-w-0 gap-2">
+        <input id="image-access-code" type="password" autoComplete="off" value={codeDraft} disabled={isSavingCode} onChange={event => setCodeDraft(event.target.value)} className={fieldClass + ' flex-1'} />
+        <button type="submit" className={primaryClass} disabled={!codeDraft.trim() || isSavingCode}><i className={'fa-solid ' + (isSavingCode ? 'fa-spinner fa-spin' : 'fa-unlock')} aria-hidden="true" />Unlock</button>
+        {isSavingCode && <button type="button" className={buttonClass} onClick={() => { authRequest.current?.abort(); authRequest.current = null; setIsSavingCode(false); }}>Cancel</button>}
+      </div>
+      {authError && <p role="alert" className="mt-2 text-sm text-rose-700 dark:text-rose-300">{authError}</p>}
+    </form> : <>
+      {view === 'library' && <div role="tabpanel" id="image-panel-library" aria-labelledby="image-tab-library" className="min-w-0">
+        <label htmlFor="image-library-query" className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Search image library</label>
+        <div className="flex min-w-0 gap-2">
+          <input id="image-library-query" type="search" value={libraryQuery} onChange={event => setLibraryQuery(event.target.value)}
+            placeholder="Filename or label" className={fieldClass + ' flex-1'} />
+          <button className={buttonClass} disabled={isLibraryLoading} title="Refresh hosted image library" aria-label="Refresh hosted image library" onClick={() => void loadLibrary(true)}><i className="fa-solid fa-rotate" aria-hidden="true" /></button>
+        </div>
+        <div className="my-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400" role="status" aria-live="polite">
+          <span>{isLibraryLoading ? 'Loading inventory: ' + progress.count + ' images, ' + progress.pages + ' pages'
+            : isLibraryLoaded ? libraryMatches.length + ' matches / ' + libraryImages.length + ' hosted images' : 'Library not loaded'}
+            {libraryQuery !== debouncedQuery ? ' | Searching...' : ''}</span>
+          {isLibraryLoading && <button className={buttonClass} onClick={() => { cancelLibrary(); setLibraryError('Library loading cancelled.'); }}><i className="fa-solid fa-stop" aria-hidden="true" />Cancel</button>}
+        </div>
+        {libraryError && <div role="alert" className="my-2 text-sm text-rose-700 dark:text-rose-300"><p>{libraryError}</p><button className={buttonClass + ' mt-2'} disabled={isLibraryLoading} onClick={() => void loadLibrary(true)}><i className="fa-solid fa-rotate-right" aria-hidden="true" />Retry</button></div>}
+        {isLibraryLoaded && <div aria-label="Hosted image library search results" data-testid="quick-image-library-search-scroll" className="max-h-[34rem] min-w-0 overflow-y-auto overscroll-contain pr-1 custom-scrollbar">
+          {libraryMatches.slice(0, visibleCount).map(renderImage)}
+          {!libraryMatches.length && <p className="py-6 text-sm text-slate-500 dark:text-slate-400">No hosted images match this search.</p>}
+          {libraryMatches.length > visibleCount && <button className={buttonClass + ' my-3'} onClick={() => setVisibleCount(count => count + 60)}>Show More ({libraryMatches.length - visibleCount})<i className="fa-solid fa-chevron-down" aria-hidden="true" /></button>}
+        </div>}
+      </div>}
+      {view === 'upload' && <div role="tabpanel" id="image-panel-upload" aria-labelledby="image-tab-upload" className="min-w-0">
+        <div className="mb-3 flex flex-wrap gap-1.5" role="group" aria-label="Image format">
+          {IMAGE_PRESETS.map(preset => <button key={preset.id} aria-pressed={preset.id === activePreset.id} disabled={isUploading}
+            onClick={() => setPresetId(preset.id)} title={preset.hint} className={preset.id === activePreset.id ? primaryClass : buttonClass}><i className={'fa-solid ' + preset.icon} aria-hidden="true" />{preset.label}</button>)}
+        </div>
+        <div onDragOver={event => { event.preventDefault(); if (!isUploading) setDragActive(true); }} onDragLeave={() => setDragActive(false)}
+          onDrop={event => { event.preventDefault(); setDragActive(false); const file = event.dataTransfer.files[0]; if (file && !isUploading) void handleUpload(file); }}
+          className={'min-w-0 rounded-lg border-2 border-dashed p-4 ' + (dragActive ? 'border-sky-500 bg-sky-50 dark:bg-sky-500/10' : 'border-slate-200 dark:border-white/20')}>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="min-w-0 flex-1 text-sm font-medium text-slate-700 dark:text-slate-200">{isUploading ? 'Uploading image...' : 'JPG, PNG, WebP, GIF, SVG | Up to 30 MiB'}</span>
+            <button className={primaryClass} disabled={isUploading} onClick={() => fileInputRef.current?.click()}><i className={'fa-solid ' + (isUploading ? 'fa-spinner fa-spin' : 'fa-plus')} aria-hidden="true" />Choose Image</button>
+            {isUploading && <button className={buttonClass} onClick={cancelUpload}>Cancel</button>}
+          </div>
+          <input ref={fileInputRef} type="file" className="hidden" aria-label="Choose image to upload" disabled={isUploading}
+            accept=".jpg,.jpeg,.png,.webp,.gif,.svg" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void handleUpload(file); }} />
+        </div>
+        {uploadSuccess && <p role="status" className="mt-3 break-words text-sm text-emerald-700 dark:text-emerald-300">{uploadSuccess}</p>}
+        {uploadError && <div role="alert" className="mt-3 text-sm text-rose-700 dark:text-rose-300"><p>{uploadError}</p>{retryFile.current && <button className={buttonClass + ' mt-2'} disabled={isUploading} onClick={() => { if (retryFile.current) void handleUpload(retryFile.current); }}><i className="fa-solid fa-rotate-right" aria-hidden="true" />Retry Upload</button>}</div>}
+        {latestLink && <div className="mt-3 flex min-w-0 items-center gap-2">
+          <input aria-label="Latest uploaded image link" readOnly value={latestLink} onFocus={event => event.target.select()} className={fieldClass + ' flex-1 !text-xs'} />
+          <button className={buttonClass} title="Copy latest image link" aria-label="Copy latest image link" disabled={Boolean(copyingLink)} onClick={() => void copyLink(latestLink)}><i className="fa-solid fa-copy" aria-hidden="true" /></button>
+        </div>}
+        <h3 className="mt-5 text-sm font-semibold text-slate-700 dark:text-slate-200">Recent Uploads <span className="font-normal text-slate-500">({recentUploads.length})</span></h3>
+        <div aria-label="Recent uploaded image links" data-testid="quick-image-recent-uploads-scroll" className="max-h-[26rem] min-w-0 overflow-y-auto overscroll-contain pr-1 custom-scrollbar">
+          {recentUploads.map(item => renderImage({ key: item.key || item.id, url: item.link, size: item.size || 0,
+            uploaded: new Date(item.createdAt || 0).toISOString(), originalName: item.name, label: '', contentType: item.contentType }))}
+          {!recentUploads.length && <p className="py-4 text-sm text-slate-500 dark:text-slate-400">No recent uploads on this browser.</p>}
+        </div>
+      </div>}
+    </>}
+    {copyState && <div className="mt-3 min-w-0 border-t border-slate-200 pt-3 dark:border-white/10">
+      <p role={copyState.error ? 'alert' : 'status'} className={'text-sm ' + (copyState.error ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300')}>{copyState.message}</p>
+      {copyState.error && <div className="mt-2 flex min-w-0 gap-2">
+        <input readOnly aria-label="Image link to copy manually" value={copyState.link} onFocus={event => event.target.select()} className={fieldClass + ' flex-1 !text-xs'} />
+        <button className={buttonClass} disabled={Boolean(copyingLink)} onClick={() => void copyLink(copyState.link)}><i className="fa-solid fa-copy" aria-hidden="true" />Retry</button>
+      </div>}
+    </div>}
+  </section>;
 };
-
 export default QuickImageLinksCard;

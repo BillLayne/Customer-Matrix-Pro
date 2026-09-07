@@ -3,283 +3,198 @@ import SearchCard from './components/SearchCard';
 import CommandPalette from './components/CommandPalette';
 import ProgramLauncher from './components/ProgramLauncher';
 import QuickImageLinksCard from './components/QuickImageLinksCard';
-import Toast from './components/Toast';
+import Toast, { type ToastAction } from './components/Toast';
 import Modal from './components/Modal';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import type { ToastMessage } from './types';
 
-/** Local calendar day, e.g. "2026-07-14". Used to reset the daily search counter. */
 const todayKey = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 };
 
-interface SearchLog {
-  day: string;
-  count: number;
-}
+interface SearchLog { day: string; count: number }
+type Workspace = 'search' | 'tools' | 'images';
+type AppToast = ToastMessage & { action?: ToastAction };
+const WORKSPACES: { id: Workspace; label: string; icon: string }[] = [
+  { id: 'search', label: 'Search', icon: 'fa-magnifying-glass' },
+  { id: 'tools', label: 'Tools', icon: 'fa-table-cells-large' },
+  { id: 'images', label: 'Images', icon: 'fa-image' },
+];
 
 export default function App() {
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [workspace, setWorkspace] = useState<Workspace>('search');
+  const [toasts, setToasts] = useState<AppToast[]>([]);
   const [searchLog, setSearchLog] = useLocalStorage<SearchLog>('matrix-pro-search-log', { day: todayKey(), count: 0 });
   const [showPalette, setShowPalette] = useState(false);
-  const [showShortcutModal, setShowShortcutModal] = useState(false);
-  const launcherSectionRef = useRef<HTMLElement | null>(null);
-  const imagesSectionRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
-  // A monotonic counter, not Date.now(): two toasts raised in the same millisecond
-  // would otherwise share an id and collide as React keys.
+  const [showSettings, setShowSettings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const toastIdRef = useRef(0);
+  const toastTimers = useRef(new Map<number, number>());
 
-  const addToast = useCallback((message: string, type: ToastMessage['type'] = 'success') => {
-    const id = (toastIdRef.current += 1);
-    setToasts((prev) => [...prev, { id, message, type }]);
-    window.setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, 3000);
+  useEffect(() => { document.documentElement.classList.toggle('dark', theme === 'dark'); }, [theme]);
+  useEffect(() => () => { toastTimers.current.forEach((timer) => window.clearTimeout(timer)); }, []);
+
+  const dismissToast = useCallback((id: number) => {
+    window.clearTimeout(toastTimers.current.get(id));
+    toastTimers.current.delete(id);
+    setToasts((previous) => previous.filter((toast) => toast.id !== id));
   }, []);
 
-  const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
-  };
+  // The optional third argument keeps existing two-argument callers compatible.
+  const addToast = useCallback((message: string, type: ToastMessage['type'] = 'success', options?: { action?: ToastAction }) => {
+    const id = ++toastIdRef.current;
+    setToasts((previous) => [...previous, { id, message, type, action: options?.action }]);
+    if (type !== 'danger' && type !== 'warning' && !options?.action) {
+      toastTimers.current.set(id, window.setTimeout(() => dismissToast(id), 5000));
+    }
+  }, [dismissToast]);
 
-  // Reads as 0 again once the date rolls over, without needing the tab to be reloaded.
+  const toggleTheme = useCallback(() => setTheme((previous) => previous === 'light' ? 'dark' : 'light'), [setTheme]);
   const searchCount = searchLog.day === todayKey() ? searchLog.count : 0;
-
-  const handleSearchIncrement = () => {
-    setSearchLog((prev) => {
+  const handleSearchIncrement = useCallback(() => {
+    setSearchLog((previous) => {
       const today = todayKey();
-      return prev.day === today ? { day: today, count: prev.count + 1 } : { day: today, count: 1 };
+      return previous.day === today ? { day: today, count: previous.count + 1 } : { day: today, count: 1 };
     });
-  };
+  }, [setSearchLog]);
 
-  const scrollToSection = useCallback((targetRef: React.RefObject<HTMLElement | null>) => {
-    targetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const selectWorkspace = useCallback((next: Workspace) => {
+    setWorkspace(next);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  const handleQuickSearch = useCallback(
-    (query: string) => {
-      const selection = /\d+/.test(query) ? 'Address' : 'Name';
-      const url = `https://agents.agencymatrix.com/#/customer/search?selection=${selection}&query=${encodeURIComponent(query)}`;
-      window.open(url, '_blank');
-      handleSearchIncrement();
-    },
-    []
-  );
+  const focusUnifiedSearch = useCallback(() => {
+    selectWorkspace('search');
+    window.requestAnimationFrame(() => {
+      const input = document.querySelector<HTMLInputElement>(
+        '#workspace-search input[data-unified-search], #workspace-search input[type="search"], #workspace-search input[type="text"]'
+      );
+      input?.focus({ preventScroll: true });
+      input?.select();
+    });
+  }, [selectWorkspace]);
+
+  const handleQuickSearch = useCallback((query: string) => {
+    const selection = /\d+/.test(query) ? 'Address' : 'Name';
+    window.open(`https://agents.agencymatrix.com/#/customer/search?selection=${selection}&query=${encodeURIComponent(query)}`, '_blank', 'noopener,noreferrer');
+    handleSearchIncrement();
+  }, [handleSearchIncrement]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+K is the palette's home; Ctrl+M stays as an alias for muscle memory
-      // (on Bill's PC the global AutoHotkey Ctrl+M usually swallows it first).
-      const key = e.key.toLowerCase();
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (key === 'k' || key === 'm')) {
-        e.preventDefault();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.isComposing || document.querySelector('[aria-modal="true"]')) return;
+      const target = event.target as HTMLElement | null;
+      const typing = target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])');
+      const key = event.key.toLowerCase();
+      if (key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        // Claim slash before any mounted section's native listener sees it.
+        event.stopImmediatePropagation();
+        focusUnifiedSearch();
+      } else if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && (key === 'k' || key === 'm')) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
         setShowPalette(true);
-      }
-
-      if ((e.ctrlKey || e.metaKey) && key === 'd') {
-        e.preventDefault();
+      } else if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && key === 'd' && !typing) {
+        event.preventDefault();
         toggleTheme();
       }
-
-      if (e.key === 'Escape') {
-        setShowPalette(false);
-      }
     };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [theme]);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [focusUnifiedSearch, toggleTheme]);
 
   useEffect(() => {
-    const handleStorageError = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const error = customEvent.detail?.error;
-      if (error && (error.name === 'QuotaExceededError' || error.code === 22)) {
-        addToast('Storage Full! Tasks or notes may not save until older items are removed.', 'danger');
-      } else {
-        addToast(`Storage warning for ${customEvent.detail?.key || 'local data'}.`, 'warning');
-      }
+    const handleStorageError = (event: Event) => {
+      const { error, key } = (event as CustomEvent).detail ?? {};
+      addToast(error?.name === 'QuotaExceededError' || error?.code === 22
+        ? 'Browser storage is full. Recent changes may not be saved.'
+        : `Changes to ${key || 'local data'} could not be saved in this browser.`, 'danger');
     };
-
     window.addEventListener('local-storage-error', handleStorageError);
     return () => window.removeEventListener('local-storage-error', handleStorageError);
   }, [addToast]);
 
+  const navigation = (mobile: boolean) => (
+    <nav className={mobile ? 'workspace-nav workspace-nav-mobile' : 'workspace-nav workspace-nav-desktop'} aria-label={mobile ? 'Mobile workspace' : 'Workspace'}>
+      {WORKSPACES.map((item) => (
+        <button key={item.id} type="button" aria-current={workspace === item.id ? 'page' : undefined}
+          aria-controls={`workspace-${item.id}`} onClick={() => selectWorkspace(item.id)}>
+          <i className={`fa-solid ${item.icon}`} aria-hidden="true" />
+          <span>{item.label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+
   return (
-    <div className="app-shell min-h-screen text-slate-900 transition-colors duration-300 dark:text-slate-100">
-      <header className="sticky top-0 z-50 border-b border-slate-200/90 bg-white/95 shadow-[0_8px_24px_-22px_rgba(15,23,42,0.8)] backdrop-blur-xl dark:border-white/10 dark:bg-[#0b1220]/95">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#003f87] text-white shadow-sm">
-              <i className="fa-solid fa-shield-halved text-base"></i>
-            </div>
-            <div className="min-w-0">
-              <h1 className="truncate font-outfit text-base font-bold tracking-tight text-slate-900 dark:text-white sm:text-lg">
-                Agency Command Center
-              </h1>
-              <p className="hidden truncate text-xs text-slate-500 dark:text-slate-400 sm:block">
-                Bill Layne Insurance
-              </p>
+    <div className="app-shell">
+      <a className="skip-link" href="#workspace-main">Skip to workspace</a>
+      <header className="shell-header">
+        <div className="shell-header-inner">
+          <div className="shell-brand">
+            <img src="/favicon.svg" width="32" height="32" alt="" />
+            <div>
+              <h1>Agency Command Center</h1>
+              <p>Bill Layne Insurance</p>
             </div>
           </div>
-
-          <nav className="hidden items-center gap-1 md:flex">
-            <button
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-[#003f87] dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-            >
-              <i className="fa-solid fa-magnifying-glass mr-1.5 text-xs"></i>
-              Search
+          {navigation(false)}
+          <div className="shell-actions">
+            <button type="button" className="shell-icon-button" onClick={() => setShowPalette(true)} aria-label="Open command palette" title="Command palette (Ctrl+K)">
+              <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
             </button>
-            <button
-              onClick={() => scrollToSection(launcherSectionRef)}
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-[#003f87] dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-            >
-              <i className="fa-solid fa-table-cells-large mr-1.5 text-xs"></i>
-              Tools
-            </button>
-            <button
-              onClick={() => scrollToSection(imagesSectionRef)}
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-[#003f87] dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-            >
-              <i className="fa-solid fa-image mr-1.5 text-xs"></i>
-              Images
-            </button>
-          </nav>
-
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              onClick={() => setShowPalette(true)}
-              className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-[#0076d3]/50 hover:text-[#003f87] sm:flex dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:text-white"
-            >
-              <i className="fa-solid fa-bolt text-xs"></i>
-              Search or Launch
-              <kbd className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-400 dark:bg-white/10 dark:text-slate-400">
-                Ctrl K
-              </kbd>
-            </button>
-            <button
-              onClick={() => setShowShortcutModal(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-[#0076d3]/50 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white"
-              title="Keyboard shortcuts"
-            >
-              <i className="fa-solid fa-circle-question"></i>
-            </button>
-            <button
-              onClick={toggleTheme}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-[#0076d3]/50 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white"
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
+            <button type="button" className="shell-icon-button" onClick={() => setShowSettings(true)} aria-label="Settings and help" title="Settings and help">
+              <i className="fa-solid fa-gear" aria-hidden="true" />
             </button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] space-y-4 px-4 pb-16 pt-4 sm:px-6">
-        <section>
-          <SearchCard addToast={addToast} searchCount={searchCount} onSearch={handleSearchIncrement} />
+      <main id="workspace-main" className="workspace-main" tabIndex={-1} data-modal-focus-fallback>
+        <section id="workspace-search" aria-label="Search workspace" hidden={workspace !== 'search'}>
+          <SearchCard active={workspace === 'search'} addToast={addToast} searchCount={searchCount} onSearch={handleSearchIncrement} />
         </section>
-
-        <section ref={launcherSectionRef} className="scroll-mt-20">
+        <section id="workspace-tools" aria-label="Tools workspace" hidden={workspace !== 'tools'}>
           <ProgramLauncher addToast={addToast} />
         </section>
-
-        <section ref={imagesSectionRef} className="scroll-mt-20">
-          <QuickImageLinksCard addToast={addToast} />
+        <section id="workspace-images" aria-label="Images workspace" hidden={workspace !== 'images'}>
+          <QuickImageLinksCard active={workspace === 'images'} addToast={addToast} />
         </section>
       </main>
+      {navigation(true)}
 
-      <CommandPalette
-        isOpen={showPalette}
-        onClose={() => setShowPalette(false)}
-        onClientSearch={handleQuickSearch}
-        addToast={addToast}
-      />
-
-      <Modal
-        isOpen={showShortcutModal}
-        onClose={() => setShowShortcutModal(false)}
-        title="Keyboard Shortcuts"
-        maxWidthClass="max-w-lg"
-      >
-        <div className="space-y-4 text-slate-800 dark:text-slate-200">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                General
-              </h4>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
-                <span>Focus Search Bar</span>
-                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">/</kbd>
-              </div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
-                <span>Command Palette</span>
-                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Ctrl + K</kbd>
-              </div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
-                <span>Toggle Dark Mode</span>
-                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Ctrl + D</kbd>
-              </div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
-                <span>Close Modal</span>
-                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Esc</kbd>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Search Modes
-              </h4>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
-                <span>Web Search</span>
-                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Alt + W</kbd>
-              </div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
-                <span>Real Estate</span>
-                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Alt + H</kbd>
-              </div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
-                <span>People Search</span>
-                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Alt + P</kbd>
-              </div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
-                <span>Client Folder</span>
-                <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Alt + F</kbd>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-2">
-            <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Audit Memo
-            </h4>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-1 text-xs dark:border-white/10">
-              <span>Open Audit Memo Studio</span>
-              <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold dark:border-slate-700 dark:bg-slate-800">Alt + N or Ctrl + Shift + M</kbd>
-            </div>
-          </div>
-
-          <div className="mt-4 border-t border-slate-100 pt-3 text-center text-[11px] font-medium text-slate-400 dark:border-white/10 dark:text-slate-500">
-            Press key combinations anywhere outside text input fields to trigger shortcuts instantly.
-          </div>
+      <CommandPalette isOpen={showPalette} onClose={() => setShowPalette(false)} onClientSearch={handleQuickSearch} addToast={addToast} />
+      <Modal isOpen={showSettings} onClose={() => setShowSettings(false)} title="Settings and Help">
+        <div className="settings-row">
+          <label htmlFor="dark-appearance">Dark appearance</label>
+          <input id="dark-appearance" type="checkbox" role="switch" checked={theme === 'dark'} onChange={toggleTheme} />
         </div>
+        <button type="button" className="settings-help" onClick={() => setShowHelp(true)}>
+          <i className="fa-solid fa-circle-question" aria-hidden="true" />
+          Keyboard Shortcuts
+          <i className="fa-solid fa-chevron-right" aria-hidden="true" />
+        </button>
+        <a className="settings-help" href="/logout">
+          <i className="fa-solid fa-right-from-bracket" aria-hidden="true" />
+          Sign out
+        </a>
       </Modal>
-
-      <div className="fixed bottom-6 right-6 z-[110] flex flex-col gap-3">
-        {toasts.map((toast) => (
-          <Toast key={toast.id} message={toast.message} type={toast.type} />
-        ))}
+      <Modal isOpen={showHelp} onClose={() => setShowHelp(false)} title="Keyboard Shortcuts" maxWidthClass="max-w-lg">
+        <dl className="shortcut-list">
+          {[
+            ['Unified Search', '/'], ['Command Palette', 'Ctrl + K / Ctrl + M'],
+            ['Dark Appearance', 'Ctrl + D'], ['Close Dialog', 'Esc'],
+            ['Web Search', 'Alt + W'], ['Real Estate', 'Alt + H'],
+            ['People Search', 'Alt + P'], ['Client Folder', 'Alt + F'],
+            ['Contact Numbers', 'Alt + C'], ['Audit Memo', 'Alt + N / Ctrl + Shift + M'],
+          ].map(([label, shortcut]) => <div key={label}><dt>{label}</dt><dd><kbd>{shortcut}</kbd></dd></div>)}
+        </dl>
+      </Modal>
+      <div className="toast-stack" aria-label="Notifications">
+        {toasts.map((toast) => <Toast key={toast.id} message={toast.message} type={toast.type} action={toast.action} onDismiss={() => dismissToast(toast.id)} />)}
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 # Agency Command Center — Live Handoff
 
-**Last verified against the code: September 4, 2026** (e-sign No Loss Forms and Cancellation Request launcher update).
+**Last verified against the code: September 7, 2026** (approved command center redesign, protected APIs, and shared contacts).
+
+**Release caveat:** The saved Gemini key was invalid during review. The new server API and error recovery are implemented, but successful live AI generation remains blocked until Bill supplies a valid replacement key. Never report AI generation as verified merely because the interface builds.
 
 This describes the dashboard **as it actually exists right now**. If anything here disagrees with the code, the code wins — re-verify and fix this file in the same commit.
 
@@ -63,7 +65,7 @@ Before this rewrite, §13 still instructed maintainers to update a "Quick Links 
 
 Separate, do not confuse: the staff dashboard at `Playground\Agency-Staff-Dashboard` → https://agency-staff-dashboard.pages.dev/. If a launcher target changes for both people, check whether the staff dashboard needs the same edit.
 
-**Current state:** The premium UX release is live, including the NC Grange New Business App & Photo Link, Sign Forms, and Cancellation Request launcher containers. No Loss Form Generator now opens the agency e-signature portal. The current build passed TypeScript/build checks and targeted launcher verification.
+**Current state:** Search-first workspace redesign. All 45 launcher entries and their destinations are retained, including NC Grange, Sign Forms, No Loss Form Generator, and Cancellation Request. Both dashboards now use signed server sessions and the same private D1 contact directory. See `RELEASE_2026_09_07.md` for validation and deployment details.
 
 ---
 
@@ -76,16 +78,16 @@ A single-page internal dashboard Bill opens every day. Two jobs dominate:
 
 **The governing UX rule: Unified Search stays at the top and must be usable without scrolling.** Never push content above it.
 
-### Page structure (top to bottom, `App.tsx`)
+### Workspace structure (`App.tsx`)
 
-1. **Sticky header** — logo, in-page nav (Search / Tools / Images), "Search or Launch" palette button (Ctrl+K), shortcuts modal, light/dark toggle
-2. **Unified Search** (`components/SearchCard.tsx`) — search modes, one primary Search control, grouped Workspace / Agency Matrix actions, collapsible Carrier Portals drawer
-3. **Program Launcher** (`components/ProgramLauncher.tsx`)
-4. **Quick Image Links** (`components/QuickImageLinksCard.tsx`)
+1. **Compact sticky header** with Search / Tools / Images, command palette, and Settings. On phones, workspace navigation moves to a fixed bottom bar.
+2. **Search** is the default workspace. Six modes become a native selector on phones; the query remains above the fold. Agency actions and collapsible carrier portals remain here.
+3. **Tools** is a separate workspace with the complete launcher, filter, category controls, pinned pagination, and recent links.
+4. **Images** is a separate workspace with Library / Upload tabs, searchable complete inventory, previews, and 25 browser-local recent uploads.
 
 Plus the **Command Palette** overlay (§6).
 
-There are **no tabs** — that system and its `matrix-pro-layout-mode` key were removed in `9b1a351`. There is **no Quick Links chip row** — removed 2026-08-11 (§6).
+The three workspace sections stay mounted but hidden when inactive, preserving in-progress state. Images loads its inventory only when active. This intentionally supersedes the June single-long-page decision. There is still **no duplicate Quick Links chip row** (§6).
 
 ### Gmail Engineering is gone from the UI
 
@@ -100,13 +102,15 @@ Removed in `9b1a351` because it was broken; Bill plans to rebuild it. **The file
 From the repo root:
 
 ```bash
-npm run lint && npm run build
+npm run lint
+npm test
+npm run build
 ```
 
 `lint` is `tsc --noEmit` (there is no ESLint). Then:
 
 ```bash
-npx wrangler pages deploy dist --project-name customer-matrix-pro
+npx wrangler pages deploy dist --project-name customer-matrix-pro --branch main
 ```
 
 **Four gotchas — each has burned a previous session:**
@@ -116,7 +120,7 @@ npx wrangler pages deploy dist --project-name customer-matrix-pro
 - **`curl` returns 401 + the access-gate login page, not the app.** That's the auth middleware working correctly. Never conclude "the deploy failed" from a curl result — check in an authenticated browser.
 - **Propagation + browser cache.** The origin can serve the previous `index.html` for ~5–15s, and a browser will serve a cached copy far longer. Verify with `fetch(url, {cache:'no-store'})` and retry before believing a stale result. Bill usually needs Ctrl+Shift+R.
 
-**Local dev:** `npm run dev` (Vite, port 3000). There's a preview entry named `matrix-pro` on port 8797 in the LIVE repo's `.claude/launch.json`. Note: screenshot tooling reliably times out on this app — verify via DOM evaluation or a real browser.
+**Local dev:** `npm run dev` (Vite, port 3000) proxies `/api`, `/login`, and `/logout` to local Pages on 8788. For the full protected app: build, initialize local D1 with the migration, then run `npx wrangler pages dev dist --port 8788`. `.dev.vars` must contain local credentials. Playwright screenshots work and are stored in ignored `output/qa`.
 
 ---
 
@@ -125,18 +129,19 @@ npx wrangler pages deploy dist --project-name customer-matrix-pro
 - React 19 + TypeScript + Vite 6 → Cloudflare Pages static assets
 - **Tailwind compiles at build time** (`tailwind.config.js` + `postcss.config.js` + `index.css`). The `cdn.tailwindcss.com` runtime script was removed 2026-07-14. New utility classes work via JIT; if a class silently does nothing, check the `content` globs.
 - Font Awesome 6 + Google Fonts (Inter, Outfit) still load from CDN in `index.html`
-- `@google/genai` powers the AI features inside Search
+- Search calls authenticated `/api/ai`; server-side Gemini REST requests own the prompts and credentials. `@google/genai` remains only for dormant components.
 - `marked` — dependency of the dormant Gmail code
-- **No database.** All state is `localStorage` (§9), so nothing syncs between Bill's computers.
+- **D1 shared contacts:** `CONTACTS_DB` binds both agent and staff dashboards to `agency-shared-contacts`. Other preferences and memo drafts remain browser-local (§9).
 
 ### Access gate — `functions/_middleware.ts`
 
 A Cloudflare Pages Function password-gates the whole site.
 
-- Cookie `customer_matrix_pro_auth=approved`, one week, HttpOnly + Secure
+- Cookie `customer_matrix_pro_session`, HMAC-signed, audience-scoped, one week, HttpOnly + Secure + SameSite=Lax. Staff uses `agency_staff_session`.
 - Routes: `POST /login`, `/logout`
-- Password comes from the `SITE_PASSWORD` env var on the Pages project
-- **Security note:** the middleware falls back to a hardcoded password literal when `SITE_PASSWORD` is unset, and that literal is committed. Should fail closed instead (§12).
+- Password comes from `SITE_PASSWORD`; `SESSION_SECRET` must also be configured. Missing credentials fail closed. The old fixed `approved` cookie and client-side staff gate are no longer accepted.
+- Old publicly embedded passwords were replaced. Private login instructions are outside both public repositories at `../Agency-Staff-Contact-Backups/command-center-access-2026-09-07.txt`. Do not copy values into source or documentation.
+- APIs return JSON 401 on expiration; cross-origin writes are rejected. Rotating either private credential invalidates sessions. Implemented in `server/auth.ts`, delegated by `functions/_middleware.ts`.
 
 ---
 
@@ -148,19 +153,19 @@ The highest-traffic component in the app. Treat it carefully.
 
 | Mode | Opens | Shortcut |
 |---|---|---|
-| Agency Matrix | `agents.agencymatrix.com` customer search | Ctrl + M |
+| Agency Matrix | `agents.agencymatrix.com` customer search | `/` focuses Unified Search |
 | Web Search | Google | Alt + W |
 | Real Estate | NC Insurance Tools property lookup, `?address=` prefilled | Alt + H |
 | People | TruePeopleSearch | Alt + P |
 | Client Folder | Google Drive `title:` search over the agency's client folders | Alt + F |
-| Contact Numbers | Local carrier contact directory, live matching | Alt + C |
+| Contact Numbers | Built-in plus shared contact directory, live matching | Alt + C |
 
 Agency Matrix mode picks `selection=Address` when the query contains a digit, else `selection=Name`. **The command palette repeats this rule — keep the two in sync.**
 
 **Other features:**
 
 - `/` focuses the search input from anywhere (unless already typing)
-- Recent searches (last 6) as chips — `matrix-pro-search-history`
+- Recent searches (last 6) retain query plus mode; old string histories are migrated in place — `matrix-pro-search-history`.
 - One primary **Search / Find** control lives inside the query field; do not add a second Search button below it.
 - **Client Folder / Cloud Folder → Google Drive (verified 2026-08-16).** Both live in `SearchCard.tsx` via `clientFolderSearchUrl()` / `clientFoldersRootUrl()`.
   - Target is the **"BLI Clients" SHARED DRIVE**, id `0AHhWG49MZdQjUk9PVA` — the same drive Bill sees locally as `H:\Shared drives\BLI Clients`. It holds **one sub-folder per client named "Last, First"**, plus `_DROP DOCUMENTS HERE`, `_Needs Filing Review`, `_Folder Automation`, and `_Agency Reference`.
@@ -172,11 +177,11 @@ Agency Matrix mode picks `selection=Address` when the query contains a digit, el
   - The hosted dashboard cannot open `H:\...` paths — browsers block `file://` navigation from an https page — so the web URL is the only workable link.
 
 - Secondary action row is grouped by intent: **Workspace** (Cloud Folder · Audit Memo · **NC Tools** in Real Estate mode) and **Agency Matrix** (Matrix Home · New Prospect · Reports).
-- **Audit Memo studio** (Alt+N or Ctrl+Shift+M) — E&O compliance memo builder. The three plain-language steps are Customer name → Interaction notes or email thread → Save memo to workflow. Paste notes or attach a PDF/image; Gemini formats an audit-ready CRM memo; "Copy Memo & Open Matrix" copies it and opens the customer in Agency Matrix.
+- **Audit Memo** (Alt+N or Ctrl+Shift+M): name, notes, optional PDF/image, Organize/Extract, Copy Memo & Open Matrix. Local draft survives closing/reload; Undo restores the original AI input; AI and clipboard errors do not discard work. Prompts must not invent completed actions or timestamps. A memo remains until explicit Discard. Attachment limits are enforced before upload; cancellation and session recovery are visible.
 - **County Property Map and Property Risk Report** use the same shared premium modal shell as Audit Memo. Keep their wording plain and their actions descriptive.
-- **Real Estate → NC Tools handoff** — Enter, the arrow button, or the NC Tools button opens NC Insurance Tools with `?address=…`, which auto-runs the lookup in its `PropertyTab.tsx`.
+- **Real Estate → NC Tools handoff** — Enter, Search, or Open NC Tools preserves the exact legacy base `https://26d5834f.nc-insurance-tools-gemini.pages.dev/` with `?address=...`. Do not silently replace it with the launcher's different base URL. Property Report and County Map call the server API; report HTML is sanitized before preview/export.
 - **Contact Numbers** — results appear as Bill types, in a contained scrolling panel. `tel:` links; copy buttons on phone/fax/email/website. 17 companies built in.
-- **Manual contact editor** — "Add Contact" for a new company; the **+** on a company card opens a manager prefilled. Built-in details can be corrected without editing `data/carrierContacts.ts`; removing a saved correction restores the original.
+- **Manual contact editor** — Add Contact or the company card's pencil opens one add/edit manager. Built-in corrections retain `replacesDetail`; removing a correction restores the original. Shared status, retry, conflict review, Backup, and Restore are available. Native dialog has one scroll area; values wrap instead of truncating.
 - **Carrier Portals** — collapsible drawer (`matrix-pro-show-carrier-gateway`). Six daily portals from `DEFAULT_INSURANCE_PORTALS`, plus a **More Carriers** panel of ten from `MORE_CARRIER_PORTALS` (both in `constants.ts`).
 - Search counter resets per calendar day (`matrix-pro-search-log`)
 
@@ -195,7 +200,7 @@ Agency Matrix mode picks `selection=Address` when the query contains a digit, el
 
 - **Tools** — filters all `PROGRAMS` (word-match on title/description/category/note; title hits ranked first). Opens via the exported `resolveProgramDestination()` so behavior matches the launcher exactly, and updates `matrix-pro-recent-programs`.
 - **Client search** — a "Search Agency Matrix for …" row is always present on a non-empty query, and is the *first* row when nothing else matched. So `cert ⏎` opens Certificates; `john smith ⏎` searches Matrix.
-- **Carrier numbers** — matches built-in `COMPANY_CONTACTS` (phone/fax); Enter or click copies the number, with a toast that shows the number itself if the clipboard write fails. Browser-saved *manual* contacts are **not** searched here — those live only in Contact Numbers mode.
+- **Carrier contacts** — searches the same `useCompanyContacts().directory` as Unified Search, including saved additions and corrections. Phone, fax, email, and website values are included. Copy failure remains visible with a manually selectable value.
 - Empty query lists recent-then-pinned tools (max 8). On a fresh browser it falls back to exported `DEFAULT_PINNED`, while an intentionally saved empty pin list remains empty. ↑↓ + Enter, Esc closes, mouse works throughout.
 
 `QuickSearchPopup.tsx` was replaced by the palette and is now dormant.
@@ -218,9 +223,9 @@ Opening tools, running searches, and switching modes **do not toast** — the ne
 
 **How Bill finds things:**
 
-- **Filter box** — matches title/description/category/note; `/` focuses it; **Enter opens the first match**; Escape clears
+- **Filter box** — matches title/description/category/note; **Enter opens the first match**; Escape clears. `/` belongs only to Unified Search, never the launcher.
 - **Category pills** — All / Operations / Documents & Forms / AI / Property & Coverage with counts; the strip stays visible while browsing the tool list and selection persists in `matrix-pro-launcher-category`
-- **Pinned** — star any tile to keep it on top (`matrix-pro-pinned-programs`). The first 8 show by default; **Show all / Show fewer** expands and condenses the area without changing the saved pins.
+- **Pinned** — star any tile (`matrix-pro-pinned-programs`). Eight per page, with previous/next controls; no saved pins are removed by pagination.
 - **Recent** — last 6 opened, as chips (`matrix-pro-recent-programs`)
 
 **Exports the palette depends on — keep them:** `PROGRAMS`, `ProgramEntry`, `ProgramCategory`, `CATEGORY_STYLES`, `DEFAULT_PINNED`, `RECENT_PROGRAMS_KEY`, `PINNED_PROGRAMS_KEY`, `resolveProgramDestination()`.
@@ -267,6 +272,7 @@ Migrated off Imgur 2026-07-23. Uploads go to **BLI Image Host** at `https://img.
 - Upload: `POST /api/upload?filename=…` with the blob as the body; the returned URL auto-copies.
 - **Recent Uploads** = browser-local convenience history only (last 25, `quicklink-upload-history`).
 - **Image Library search** = the permanent host, via authenticated paginated `GET /api/list`. `listAllHostedImages()` follows every cursor, dedupes by key, sorts newest-first. Matches each typed word against filename, host label, object key, and URL. This is how Bill reaches images uploaded from a *different* computer.
+- Complete inventory has a five-minute in-memory cache scoped to the image access code; Refresh bypasses it. Searching filters the entire fetched inventory, not just visible rows. Progress, cancellation, retry, readable upload dates, preview dimensions, and independent copy errors are shown. Maximum original image size is 30 MiB, matching the host. No image-host backend was changed.
 
 ---
 
@@ -276,18 +282,28 @@ Migrated off Imgur 2026-07-23. Uploads go to **BLI Image Host** at `https://img.
 |---|---|
 | `theme` | light / dark |
 | `matrix-pro-search-log` | `{day, count}` — daily search counter |
-| `matrix-pro-search-history` | last 6 search queries |
+| `matrix-pro-search-history` | last 6 `{query, mode}` search entries; old strings supported |
 | `matrix-pro-show-carrier-gateway` | Carrier Portals drawer open/closed |
 | `matrix-pro-pinned-programs` | pinned launcher tool ids |
 | `matrix-pro-recent-programs` | recently opened tool ids (launcher + palette) |
 | `matrix-pro-launcher-version` | last launcher version this browser saw |
 | `matrix-pro-launcher-category` | last selected category pill |
-| `matrix-pro-manual-company-contacts` | browser-saved contact additions/corrections |
+| `matrix-pro-manual-company-contacts` | original browser contact entries, retained for one-time migration |
+| `matrix-pro-manual-company-contacts:shared-v1:*` | shared cache, migration acknowledgment, and durable per-operation pending edits |
+| `matrix-pro-memo-draft` | local memo text, customer name, and original AI input for Undo |
 | `quick-image-preset` | selected image format preset |
 | `quicklink-upload-history` | recent image uploads |
 | `bliImgAccessCode` | BLI Image Host access code |
 
-A `local-storage-error` event surfaces quota failures as a toast. **Nothing here syncs between devices** — there's no database.
+A `local-storage-error` event surfaces quota failures as a toast. Only contact additions/corrections sync between devices. History, pins, theme, image access code, uploads list, and memo draft remain local. Do not erase legacy contacts during migration. A migration is complete only after an acknowledged shared save.
+
+### Shared contact database
+
+- Production D1 `agency-shared-contacts` (`30298ddf-3c36-4d2d-83d1-61f1a4981ec4`); separate preview D1 `agency-shared-contacts-preview` (`44801675-641f-4177-8c7d-0ac2804b04fc`). Both projects bind `CONTACTS_DB` through `wrangler.jsonc`.
+- `GET /api/contacts` returns `{entries, revision}`. `PUT` requires the observed revision. Atomic stale-write rejection returns 409 plus current entries. Never use unconditional last-write-wins.
+- `contact_directory` holds the current document. A database trigger stores previous versions in `contact_versions`, retaining 90 days. `migrations/0001_shared_contacts.sql` creates both.
+- Client persists per-operation base/value, including deletions. Unrelated changes can rebase; same-entry changes require explicit conflict resolution. Polling is 60 seconds while visible, plus cross-tab updates. A failed save never claims to be synced.
+- Original 20 private saved additions/corrections were hash-matched to Bill's live browser and seeded from an external private backup. Public source contains only the existing built-in directory, never the private backup.
 
 ---
 
@@ -295,18 +311,17 @@ A `local-storage-error` event surfaces quota failures as a toast. **Nothing here
 
 Never put real secret values in this file, in code, in chat, or in screenshots.
 
-- **`.env.local`** (gitignored) — `GEMINI_API_KEY`
-- **`.dev.vars`** (gitignored) — `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SITE_PASSWORD`
-- **Cloudflare Pages project settings** — `SITE_PASSWORD` for the live gate
+- **`.env.local`** is no longer a source of frontend AI credentials.
+- **`.dev.vars`** (gitignored): local `SITE_PASSWORD`, `SESSION_SECRET`, `GEMINI_API_KEY`, deployment `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+- **Cloudflare Pages secrets** in both production/preview: `SITE_PASSWORD`, `SESSION_SECRET`, `GEMINI_API_KEY`. Nonsecret `APP_ID`, `APP_NAME`, `GEMINI_MODEL` and D1 bindings are in `wrangler.jsonc`.
 
-`vite.config.ts` resolves the Gemini key in order: `env.GEMINI_API_KEY` → `process.env.GEMINI_API_KEY` → `process.env.GOOGLE_API_KEY` → `process.env.API_KEY`, then defines both `process.env.API_KEY` and `process.env.GEMINI_API_KEY`.
+`vite.config.ts` defines empty legacy key values only so dormant components still compile. It must NEVER inject a real key into browser JavaScript. Windows user-level keys no longer affect the production browser bundle.
 
-**Two consequences:**
+`functions/api/ai.ts` delegates to `server/ai.ts`: authenticated POST tasks are `organize-notes`, `extract-notes`, `property-report`, and `county-map`. Returns `{text}` or sanitized actionable JSON errors. Credentials, model selection, and prompts stay server-side. Default model is `gemini-2.5-flash`; verify current availability when installing a new key. Timeout is 80 seconds server-side, 100 seconds client-side.
 
-1. **The Gemini key is baked into the built frontend bundle.** Anyone past the password gate can read it. Rotate if the site password is ever shared.
-2. **A Windows user-level `GEMINI_API_KEY` can override what you intended.** If the live site acts like it's using an old key, check `.env.local`, process env, and the Windows user-level variable, then rebuild and redeploy. A successful secret upload does not prove the built bundle uses it.
+`scripts/configure-pages.mjs preview|production` merges private secrets into both Pages projects without printing values. A production update requires explicit authorization. `scripts/verify-deployment.mjs URL agent|staff` validates gate, contacts, CSRF protection, and key-free bundle; its authenticated browser state is saved only under ignored `output/qa`.
 
-Gemini model fallback chain: `gemini-3-flash-preview` → `gemini-3.5-flash` → `gemini-3.1-flash-lite`, retried on 429/503/quota.
+The old saved Gemini key is invalid. Do not reinstall it from Windows or `.env.local`. Ask Bill for a current key through the private clipboard workflow, validate with synthetic text, then update both projects and verify the actual API response. No customer messages should be sent during checks.
 
 ---
 
@@ -327,22 +342,31 @@ components/CommandPalette.tsx       Ctrl+K palette: tools + client search + carr
 components/QuickImageLinksCard.tsx  image uploader + library search
 components/Modal.tsx / Toast.tsx
 services/imageHostService.ts        BLI Image Host client + presets
+services/aiClient.ts                authenticated AI requests, timeout and cancellation
+services/contactDirectory.ts        contact validation, merging, offline queue and conflicts
+hooks/useCompanyContacts.ts         shared reactive directory
+server/auth.ts / ai.ts / contacts.ts protected backend implementation
+functions/api/ai.ts / contacts.ts    Pages API entry points
+migrations/0001_shared_contacts.sql  current directory and version backups
+wrangler.jsonc                      Pages configuration and separate preview D1
+tests/                              synthetic server and contact regression tests
 data/carrierContacts.ts             editable carrier phone/fax/email directory
 hooks/useLocalStorage.tsx
 functions/_middleware.ts            password gate
 public/                             hosted tools + carrier logo images
 ```
 
-**Dormant — kept intentionally, not imported:** `AiAssistant.tsx`, `QuickSearchPopup.tsx`, `Favorites.tsx`, `Header.tsx`, `PortalsCard.tsx`, `QuickActions.tsx`, `NeedsAnalysisCard.tsx`, `PdfParserCard.tsx`, `QuoteAssistantCard.tsx`, `TaskMatrixCard.tsx`; `emailEngine.ts`, `emailDesignSystemV2.ts`, `poiTemplate.ts`. (`geminiService.ts` is still used by SearchCard.)
+**Dormant — kept intentionally, not imported:** `AiAssistant.tsx`, `QuickSearchPopup.tsx`, `Favorites.tsx`, `Header.tsx`, `PortalsCard.tsx`, `QuickActions.tsx`, `NeedsAnalysisCard.tsx`, `PdfParserCard.tsx`, `QuoteAssistantCard.tsx`, `TaskMatrixCard.tsx`; `geminiService.ts`, `emailEngine.ts`, `emailDesignSystemV2.ts`, `poiTemplate.ts`.
 
 ---
 
 ## 12. Known issues / open items
 
-- **Carrier logos still load from Imgur.** `DEFAULT_INSURANCE_PORTALS` (and `AGENCY_LOGO`, `CARRIER_LOGOS`) point at `i.imgur.com` even though matching PNGs sit in `public/` and the agency runs its own image host. The newer `MORE_CARRIER_PORTALS` already use local paths.
-- **`SITE_PASSWORD` has a committed fallback literal** in `functions/_middleware.ts`. Should fail closed.
-- **`README.md` is still the stock AI Studio scaffold** and doesn't describe this project.
-- Bundle is ~604 kB (~148 kB gzipped) in one chunk — fine for an internal tool, but that's the chunk-size warning on every build.
+- **Live AI generation remains unverified until the invalid Gemini key is replaced.** Draft/error handling and the server contract have automated synthetic coverage.
+- Search carrier logos now use existing local assets. Dormant Gmail constants may still contain legacy image URLs; do not revive them without a separate Gmail review.
+- Agent frontend bundle is approximately 357 kB (about 111 kB gzipped), down from roughly 604 kB. No framework migration was needed.
+- Contacts sync; other local state does not. Individual accounts, audit identities, and per-user permissions are not implemented: dashboards use separate shared access passwords.
+- Physical mobile keyboards, third-party tool login flows, actual customer sending, and real image uploads were not exercised in this release.
 - The dormant Gmail/Task/Quote components still type-check on every lint, so a breaking change to `constants.ts` or the services can fail the build from code nothing renders.
 
 ---
@@ -371,9 +395,9 @@ public/                             hosted tools + carrier logo images
 > This is Bill Layne Insurance's personal **Agency Command Center** dashboard.
 > Repo: `C:\Users\bill\OneDrive\Documents\Playground\Customer-Matrix-Pro` · GitHub `BillLayne/Customer-Matrix-Pro` · live (password-gated) at https://customer-matrix-pro.pages.dev/ · Cloudflare Pages project `customer-matrix-pro`.
 >
-> **Stack:** React 19 + TypeScript + Vite 6, Tailwind compiled at build time, no database (state is localStorage), Cloudflare Pages Function password gate.
+> **Stack:** React 19 + TypeScript + Vite 6, compiled Tailwind, signed Cloudflare Pages authentication, server-side Gemini, and D1 contacts shared with the staff dashboard. Other state is local.
 >
-> **Layout — one scrolling page, no tabs:** Unified Search (must stay visible without scrolling) → Program Launcher → Quick Image Links, plus a Ctrl+K command palette overlay. Pinned shows 8 tools until expanded; launcher categories stay visible while browsing; the locked image-host state stays compact.
+> **Layout:** separate Search / Tools / Images workspaces, with Search default and above the fold. Mobile bottom navigation, command palette, Settings, eight-item pinned pages, and Library / Upload tabs. Hidden workspaces remain mounted to retain drafts and filters.
 >
 > **Critical rules:**
 > 1. Another AI may be working in this repo — run `git status --short` before editing AND before deploying; if it's dirty and not yours, ask Bill. Commit your work before handing back.

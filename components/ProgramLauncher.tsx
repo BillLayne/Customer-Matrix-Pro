@@ -653,349 +653,249 @@ export const resolveProgramDestination = (program: ProgramEntry): string | null 
       : toFileUrl(program.target);
 };
 
+export const readStoredProgramIds = (key: string, fallback: string[] = []): string[] => {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (raw === null) return fallback;
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return fallback;
+  }
+};
+
+const PROGRAM_LAUNCHED_EVENT = 'matrix-pro-program-launched';
+
+export const recordProgramLaunch = (programId: string) => {
+  const ids = [programId, ...readStoredProgramIds(RECENT_PROGRAMS_KEY).filter((id) => id !== programId)].slice(0, 8);
+  try {
+    window.localStorage.setItem(RECENT_PROGRAMS_KEY, JSON.stringify(ids));
+  } catch (error) {
+    window.dispatchEvent(new CustomEvent('local-storage-error', { detail: { key: RECENT_PROGRAMS_KEY, error } }));
+  }
+  // Storage events do not fire in the writing tab. Update the mounted launcher too.
+  window.dispatchEvent(new CustomEvent(PROGRAM_LAUNCHED_EVENT, { detail: { programId, ids } }));
+};
+
 const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
-  const [recentProgramIds, setRecentProgramIds] = useLocalStorage<string[]>(RECENT_PROGRAMS_KEY, []);
+  const [recentProgramIds, setRecentProgramIds] = useState(() => readStoredProgramIds(RECENT_PROGRAMS_KEY));
   const [pinnedProgramIds, setPinnedProgramIds] = useLocalStorage<string[]>(PINNED_PROGRAMS_KEY, DEFAULT_PINNED);
   const [seenVersion, setSeenVersion] = useLocalStorage<number>(LAUNCHER_VERSION_KEY, 1);
   const [filterQuery, setFilterQuery] = useState('');
-  const [showAllPinned, setShowAllPinned] = useState(false);
+  const [pinnedPage, setPinnedPage] = useState(0);
   const [storedCategory, setActiveCategory] = useLocalStorage<ProgramCategory | 'All'>('matrix-pro-launcher-category', 'All');
-  // Guard against stale persisted values if a category is ever renamed.
   const activeCategory: ProgramCategory | 'All' =
     storedCategory === 'All' || CATEGORY_ORDER.includes(storedCategory) ? storedCategory : 'All';
   const [newProgramIds, setNewProgramIds] = useState<string[]>([]);
-  const filterInputRef = useRef<HTMLInputElement | null>(null);
+  const filterInputRef = useRef<HTMLInputElement>(null);
+  const filterResultsRef = useRef<HTMLDivElement>(null);
 
-  // Surface tools added since this browser last saw the launcher: pin them once, badge them NEW.
   useEffect(() => {
     if (seenVersion >= LAUNCHER_VERSION) return;
     const freshIds = Object.entries(NEW_IN_VERSION)
       .filter(([version]) => Number(version) > seenVersion)
       .flatMap(([, ids]) => ids)
       .filter((id) => PROGRAMS.some((program) => program.id === id));
-
     if (freshIds.length > 0) {
-      setPinnedProgramIds((prev) => [...prev, ...freshIds.filter((id) => !prev.includes(id))]);
+      setPinnedProgramIds((previous) => [...previous, ...freshIds.filter((id) => !previous.includes(id))]);
       setNewProgramIds(freshIds);
     }
     setSeenVersion(LAUNCHER_VERSION);
   }, [seenVersion, setPinnedProgramIds, setSeenVersion]);
 
-  // "/" focuses the filter from anywhere on the page, as long as you aren't already typing.
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
-      const target = event.target as HTMLElement | null;
-      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
-      if (target?.isContentEditable) return;
-      event.preventDefault();
-      filterInputRef.current?.focus();
-      filterInputRef.current?.select();
+    const handleLaunch = (event: Event) => {
+      const { programId, ids } = (event as CustomEvent<{ programId: string; ids: string[] }>).detail;
+      setRecentProgramIds(ids);
+      setNewProgramIds((previous) => previous.filter((id) => id !== programId));
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === RECENT_PROGRAMS_KEY || event.key === null) setRecentProgramIds(readStoredProgramIds(RECENT_PROGRAMS_KEY));
+    };
+    window.addEventListener(PROGRAM_LAUNCHED_EVENT, handleLaunch);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener(PROGRAM_LAUNCHED_EVENT, handleLaunch);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
-  const programMap = useMemo(
-    () => Object.fromEntries(PROGRAMS.map((program) => [program.id, program])),
-    []
-  );
-
+  const programMap = useMemo(() => Object.fromEntries(PROGRAMS.map((program) => [program.id, program])), []);
   const pinnedPrograms = useMemo(
-    () =>
-      pinnedProgramIds
-        .map((programId) => programMap[programId])
-        .filter((program): program is ProgramEntry => Boolean(program)),
+    () => pinnedProgramIds.map((id) => programMap[id]).filter((program): program is ProgramEntry => Boolean(program)),
     [programMap, pinnedProgramIds]
   );
-
-  const visiblePinnedPrograms = showAllPinned
-    ? pinnedPrograms
-    : pinnedPrograms.slice(0, PINNED_PREVIEW_LIMIT);
-  const hiddenPinnedCount = Math.max(0, pinnedPrograms.length - PINNED_PREVIEW_LIMIT);
-
+  const pageCount = Math.max(1, Math.ceil(pinnedPrograms.length / PINNED_PREVIEW_LIMIT));
+  const currentPage = Math.min(pinnedPage, pageCount - 1);
+  const visiblePinnedPrograms = pinnedPrograms.slice(currentPage * PINNED_PREVIEW_LIMIT, (currentPage + 1) * PINNED_PREVIEW_LIMIT);
   const recentPrograms = useMemo(
-    () =>
-      recentProgramIds
-        .map((programId) => programMap[programId])
-        .filter((program): program is ProgramEntry => Boolean(program))
-        .slice(0, 6),
+    () => recentProgramIds.map((id) => programMap[id]).filter((program): program is ProgramEntry => Boolean(program)).slice(0, 6),
     [programMap, recentProgramIds]
   );
-
   const normalizedFilter = filterQuery.trim().toLowerCase();
-
   const filteredPrograms = useMemo(() => {
     if (!normalizedFilter) return [];
-    return sortProgramsByTitle(
-      PROGRAMS.filter((program) =>
-        [program.title, program.description, program.category, program.note]
-          .join(' ')
-          .toLowerCase()
-          .includes(normalizedFilter)
-      )
-    );
+    const terms = normalizedFilter.split(/\s+/);
+    return sortProgramsByTitle(PROGRAMS.filter((program) => {
+      const text = [program.title, program.description, program.category, program.note].join(' ').toLowerCase();
+      return terms.every((term) => text.includes(term));
+    }));
   }, [normalizedFilter]);
-
   const groupedPrograms = useMemo(
-    () =>
-      CATEGORY_ORDER.filter((category) => activeCategory === 'All' || activeCategory === category).map(
-        (category) => ({
-          category,
-          items: sortProgramsByTitle(PROGRAMS.filter((program) => program.category === category)),
-        })
-      ),
+    () => CATEGORY_ORDER.filter((category) => activeCategory === 'All' || activeCategory === category).map((category) => ({
+      category, items: sortProgramsByTitle(PROGRAMS.filter((program) => program.category === category)),
+    })),
     [activeCategory]
   );
 
   const togglePin = (program: ProgramEntry) => {
-    setPinnedProgramIds((prev) => {
-      if (prev.includes(program.id)) {
-        addToast(`${program.title} unpinned.`, 'info');
-        return prev.filter((id) => id !== program.id);
-      }
-      addToast(`${program.title} pinned to the top.`, 'success');
-      return [...prev, program.id];
-    });
+    const wasPinned = pinnedProgramIds.includes(program.id);
+    setPinnedProgramIds((previous) => previous.includes(program.id)
+      ? previous.filter((id) => id !== program.id) : [...previous, program.id]);
+    addToast(`${program.title} ${wasPinned ? 'unpinned' : 'pinned'}.`, wasPinned ? 'info' : 'success');
   };
 
-  const openProgram = (program: ProgramEntry) => {
-    setNewProgramIds((prev) => prev.filter((id) => id !== program.id));
+  const unavailable = (program: ProgramEntry) => addToast(
+    `${program.title} is a local-only tool. Open it from the local dashboard on this computer.`, 'warning'
+  );
 
+  const renderTile = (program: ProgramEntry, compact = false) => {
     const destination = resolveProgramDestination(program);
-    if (!destination) {
-      addToast(`${program.title} is a local-only tool. Open it from the local dashboard on this computer.`, 'warning');
-      return;
-    }
-    const newWindow = window.open(destination, '_blank', 'noopener,noreferrer');
-    if (newWindow) {
-      setRecentProgramIds((prev) => [program.id, ...prev.filter((item) => item !== program.id)].slice(0, 8));
-      return;
-    }
-
-    addToast(`Popup blocked while opening ${program.title}. Please allow popups for this dashboard.`, 'warning');
-  };
-
-  const renderTile = (program: ProgramEntry) => {
     const isPinned = pinnedProgramIds.includes(program.id);
     const isNew = newProgramIds.includes(program.id);
     const styles = CATEGORY_STYLES[program.category];
-    // The star is a sibling of the open button, not nested inside it: a button inside a button is
-    // invalid HTML and left the star unreachable by keyboard.
+    const content = <>
+      <span className="program-meta">
+        <span className={`program-icon ${styles.iconBg} ${styles.iconText}`}><i className={program.icon} aria-hidden="true" /></span>
+        {!compact && <span>{program.category}</span>}
+        {isNew && <span className="program-new">New</span>}
+      </span>
+      <span className="program-title">{program.title}</span>
+      {!compact && <span className="program-description">{program.description}</span>}
+    </>;
     return (
-      <div
-        key={program.id}
-        className="group flex w-full items-center gap-1 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-[#0076d3]/50 hover:shadow-md focus-within:border-[#0076d3]/50 dark:border-white/10 dark:bg-white/5 dark:hover:border-cyan-400/40 dark:focus-within:border-cyan-400/40"
-      >
-        <button
-          type="button"
-          onClick={() => openProgram(program)}
-          title={program.description}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-[#0076d3]"
-        >
-          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${styles.iconBg} ${styles.iconText}`}>
-            <i className={`${program.icon} text-base`}></i>
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-1.5">
-              <span className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                {program.title}
-              </span>
-              {isNew && (
-                <span className="shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-                  New
-                </span>
-              )}
-            </span>
-            <span className="block truncate text-xs text-slate-500 dark:text-slate-400">{program.note}</span>
-          </span>
-        </button>
-        <button
-          type="button"
-          aria-label={isPinned ? `Unpin ${program.title}` : `Pin ${program.title}`}
-          aria-pressed={isPinned}
-          onClick={() => togglePin(program)}
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-[#0076d3] ${
-            isPinned
-              ? 'text-amber-500 hover:text-slate-400'
-              : 'text-slate-300 opacity-0 hover:text-amber-500 focus-visible:opacity-100 group-hover:opacity-100 dark:text-slate-600'
-          }`}
-          title={isPinned ? 'Unpin from top' : 'Pin to top'}
-        >
-          <i className={`${isPinned ? 'fa-solid' : 'fa-regular'} fa-star`}></i>
+      <div key={program.id} className={`program-card${compact ? ' program-card-compact' : ''}`} data-program-id={program.id}>
+        {destination ? (
+          <a className="program-link" href={destination} target="_blank" rel="noopener noreferrer"
+            aria-label={`Open ${program.title} in a new tab`} title={program.description}
+            onClick={() => recordProgramLaunch(program.id)}
+            onAuxClick={(event) => { if (event.button === 1) recordProgramLaunch(program.id); }}>
+            {content}
+          </a>
+        ) : (
+          <button type="button" className="program-link" onClick={() => unavailable(program)}>{content}</button>
+        )}
+        <button type="button" aria-label={`${isPinned ? 'Unpin' : 'Pin'} ${program.title}`}
+          aria-pressed={isPinned} onClick={() => togglePin(program)}
+          className={`shell-icon-button program-pin${isPinned ? ' is-pinned' : ''}`}
+          title={isPinned ? 'Unpin tool' : 'Pin tool'}>
+          <i className={`${isPinned ? 'fa-solid' : 'fa-regular'} fa-star`} aria-hidden="true" />
         </button>
       </div>
     );
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5 sm:p-5">
-      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h2 className="flex items-center gap-2.5 font-outfit text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#003f87] text-white shadow-sm">
-              <i className="fa-solid fa-table-cells-large text-sm"></i>
-            </span>
-            Program Launcher
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Every agency tool in one place. Star the ones you use most to keep them on top.
-          </p>
-        </div>
-
-        <div className="relative w-full lg:max-w-xs">
-          <i className="fa-solid fa-filter pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400"></i>
-          <input
-            ref={filterInputRef}
-            type="text"
-            value={filterQuery}
-            onChange={(e) => setFilterQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && filteredPrograms.length > 0) {
-                e.preventDefault();
-                openProgram(filteredPrograms[0]);
-                return;
-              }
-              if (e.key === 'Escape') {
+    <div className="program-launcher">
+      <div className="launcher-heading">
+        <h2>Tools <span className="section-count">{PROGRAMS.length}</span></h2>
+        <div className="launcher-filter">
+          <i className="fa-solid fa-filter" aria-hidden="true" />
+          <input ref={filterInputRef} type="search" aria-label="Filter all tools" value={filterQuery}
+            onChange={(event) => setFilterQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.nativeEvent.isComposing) return;
+              if (event.key === 'Enter' && filteredPrograms.length > 0) {
+                event.preventDefault();
+                filterResultsRef.current?.querySelector<HTMLAnchorElement>('.program-link')?.click();
+              } else if (event.key === 'Escape') {
+                event.preventDefault();
                 setFilterQuery('');
-                e.currentTarget.blur();
               }
             }}
-            placeholder="Filter tools… (e.g. certificate)"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-16 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#0076d3]/60 focus:bg-white dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500"
-          />
-          {filterQuery ? (
-            <button
-              type="button"
-              onClick={() => setFilterQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200"
-              aria-label="Clear filter"
-            >
-              <i className="fa-solid fa-circle-xmark"></i>
-            </button>
-          ) : (
-            <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-400 dark:bg-slate-800 dark:text-slate-500 sm:block">
-              /
-            </kbd>
-          )}
+            placeholder="Filter tools" />
+          {filterQuery && <button type="button" className="shell-icon-button" aria-label="Clear tool filter" title="Clear tool filter"
+            onClick={() => { setFilterQuery(''); filterInputRef.current?.focus(); }}>
+            <i className="fa-solid fa-xmark" aria-hidden="true" />
+          </button>}
         </div>
       </div>
 
       {normalizedFilter ? (
-        <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            {filteredPrograms.length} {filteredPrograms.length === 1 ? 'match' : 'matches'}
-            {filteredPrograms.length > 0 && (
-              <span className="ml-2 normal-case tracking-normal text-slate-400 dark:text-slate-500">
-                — press Enter to open {filteredPrograms[0].title}
-              </span>
-            )}
-          </p>
-          {filteredPrograms.length > 0 ? (
-            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredPrograms.map(renderTile)}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
-              No tools match “{filterQuery}”. Try a shorter word.
-            </div>
-          )}
-        </div>
+        <section aria-label="Tool results">
+          <p className="launcher-result-count" role="status">{filteredPrograms.length} {filteredPrograms.length === 1 ? 'tool' : 'tools'}</p>
+          {filteredPrograms.length > 0
+            ? <div ref={filterResultsRef} className="program-grid">{filteredPrograms.map((program) => renderTile(program))}</div>
+            : <p className="launcher-empty">No tools match "{filterQuery}".</p>}
+        </section>
       ) : (
-        <div className="space-y-5">
+        <>
           {pinnedPrograms.length > 0 && (
-            <section>
-              <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <i className="fa-solid fa-star text-xs text-amber-500"></i>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Pinned
-                  </h3>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-white/10 dark:text-slate-300">
-                    {pinnedPrograms.length}
-                  </span>
+            <section className="launcher-section" aria-labelledby="pinned-tools-heading">
+              <div className="launcher-section-heading">
+                <h3 id="pinned-tools-heading"><i className="fa-solid fa-star" aria-hidden="true" /> Pinned</h3>
+                <div className="pin-pagination">
+                  <span>{currentPage * PINNED_PREVIEW_LIMIT + 1}-{Math.min((currentPage + 1) * PINNED_PREVIEW_LIMIT, pinnedPrograms.length)} of {pinnedPrograms.length}</span>
+                  {pageCount > 1 && <>
+                    <button type="button" className="shell-icon-button" disabled={currentPage === 0}
+                      onClick={() => setPinnedPage(currentPage - 1)} aria-label="Previous pinned tools" title="Previous pinned tools">
+                      <i className="fa-solid fa-chevron-left" aria-hidden="true" />
+                    </button>
+                    <button type="button" className="shell-icon-button" disabled={currentPage >= pageCount - 1}
+                      onClick={() => setPinnedPage(currentPage + 1)} aria-label="Next pinned tools" title="Next pinned tools">
+                      <i className="fa-solid fa-chevron-right" aria-hidden="true" />
+                    </button>
+                  </>}
                 </div>
-                {hiddenPinnedCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllPinned((current) => !current)}
-                    aria-expanded={showAllPinned}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-[#003f87] transition hover:bg-blue-50 dark:text-cyan-200 dark:hover:bg-white/10"
-                  >
-                    {showAllPinned ? 'Show fewer' : `Show all ${pinnedPrograms.length}`}
-                    <i className={`fa-solid ${showAllPinned ? 'fa-chevron-up' : 'fa-chevron-down'} text-[9px]`}></i>
-                  </button>
-                )}
               </div>
-              <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {visiblePinnedPrograms.map(renderTile)}
-              </div>
+              <div className="program-grid">{visiblePinnedPrograms.map((program) => renderTile(program, true))}</div>
             </section>
           )}
 
           {recentPrograms.length > 0 && (
-            <section>
-              <div className="mb-2.5 flex items-center gap-2">
-                <i className="fa-solid fa-clock-rotate-left text-xs text-slate-400"></i>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Recent
-                </h3>
+            <section className="launcher-section" aria-labelledby="recent-tools-heading">
+              <div className="launcher-section-heading">
+                <h3 id="recent-tools-heading"><i className="fa-solid fa-clock-rotate-left" aria-hidden="true" /> Recent</h3>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {recentPrograms.map((program) => (
-                  <button
-                    key={program.id}
-                    onClick={() => openProgram(program)}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-[#0076d3]/50 hover:bg-white hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white"
-                  >
-                    <i className={`${program.icon} text-[11px]`}></i>
-                    {program.title}
-                  </button>
-                ))}
+              <div className="recent-tools">
+                {recentPrograms.map((program) => {
+                  const destination = resolveProgramDestination(program);
+                  return destination && <a key={program.id} href={destination} target="_blank" rel="noopener noreferrer"
+                    aria-label={`Open ${program.title} in a new tab`}
+                    onClick={() => recordProgramLaunch(program.id)}
+                    onAuxClick={(event) => { if (event.button === 1) recordProgramLaunch(program.id); }}>
+                    <i className={program.icon} aria-hidden="true" /><span>{program.title}</span>
+                  </a>;
+                })}
               </div>
             </section>
           )}
 
-          <section>
-            <div className="sticky top-[4.25rem] z-20 -mx-1 mb-3 flex flex-wrap items-center gap-2 rounded-xl border-t border-slate-100 bg-white/95 px-1 py-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-[#151f2f]/95">
-              <h3 className="mr-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                All Tools
-              </h3>
-              {(['All', ...CATEGORY_ORDER] as Array<ProgramCategory | 'All'>).map((category) => (
-                <button
-                  key={category}
-                  type="button"
-                  onClick={() => setActiveCategory(category)}
-                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
-                    activeCategory === category
-                      ? 'bg-[#003f87] text-white shadow-sm dark:bg-[#0076d3]'
-                      : 'border border-slate-200 bg-white text-slate-500 hover:border-[#0076d3]/40 hover:text-[#003f87] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white'
-                  }`}
-                >
-                  {category === 'All'
-                    ? `All (${PROGRAMS.length})`
-                    : `${category} (${PROGRAMS.filter((p) => p.category === category).length})`}
-                </button>
-              ))}
+          <section className="launcher-section" aria-labelledby="all-tools-heading">
+            <div className="launcher-categories">
+              <h3 id="all-tools-heading">All Tools</h3>
+              <div className="category-buttons" role="group" aria-label="Tool category">
+                {(['All', ...CATEGORY_ORDER] as Array<ProgramCategory | 'All'>).map((category) => (
+                  <button key={category} type="button" aria-pressed={activeCategory === category} onClick={() => setActiveCategory(category)}>
+                    {category}<span>{category === 'All' ? PROGRAMS.length : PROGRAMS.filter((program) => program.category === category).length}</span>
+                  </button>
+                ))}
+              </div>
+              <select className="category-select" aria-label="Tool category" value={activeCategory}
+                onChange={(event) => setActiveCategory(event.target.value as ProgramCategory | 'All')}>
+                {(['All', ...CATEGORY_ORDER] as Array<ProgramCategory | 'All'>).map((category) => (
+                  <option key={category} value={category}>{category} ({category === 'All' ? PROGRAMS.length : PROGRAMS.filter((program) => program.category === category).length})</option>
+                ))}
+              </select>
             </div>
-
-            <div className="space-y-4">
-              {groupedPrograms.map((group) => (
-                <div key={group.category}>
-                  <div className="mb-2 flex items-center gap-2">
-                    <i className={`${CATEGORY_ICONS[group.category]} text-xs ${CATEGORY_STYLES[group.category].iconText}`}></i>
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                      {group.category}
-                    </h4>
-                  </div>
-                  <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {group.items.map(renderTile)}
-                  </div>
-                </div>
-              ))}
-            </div>
+            {groupedPrograms.map((group) => (
+              <section key={group.category} className="program-category" aria-label={group.category}>
+                <h4><i className={`${CATEGORY_ICONS[group.category]} ${CATEGORY_STYLES[group.category].iconText}`} aria-hidden="true" />{group.category}</h4>
+                <div className="program-grid">{group.items.map((program) => renderTile(program))}</div>
+              </section>
+            ))}
           </section>
-        </div>
+        </>
       )}
     </div>
   );

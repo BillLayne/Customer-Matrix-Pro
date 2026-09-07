@@ -1,41 +1,37 @@
-
 import React from 'react';
+
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
 
 interface ToastProps {
   message: string;
   type: 'success' | 'warning' | 'danger' | 'info';
+  onDismiss?: () => void;
+  action?: ToastAction;
 }
 
-const toastConfig = {
-  success: {
-    icon: 'fa-solid fa-check-circle',
-    style: 'border-green-500',
-  },
-  warning: {
-    icon: 'fa-solid fa-exclamation-triangle',
-    style: 'border-yellow-500',
-  },
-  danger: {
-    icon: 'fa-solid fa-times-circle',
-    style: 'border-red-500',
-  },
-  info: {
-    icon: 'fa-solid fa-info-circle',
-    style: 'border-blue-500',
-  },
+const toastIcons = {
+  success: 'fa-circle-check',
+  warning: 'fa-triangle-exclamation',
+  danger: 'fa-circle-xmark',
+  info: 'fa-circle-info',
 };
 
-const Toast: React.FC<ToastProps> = ({ message, type }) => {
-  const { icon, style } = toastConfig[type];
-
-  return (
-    <div
-      className={`bg-card-light dark:bg-card-dark border-l-4 ${style} rounded-lg shadow-lg p-4 flex items-center gap-3 animate-slide-in-right min-w-[300px]`}
-    >
-      <i className={`${icon} text-lg`}></i>
-      <span className="font-semibold text-sm">{message}</span>
+const Toast: React.FC<ToastProps> = ({ message, type, onDismiss, action }) => (
+  <div className={`agency-toast agency-toast-${type}`}>
+    <div className="toast-message" role={type === 'danger' || type === 'warning' ? 'alert' : 'status'} aria-atomic="true">
+      <i className={`fa-solid ${toastIcons[type]}`} aria-hidden="true" />
+      <span>{message}</span>
     </div>
-  );
-};
+    {action && <button type="button" className="toast-action" onClick={action.onClick}>{action.label}</button>}
+    {onDismiss && (
+      <button type="button" className="shell-icon-button toast-dismiss" onClick={onDismiss} aria-label="Dismiss notification" title="Dismiss notification">
+        <i className="fa-solid fa-xmark" aria-hidden="true" />
+      </button>
+    )}
+  </div>
+);
 
 export default Toast;

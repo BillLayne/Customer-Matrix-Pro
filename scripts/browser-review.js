@@ -1,0 +1,72 @@
+async (page) => {
+  const check = (value, message) => { if (!value) throw new Error(message); };
+  const widths = [320, 390, 768, 1280, 1440];
+  const results = [];
+  const workspace = name => page.getByRole('navigation', { name: 'Workspace', exact: true }).or(page.getByRole('navigation', { name: 'Mobile workspace', exact: true })).locator('visible=true').getByRole('button', { name, exact: true }).click();
+  const mode = async (value, name) => {
+    if (await page.getByLabel('Search in', { exact: true }).isVisible()) await page.getByLabel('Search in', { exact: true }).selectOption(value);
+    else await page.getByRole('group', { name: 'Search mode', exact: true }).getByRole('button', { name, exact: true }).click();
+  };
+  const fit = async label => {
+    const size = await page.evaluate(() => ({ width: innerWidth, client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
+    check(size.scroll <= size.client + 1, label + ' horizontal overflow: ' + JSON.stringify(size));
+    results.push({ label, ...size });
+  };
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await workspace('Search');
+    await mode('agency', 'Agency Matrix');
+    const search = page.getByRole('searchbox', { name: 'Name, address, or search term', exact: true });
+    await search.fill('Synthetic QA query');
+    const rect = await search.boundingBox();
+    check(rect.y >= 0 && rect.y + rect.height < 600, 'Search below first viewport at ' + width);
+    await fit('Search ' + width);
+    await page.screenshot({ path: `output/qa/search-${width}.png` });
+    await mode('contacts', 'Contact Numbers');
+    await page.getByRole('searchbox', { name: 'Company name', exact: true }).fill('NC Grange');
+    await page.getByRole('button', { name: 'Manage NC Grange Mutual', exact: true }).waitFor();
+    await fit('Contacts ' + width);
+    await page.screenshot({ path: `output/qa/contacts-${width}.png` });
+    await workspace('Tools');
+    await fit('Tools ' + width);
+    await page.screenshot({ path: `output/qa/tools-${width}.png` });
+    await page.getByRole('searchbox', { name: 'Filter all tools' }).fill('NC Grange');
+    await page.getByRole('link', { name: 'Open NC Grange New Business App & Photo Link in a new tab', exact: true }).waitFor();
+    await workspace('Images');
+    await fit('Images ' + width);
+    await page.screenshot({ path: `output/qa/images-${width}.png` });
+    await workspace('Tools');
+    check(await page.getByRole('searchbox', { name: 'Filter all tools' }).inputValue() === 'NC Grange', 'Tool filter lost on workspace change');
+    await page.getByRole('searchbox', { name: 'Filter all tools' }).fill('');
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Open command palette', exact: true }).click();
+  const palette = page.getByRole('dialog', { name: 'Command Palette', exact: true });
+  await page.getByRole('combobox', { name: 'Search tools, clients, and contacts' }).fill('Nationwide');
+  check(await palette.getByRole('option').count() > 0, 'Palette contacts did not match');
+  for (let index = 0; index < 16; index++) await page.keyboard.press('Tab');
+  check(await palette.evaluate(node => node.contains(document.activeElement)), 'Focus escaped command palette');
+  await page.keyboard.press('Escape');
+  check(!(await palette.count()), 'Escape did not close palette');
+  await page.keyboard.press('/');
+  check(await page.getByRole('searchbox', { name: 'Company name', exact: true }).evaluate(node => node === document.activeElement), 'Slash did not focus main search');
+  await page.getByRole('button', { name: 'Audit Memo', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Customer name', exact: true }).fill('Synthetic QA Customer');
+  const notes = page.getByRole('textbox', { name: 'Interaction notes or email thread', exact: true });
+  await notes.fill('Requested callback. No action completed.');
+  await page.getByRole('button', { name: 'Keep Draft & Close', exact: true }).click();
+  await page.reload();
+  await page.getByRole('button', { name: 'Resume Memo', exact: true }).click();
+  check(await notes.inputValue() === 'Requested callback. No action completed.', 'Memo draft did not survive reload');
+  await page.screenshot({ path: 'output/qa/memo-mobile.png' });
+  await page.getByRole('button', { name: 'Keep Draft & Close', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings and help', exact: true }).click();
+  await page.getByRole('switch', { name: 'Dark appearance', exact: true }).check();
+  await page.getByRole('button', { name: 'Close Settings and Help', exact: true }).click();
+  await fit('Dark mobile');
+  await page.screenshot({ path: 'output/qa/dark-mobile.png' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await workspace('Tools');
+  await page.screenshot({ path: 'output/qa/dark-tools-desktop.png' });
+  console.log(JSON.stringify({ responsiveChecks: results, paletteFocus: 'passed', draftReload: 'passed', stateRetention: 'passed' }));
+}
