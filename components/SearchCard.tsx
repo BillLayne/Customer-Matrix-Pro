@@ -6,6 +6,7 @@ import { requestAi } from '../services/aiClient';
 import type { AiTask, AiAttachment } from '../services/aiClient';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import ContactLookup from './ContactLookup';
+import HomeQuoteWorkspace from './HomeQuoteWorkspace';
 import DOMPurify from 'dompurify';
 
 interface SearchCardProps {
@@ -102,6 +103,8 @@ type SearchEntry = string | { query: string; mode: SearchMode };
 const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch, active = true }) => {
   const [mode, setMode] = useState<SearchMode>('agency');
   const [query, setQuery] = useState('');
+  const [quoteOpen, setQuoteOpen] = useState(false);
+  const [quoteHasDraft, setQuoteHasDraft] = useState(false);
   const [searchHistory, setSearchHistory] = useLocalStorage<SearchEntry[]>('matrix-pro-search-history', []);
   const [showCarrierGateway, setShowCarrierGateway] = useLocalStorage<boolean>('matrix-pro-show-carrier-gateway', false);
   const [showMoreCarriers, setShowMoreCarriers] = useState(false);
@@ -509,6 +512,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
         {mode === 'realestate' && <div className="mt-3 border-t border-slate-100 pt-3 dark:border-white/10">
           <div className="flex flex-wrap gap-2">
             <button className={buttonClass} onClick={handleNcInsuranceToolsOpen} disabled={!query.trim()}><i className="fa-solid fa-house" aria-hidden="true" />Open NC Tools</button>
+            <button className={primaryClass} aria-label="Quote Information" onClick={() => setQuoteOpen(true)} disabled={!query.trim() && !quoteHasDraft} title={quoteHasDraft ? 'Open or resume home quote information' : 'Research this address and collect prospect answers'}><i className="fa-solid fa-clipboard-question" aria-hidden="true" />Quote Information{quoteHasDraft && <span className="text-xs font-normal">(draft)</span>}</button>
             <button className={buttonClass} onClick={handleGenerateReport} disabled={!query.trim() || Boolean(busyTask)}><i className="fa-solid fa-file-lines" aria-hidden="true" />Property Report</button>
             <button className={buttonClass} onClick={handleGisSearch} disabled={!query.trim() || Boolean(busyTask)}><i className="fa-solid fa-map" aria-hidden="true" />County Map</button>
             <button className={buttonClass} onClick={() => propertyFileInputRef.current?.click()} disabled={Boolean(busyTask)} title="Attach property evidence (10 MiB total)"><i className="fa-solid fa-paperclip" aria-hidden="true" />Attach</button>
@@ -534,6 +538,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
         </div>
       </section>
 
+      <HomeQuoteWorkspace isOpen={active && quoteOpen} address={query} onClose={() => setQuoteOpen(false)} onDraftChange={setQuoteHasDraft} />
       <Modal isOpen={active && isGisModalOpen} onClose={() => { cancelRequest(); setIsGisModalOpen(false); }} title="County Property Map">
         {isGisSearching && <div role="status" className="flex flex-wrap items-center gap-3 text-sm"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />Finding county map...<button className={buttonClass} onClick={() => { cancelRequest(); setPropertyError('County search cancelled.'); }}>Cancel</button></div>}
         {propertyFeedback}

@@ -1,6 +1,18 @@
 # Agency Command Center — Live Handoff
 
-**Last verified against the code: September 7, 2026** (approved command center redesign, protected APIs, and shared contacts).
+**Last verified against the code: September 17, 2026** (local Home Quote Information feature). Last production release remains the September 7 redesign; the new quote feature has NOT been pushed or deployed.
+
+## September 17: Home Quote Information (Local Preview Only)
+
+- Added **Quote Information** beside Open NC Tools in Unified Search > Real Estate. All existing search actions and launcher URLs remain unchanged.
+- Opens a five-section prospect interview while an authenticated `/api/home-quote` function fetches public records from Find My Home Information. Only the address leaves the browser; this feature uses no Gemini key and does not change the existing `/api/ai` system.
+- Property matches require staff confirmation. Multiple candidates, address differences, unavailable records, missing facts and conflicting prospect answers remain visible. No tax assessment is treated as replacement cost or Coverage A.
+- Generates an indexed, print-styled `index.html` report with separate public and prospect sources. Explicit JSON draft download/import and tab-session recovery are included; **there is no cloud backup of quote interviews**. Private drafts can be cleared with confirmation.
+- New reusable `bli-home-quote-research` skill is in `skills/bli-home-quote-research/SKILL.md` and installed at `C:\Users\bill\.codex\skills\bli-home-quote-research\SKILL.md`. The web button runs a web workflow directly, not a local Codex task. The skill supports deeper source review separately.
+- Full feature details, file map, tests, known limitations and release procedure: [HOME_QUOTE_INFORMATION_HANDOFF.md](HOME_QUOTE_INFORMATION_HANDOFF.md).
+- Local preview: `http://127.0.0.1:8788/`. Windows workerd failed to spawn on Wrangler 4.129.1 and 4.133.0, so `scripts/preview-home-quote.mjs` provides a loopback-only Node adapter running the real authentication and quote handlers. Other APIs deliberately return 503 in this preview; it cannot write contacts or send customer communications.
+- Passed: 19 Node tests (including the existing contact suite's 15 internal checks), TypeScript, production build, live Find My Home lookup through the new local handler, browser interview/property/report checks at 320/390/768/1440 widths, dark theme, keyboard focus, draft export/import/reload, candidate switching, failure recovery, HTML escaping and downloads. Physical-device keyboards, native print dialogs and the new endpoint on Cloudflare remain unverified.
+- Existing production was inspected read-only: current bundle `index-ejjk9UDK.js`, signed login and API protection passed, shared contacts returned 20 entries at revision 5. No customer records or production services were changed.
 
 **Release caveat:** The saved Gemini key was invalid during review. The new server API and error recovery are implemented, but successful live AI generation remains blocked until Bill supplies a valid replacement key. Never report AI generation as verified merely because the interface builds.
 
