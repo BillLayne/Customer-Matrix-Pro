@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeResearch, newQuoteDraft, restoreQuoteDraft, quoteGaps, propertyConflicts, buildHomeQuoteReport, safePropertyUrl, answerWarnings } from '../shared/homeQuote.ts';
+import { QUOTE_FIELDS, normalizeResearch, newQuoteDraft, restoreQuoteDraft, quoteGaps, propertyConflicts, buildHomeQuoteReport, safePropertyUrl, answerWarnings } from '../shared/homeQuote.ts';
 import { homeQuoteHandler, HOME_PROPERTY_ENDPOINT } from '../server/homeQuote.ts';
 import { createSession, cookieName } from '../server/auth.ts';
 
@@ -98,6 +98,65 @@ test('date validation catches future DOB, impossible dates and invalid emails', 
   assert.equal(answerWarnings({ dob: '2026-02-30', email: 'bad' }).length, 2);
   assert.equal(answerWarnings({ dob: '2099-01-01' }).length, 1);
   assert.equal(answerWarnings({ dob: '1980-02-20', email: 'test@example.com' }).length, 0);
+});
+test('all interview answers may be blank when saving, restoring and creating a report', () => {
+  const draft = newQuoteDraft(address);
+  draft.answers = Object.fromEntries(QUOTE_FIELDS.map(field => [field.key, '']));
+  assert.deepEqual(answerWarnings(draft.answers), []);
+  const restored = restoreQuoteDraft(JSON.parse(JSON.stringify(draft)));
+  assert.deepEqual(restored.answers, {});
+  const html = buildHomeQuoteReport(restored);
+  assert.match(html, /All interview questions are optional; unanswered items do not block this report/);
+  assert.match(html, /Follow-Up Notes/);
+  for (const field of QUOTE_FIELDS) assert.equal(draft.answers[field.key], '');
+  assert.match(html, /Current dwelling coverage \(Coverage A\)<\/dt><dd class="missing">Not shown/);
+  assert.match(html, /Renewal \/ expiration date<\/dt><dd class="missing">Not shown/);
+});
+test('an insured prospect can export without dwelling amount or renewal and keep existing answers', () => {
+  const draft = newQuoteDraft(address);
+  draft.answers = { policyStatus: 'Currently insured', coApplicant: 'Synthetic Additional Insured' };
+  const restored = restoreQuoteDraft(JSON.parse(JSON.stringify(draft)));
+  const html = buildHomeQuoteReport(restored);
+  assert.deepEqual(restored.answers, draft.answers);
+  assert.match(html, /Currently insured/);
+  assert.match(html, /Synthetic Additional Insured/);
+  assert.match(html, /Current dwelling coverage \(Coverage A\)<\/dt><dd class="missing">Not shown/);
+  assert.match(html, /Renewal \/ expiration date<\/dt><dd class="missing">Not shown/);
+  assert.doesNotMatch(html, /Not applicable - prospect reports no current policy/);
+});
+test('public research fills the matching Home and Roof report rows without filling prospect answers', () => {
+  const draft = draftWithProperty();
+  Object.assign(draft.research.results[0].facts, { exteriorWall: 'Brick veneer', foundation: 'Crawlspace', stories: '2', roofCover: 'Shingle', roofStructure: 'Gable', heatingType: 'Heat pump' });
+  const html = buildHomeQuoteReport(draft);
+  const home = html.split('<section id="home">')[1].split('</section>')[0];
+  const systems = html.split('<section id="systems">')[1].split('</section>')[0];
+  for (const fact of ['1990', '1600', 'Exterior wall: Brick veneer', 'Foundation: Crawlspace', 'Stories: 2', 'Full baths: 2', 'Half baths: 0']) assert.ok(home.includes(fact), fact);
+  for (const fact of ['Roof covering: Shingle', 'Roof structure: Gable', 'Heating: Heat pump']) assert.ok(systems.includes(fact), fact);
+  assert.match(home, /Public record \(property match unconfirmed\)/);
+  assert.match(home, /prospect confirmation not entered/);
+  assert.match(systems, /Roof age \/ replacement year<\/dt><dd class="missing">Not shown/);
+  assert.deepEqual(draft.answers, {});
+  assert.match(html, /Current dwelling coverage \(Coverage A\)<\/dt><dd class="missing">Not shown/);
+});
+test('report keeps both sources when prospect answers conflict and follows the selected parcel', () => {
+  const draft = draftWithProperty();
+  draft.answers = { yearBuilt: '1989', heatedArea: '1,700', construction: '<img src=x onerror=alert(1)>' };
+  draft.research.results[0].facts.exteriorWall = '<script>never run</script>';
+  draft.confirmed = true;
+  const html = buildHomeQuoteReport(draft);
+  const home = html.split('<section id="home">')[1].split('</section>')[0];
+  for (const fact of ['1989', '1990', '1,700', '1600', 'Prospect / staff entry', 'Public record (property match checked)']) assert.ok(home.includes(fact), fact);
+  assert.match(home, /&lt;img/);
+  assert.match(home, /&lt;script&gt;/);
+  assert.doesNotMatch(home, /<script>|<img/);
+  assert.match(html, /public record 1990; prospect 1989/);
+  draft.research.results.push({ ...draft.research.results[0], id: 'other-parcel', facts: { yearBuilt: '2015' } });
+  draft.selectedId = 'other-parcel';
+  draft.confirmed = false;
+  const otherHome = buildHomeQuoteReport(draft).split('<section id="home">')[1].split('</section>')[0];
+  assert.match(otherHome, /2015/);
+  assert.doesNotMatch(otherHome, /1990|1600|property match checked/);
+  assert.equal(draft.answers.yearBuilt, '1989');
 });
 test('research endpoint requires signed session and same origin', async () => {
   const noSession = await context();

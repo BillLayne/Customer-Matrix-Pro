@@ -2,6 +2,15 @@
 
 **Last verified against production: September 17, 2026** (Home Quote Information release). Implementation commit `e73bf90` is on GitHub `main` and deployed to Cloudflare Pages as `c0edddad-2915-49ce-9f9e-c6fdc043c428`.
 
+## September 17 Follow-Up: Optional Questions and Integrated Report (Local Only)
+
+- Branch `codex/optional-quote-questions`, not pushed or deployed. Bill has not requested a release of these follow-up changes. Production identifiers above still describe the prior release.
+- All Home Quote interview questions are optional. Removed misleading quote-critical asterisks; unanswered questions remain advisory follow-up notes, never navigation, draft or report gates. The existing Additional named insured field is unchanged.
+- Fixed the report's Home and Roof & Systems sections: available selected-property research now appears in the corresponding rows, rather than only in the separate Property Research section. Entered answers and public records are labeled separately; conflicting values remain visible. Public facts never overwrite saved answers or imply prospect confirmation.
+- Preserved unavailable roof age, coverage, claims and other private details as missing. Tax assessments never fill dwelling coverage. Old JSON drafts remain compatible; previously downloaded HTML files must be regenerated to use the updated report.
+- Verified: 23 top-level Node tests, TypeScript and build; synthetic blank/partial interview walkthrough, report/draft download and import, live property research through the local adapter, source integration, existing full workflow regression, and 320/390/768/1440 layouts. Native print dialogs and physical mobile keyboards remain unverified.
+- Preview: http://127.0.0.1:8788/ . Local contacts API 503s are intentional isolation; no contacts, customer records or messages were changed. See the Home Quote handoff for the focused browser regression script.
+
 ## September 17: Home Quote Information (Live)
 
 - Added **Quote Information** beside Open NC Tools in Unified Search > Real Estate. All existing search actions and launcher URLs remain unchanged.

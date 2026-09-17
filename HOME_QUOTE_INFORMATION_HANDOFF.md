@@ -6,6 +6,20 @@ Production deployment: `c0edddad-2915-49ce-9f9e-c6fdc043c428`, Cloudflare status
 Deployment URL: https://c0edddad.customer-matrix-pro.pages.dev/
 Verified production JS: `/assets/index-B-dXD4eG.js`; CSS: `/assets/index-UPemCAQG.css`.
 
+## September 17 Follow-Up - Local, Not Deployed
+
+Branch: `codex/optional-quote-questions`. The production release above is unchanged; these follow-up fixes need a new explicit push-live request.
+
+- Removed the quote-critical stars and required-looking legend. Every interview question is optional, including Coverage A, renewal, DOB and applicant information. Blank answers, missing research and unconfirmed property matches do not prevent moving between sections, saving a draft or exporting a report. Existing format warnings and property-match safeguards remain advisory.
+- Renamed the visible report checklist to Follow-Up Notes. Internal `critical` metadata is retained only to select advisory reminders, not to enforce required fields. The Additional named insured field has not been duplicated or changed.
+- Fixed research integration in the indexed report. Home rows now include available year built, heated area, exterior wall, foundation, stories, bedrooms and baths. Roof & Systems includes available roof covering, roof structure and heating type. Partial public facts retain their precise labels; roof covering does not imply condition or age, and foundation does not invent basement details.
+- Each researched value identifies its public-record source and checked/unconfirmed property-match state. Where staff supplies an answer, the report shows that answer and the public value separately. The interview model is not auto-filled and conflicts stay flagged. Switching the selected parcel changes the public values in the report; JSON import still resets property confirmation.
+- No schema migration, API, credentials or backend dependency changes. Old JSON drafts still load; old exported HTML is static and needs to be downloaded again after the update.
+- Passed: all 23 top-level tests (plus 15 existing internal contact checks), `npm run lint`, `npm run build`, and both browser scripts below. The full browser review used the real upstream Lee fixture via the local adapter and confirmed year 2002 / heated area 3644 are integrated beside synthetic prospect answers in Home. Test drafts were cleared.
+- `scripts/home-quote-optional-review.js`: local-preview-only Playwright CLI regression. Verifies all five sections entirely blank; draft/report download before research finishes; automatic research integration into an already-open report; insured prospect without coverage/renewal; preservation of the one Additional named insured field; conflicting sources; blank and partial JSON imports; and report/interview layouts at 320/390/768/1440 widths. All upstream responses in this focused script are synthetic.
+- `scripts/home-quote-browser-review.js`: existing full regression now also checks that the actual research appears in the Home report rows. It still covers dark mode, focus, simulated failures, multiple parcels, address privacy, refresh/recovery and exports.
+- Preview remains http://127.0.0.1:8788/ . Contacts/images/AI requests are intentionally isolated by the preview adapter. No production writes, customer messages or real applicant data used. Native print dialogs and physical-device keyboard behavior remain unverified.
+
 ## Production Verification
 
 - Re-ran all 19 top-level tests, TypeScript and Vite build before publishing. Renamed the ignored Wrangler multipart artifact `output/qa/home-quote-worker.js` to `.multipart` because it is not JavaScript source and was mistakenly included by the TypeScript file glob.
@@ -32,7 +46,7 @@ The staff dashboard, Gmail, contacts D1, launcher inventory, image library and o
 1. Unified Search > Real Estate. Enter a full North Carolina address, then Quote Information.
 2. The interview opens immediately while research runs. Sections: Applicant, Home, Roof & Systems, Current Policy, Claims & Risk.
 3. Review the property record. Select the correct candidate if there is more than one. Staff must confirm the address/parcel; selecting another candidate or importing a draft resets confirmation.
-4. Prospect answers remain separate from public facts. Conflicting year-built/area answers and missing quote-critical answers are flagged.
+4. All interview answers are optional. The report integrates public facts into the corresponding Home and Roof rows with separate source labels, keeping prospect answers distinct. Conflicts and missing details are advisory follow-up notes.
 5. Report shows the combined indexed worksheet. Download report creates `index.html`; Print / PDF invokes the browser print flow. Incomplete reports remain working intake with follow-up items.
 6. Save draft downloads editable `home-quote-draft.json`. Open draft restores it after an explicit replace confirmation. The current tab retains sessionStorage; refresh can resume even with an empty search field. Clear requires confirmation.
 
@@ -44,7 +58,7 @@ The staff dashboard, Gmail, contacts D1, launcher inventory, image library and o
 - `server/homeQuote.ts`: signed-session and same-origin checks, address-only input validation, 22-second server timeout, redacted errors, fixed upstream URL and no-store response.
 - `functions/api/home-quote.ts`: Cloudflare Pages function wrapper.
 - `index.css`: scoped `quote-*` styles; neutral surfaces, blue actions, green research accent, amber verification warnings, existing dark theme.
-- `tests/home-quote.test.mjs`: 10 focused synthetic tests alongside existing suites.
+- `tests/home-quote.test.mjs`: 14 focused synthetic tests alongside existing suites.
 - `scripts/home-quote-browser-review.js`: Playwright CLI UI regression exercise; run in a dedicated, authenticated local browser with no real draft. Opens the Lee fixture below. Outputs ignored `output/playwright` screenshots and synthetic report/draft files.
 - `scripts/verify-home-quote-deployment.mjs`: repeatable address-only live smoke test using the ignored auth state produced by `verify-deployment.mjs`; verifies exact bundle and authorization/input boundaries without sending interview answers upstream.
 - `scripts/preview-home-quote.mjs`: loopback-only Node preview fallback. Loads ignored private local auth configuration, runs real auth and quote handlers, serves built assets, blocks all other API workflows. Writes ignored browser auth state to `output/qa/home-quote-local-auth.json`; never print or commit that file.

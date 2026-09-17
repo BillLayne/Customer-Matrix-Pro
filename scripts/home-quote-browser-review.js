@@ -48,6 +48,8 @@ async (page) => {
   await page.getByLabel('Additional prospect answers / follow-up').fill('<script>alert("never run")</script> Synthetic note only.');
   await view('Report');
   const report = page.frameLocator('iframe[title="Home quote intake report preview"]');
+  const integratedHome = await report.locator('#home').innerText();
+  check(['1999', '2002', '3644', 'Prospect / staff entry', 'Public record (property match checked)'].every(value => integratedHome.includes(value)), 'Research was not integrated into the Home report section');
   check(await report.locator('body').innerText().then(text => text.includes('public record 2002; prospect 1999')), 'Missing discrepancy');
   check(await report.locator('body').innerText().then(text => text.includes('Claim details')), 'Missing claims follow-up');
   check(await report.locator('script').count() === 0, 'Report allowed an injected script');

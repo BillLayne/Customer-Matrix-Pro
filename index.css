@@ -309,8 +309,8 @@ button:disabled { cursor: not-allowed; }
 .quote-input { display: block; width: 100%; min-width: 0; min-height: 44px; max-width: 100%; border: 1px solid var(--agency-border); border-radius: 5px; padding: 10px; background: var(--agency-surface); color: var(--agency-text); font-size: 16px; }
 textarea.quote-input { resize: vertical; }
 .quote-input:focus-visible { outline: 2px solid #0076d3; outline-offset: 2px; }
-.quote-critical, .quote-missing { color: #895713; }
-.dark .quote-critical, .dark .quote-missing { color: #efca87; }
+.quote-missing { color: #895713; }
+.dark .quote-missing { color: #efca87; }
 .quote-step-footer { border-top: 1px solid var(--agency-border); margin-top: 20px; padding-top: 14px; }
 .quote-research-status { border-left: 3px solid #288163; margin: 12px 0; padding: 8px 12px; background: var(--agency-muted-surface); font-size: 13px; }
 .quote-property > .quote-actions { margin: 12px 0 18px; }
