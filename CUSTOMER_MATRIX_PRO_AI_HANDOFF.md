@@ -1,8 +1,8 @@
 # Agency Command Center — Live Handoff
 
-**Last verified against the code: September 17, 2026** (local Home Quote Information feature). Last production release remains the September 7 redesign; the new quote feature has NOT been pushed or deployed.
+**Last verified against production: September 17, 2026** (Home Quote Information release). Implementation commit `e73bf90` is on GitHub `main` and deployed to Cloudflare Pages as `c0edddad-2915-49ce-9f9e-c6fdc043c428`.
 
-## September 17: Home Quote Information (Local Preview Only)
+## September 17: Home Quote Information (Live)
 
 - Added **Quote Information** beside Open NC Tools in Unified Search > Real Estate. All existing search actions and launcher URLs remain unchanged.
 - Opens a five-section prospect interview while an authenticated `/api/home-quote` function fetches public records from Find My Home Information. Only the address leaves the browser; this feature uses no Gemini key and does not change the existing `/api/ai` system.
@@ -10,9 +10,11 @@
 - Generates an indexed, print-styled `index.html` report with separate public and prospect sources. Explicit JSON draft download/import and tab-session recovery are included; **there is no cloud backup of quote interviews**. Private drafts can be cleared with confirmation.
 - New reusable `bli-home-quote-research` skill is in `skills/bli-home-quote-research/SKILL.md` and installed at `C:\Users\bill\.codex\skills\bli-home-quote-research\SKILL.md`. The web button runs a web workflow directly, not a local Codex task. The skill supports deeper source review separately.
 - Full feature details, file map, tests, known limitations and release procedure: [HOME_QUOTE_INFORMATION_HANDOFF.md](HOME_QUOTE_INFORMATION_HANDOFF.md).
-- Local preview: `http://127.0.0.1:8788/`. Windows workerd failed to spawn on Wrangler 4.129.1 and 4.133.0, so `scripts/preview-home-quote.mjs` provides a loopback-only Node adapter running the real authentication and quote handlers. Other APIs deliberately return 503 in this preview; it cannot write contacts or send customer communications.
-- Passed: 19 Node tests (including the existing contact suite's 15 internal checks), TypeScript, production build, live Find My Home lookup through the new local handler, browser interview/property/report checks at 320/390/768/1440 widths, dark theme, keyboard focus, draft export/import/reload, candidate switching, failure recovery, HTML escaping and downloads. Physical-device keyboards, native print dialogs and the new endpoint on Cloudflare remain unverified.
-- Existing production was inspected read-only: current bundle `index-ejjk9UDK.js`, signed login and API protection passed, shared contacts returned 20 entries at revision 5. No customer records or production services were changed.
+- Production: https://customer-matrix-pro.pages.dev/ ; deployment URL: https://c0edddad.customer-matrix-pro.pages.dev/ ; verified JS bundle `index-B-dXD4eG.js`. Cloudflare reports success on production branch `main`, commit `e73bf90`.
+- Passed: 19 Node tests (including the existing contact suite's 15 internal checks), TypeScript, production build, and the actual Cloudflare `/api/home-quote` lookup. Its authentication/origin/input/method checks return 401/403/400/405 as expected. The Lee fixture returned the expected parcel, year built and heated area with no-store headers.
+- Production browser checks passed at 320/390/768/1440 widths: interview/property/report, dark theme, keyboard focus, draft export/import/reload, candidate switching, simulated failure recovery, HTML escaping and downloads. Test drafts were cleared. Tools and Images navigation and existing No Loss/PDF Studio links were checked. Physical-device keyboards and native print dialogs remain unverified.
+- Shared contacts remain available with 20 entries. The fresh test browser's existing first-run contact migration advanced revision 6 to 7; no contact edit controls were used. No customer messages or application submissions were sent. Staff, Find My Home, NC Tools and Gmail were not deployed or modified.
+- Local preview remains available at `http://127.0.0.1:8788/` via the loopback-only Node adapter because Windows workerd failed to spawn. Its other API 503s are preview-only, not a production limitation. An ignored Wrangler multipart build artifact was renamed from `.js` to `.multipart` so TypeScript no longer tries to parse it.
 
 **Release caveat:** The saved Gemini key was invalid during review. The new server API and error recovery are implemented, but successful live AI generation remains blocked until Bill supplies a valid replacement key. Never report AI generation as verified merely because the interface builds.
 

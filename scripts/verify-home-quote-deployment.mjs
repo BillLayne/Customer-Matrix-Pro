@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+// Run verify-deployment.mjs first to create ignored, authenticated browser state.
+const base = process.argv[2] || 'https://customer-matrix-pro.pages.dev';
+const url = new URL(base);
+assert.ok(url.hostname.endsWith('.customer-matrix-pro.pages.dev') || url.hostname === 'customer-matrix-pro.pages.dev');
+const state = JSON.parse(readFileSync(new URL('../output/qa/agent-auth.json', import.meta.url), 'utf8'));
+const cookie = state.cookies.find(item => item.domain === url.hostname);
+assert.ok(cookie, 'Verify this hostname first; no session values printed.');
+const headers = { cookie: `${cookie.name}=${cookie.value}`, origin: url.origin, 'content-type': 'application/json' };
+const endpoint = new URL('/api/home-quote', url);
+const body = JSON.stringify({ address: '800 Creekwood Rd, Sanford, NC 27330' });
+assert.equal((await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body })).status, 401);
+assert.equal((await fetch(endpoint, { method: 'POST', headers: { ...headers, origin: 'https://example.com' }, body })).status, 403);
+assert.equal((await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify({ address: '123 Synthetic St, Elkin NC', dob: '1980-01-01' }) })).status, 400);
+assert.equal((await fetch(endpoint, { headers })).status, 405);
+const response = await fetch(endpoint, { method: 'POST', headers, body, signal: AbortSignal.timeout(30000) });
+assert.equal(response.status, 200, 'Live property lookup must succeed');
+assert.equal(response.headers.get('cache-control'), 'no-store');
+const result = await response.json();
+const property = result.results.find(item => item.facts.parcelId === '9612-95-5442-00');
+assert.ok(property, 'Expected public test parcel must be returned');
+assert.equal(property.facts.yearBuilt, '2002');
+assert.equal(property.facts.heatedArea, '3644');
+assert.equal(property.facts.ownerName, undefined);
+assert.equal(property.facts.dob, undefined);
+const html = await fetch(url, { headers }).then(response => response.text());
+const asset = html.match(/src="(\/assets\/[^" ]+\.js)"/)?.[1];
+const localHtml = readFileSync(new URL('../dist/index.html', import.meta.url), 'utf8');
+assert.ok(localHtml.includes(asset), 'Production must serve the tested build');
+console.log(JSON.stringify({ url: url.origin, bundle: asset, quoteProtection: '401/403/400/405 passed', lookup: 'passed', parcel: property.facts.parcelId, noStore: true }));

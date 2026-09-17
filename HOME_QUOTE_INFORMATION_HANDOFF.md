@@ -1,7 +1,20 @@
 # Home Quote Information Handoff
 
-Date: September 17, 2026. Status: implemented and tested locally; NOT deployed.
-Local implementation branch: `codex/home-quote-information` (not pushed).
+Date: September 17, 2026. Status: LIVE, authorized by Bill's "push live" request.
+Implementation commit: `e73bf90`, fast-forwarded from `codex/home-quote-information` to GitHub `main`.
+Production deployment: `c0edddad-2915-49ce-9f9e-c6fdc043c428`, Cloudflare status success, branch main.
+Deployment URL: https://c0edddad.customer-matrix-pro.pages.dev/
+Verified production JS: `/assets/index-B-dXD4eG.js`; CSS: `/assets/index-UPemCAQG.css`.
+
+## Production Verification
+
+- Re-ran all 19 top-level tests, TypeScript and Vite build before publishing. Renamed the ignored Wrangler multipart artifact `output/qa/home-quote-worker.js` to `.multipart` because it is not JavaScript source and was mistakenly included by the TypeScript file glob.
+- `node scripts/verify-deployment.mjs https://customer-matrix-pro.pages.dev agent` passed signed login, anonymous/forged-cookie rejection, contact access, cross-origin protection, bundle availability and private-config absence checks.
+- `node scripts/verify-home-quote-deployment.mjs https://customer-matrix-pro.pages.dev` passed the deployed quote endpoint's 401 anonymous, 403 cross-origin, 400 unexpected private-field and 405 wrong-method cases; the real address-only lookup returned Lee parcel `9612-95-5442-00`, year built 2002 and heated area 3644. The live HTML references the exact locally tested bundle.
+- Production Playwright review passed interview/property/report views at 320/390/768/1440 widths, dark mode, focus containment/return, editable synthetic answers during research, candidate changes, address isolation, simulated lookup failure, HTML escaping, No current policy handling, JSON export/import, refresh/resume, clear and `index.html` download. Test drafts were cleared after verification.
+- Tools and Images views still open; existing No Loss and PDF Studio destinations were inspected. Shared contacts returned 20 entries before and after. The fresh test browser's pre-existing first-run contact migration performed its normal confirmation PUT, advancing revision 6 to 7; no manual contact edit controls were used.
+- Only the agent Command Center was pushed/deployed. No messages sent, carrier forms submitted, secret changes or DB migrations. Staff, Find My Home and NC Tools were not deployed.
+- The Cloudflare runtime limitation from local preview is now resolved for this release by successful production checks. Physical-device keyboards and native print/PDF dialogs remain unverified. Source-link/deeper research limitations below still apply.
 
 ## Purpose
 
@@ -33,6 +46,7 @@ The staff dashboard, Gmail, contacts D1, launcher inventory, image library and o
 - `index.css`: scoped `quote-*` styles; neutral surfaces, blue actions, green research accent, amber verification warnings, existing dark theme.
 - `tests/home-quote.test.mjs`: 10 focused synthetic tests alongside existing suites.
 - `scripts/home-quote-browser-review.js`: Playwright CLI UI regression exercise; run in a dedicated, authenticated local browser with no real draft. Opens the Lee fixture below. Outputs ignored `output/playwright` screenshots and synthetic report/draft files.
+- `scripts/verify-home-quote-deployment.mjs`: repeatable address-only live smoke test using the ignored auth state produced by `verify-deployment.mjs`; verifies exact bundle and authorization/input boundaries without sending interview answers upstream.
 - `scripts/preview-home-quote.mjs`: loopback-only Node preview fallback. Loads ignored private local auth configuration, runs real auth and quote handlers, serves built assets, blocks all other API workflows. Writes ignored browser auth state to `output/qa/home-quote-local-auth.json`; never print or commit that file.
 - `skills/bli-home-quote-research/SKILL.md`: canonical repo skill copy. Installed same content in `C:\Users\bill\.codex\skills\bli-home-quote-research\SKILL.md`. Validated with the skill creator's quick validator. A later Codex session may be needed for discovery.
 
@@ -69,7 +83,7 @@ Passed `npm test` (19 top-level tests, plus 15 internal checks in the existing c
 Browser: 320, 390, 768 and 1440 widths; all three views fit without document/modal horizontal overflow. Core inputs/buttons meet 44px targets. Inspected desktop, narrow phone and dark-theme screenshots. Checked keyboard containment/return focus, HTML escaping, report/download filenames, private draft JSON roundtrip, reload/resume, clear, slow research while typing, multiple-candidate confirmation reset, address isolation and simulated 502 recovery.
 Also checked the explicit No current policy state so an uninsured prospect is not incorrectly required to supply current Coverage A or renewal dates. Exported HTML was opened independently at phone width and inspected with print CSS; this is not proof of a physical printer or native print dialog.
 
-Windows workerd could not spawn with Wrangler 4.129.1 or 4.133.0 (`spawn UNKNOWN`). Both function compilations succeeded, but Cloudflare runtime execution is unverified. Local preview uses the same Request/Response handlers via Node:
+Windows workerd could not spawn with Wrangler 4.129.1 or 4.133.0 (`spawn UNKNOWN`). Both function compilations succeeded. Cloudflare production runtime execution was subsequently verified successfully after deployment. Local preview uses the same Request/Response handlers via Node:
 
 ```powershell
 npm run build
@@ -78,9 +92,9 @@ node --experimental-strip-types scripts/preview-home-quote.mjs
 
 Preview starts only on loopback port 8788. The running preview started for this task has process ID 52308; check actual process/port before stopping anything. Other API 503s in preview are intentional; production contacts remain intact. The quote UI tests also deliberately trigger a synthetic 502. No unexpected frontend runtime exceptions were observed.
 
-Remaining manual checks: real phone keyboard behavior, native print/PDF dialog, and deployed Cloudflare function. No new production verification claimed.
+Remaining manual checks: real phone keyboard behavior and native print/PDF dialog. Production evidence is recorded above.
 
-## Release When Bill Says Push Live
+## Future Release Procedure
 
 1. Inspect git status and preserve unrelated work. Read the main handoff release protocol.
 2. Re-run tests, lint, build and staged secret scan. No new API key, database, migration or secret is required.
