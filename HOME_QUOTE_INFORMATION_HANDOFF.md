@@ -1,14 +1,14 @@
 # Home Quote Information Handoff
 
 Date: September 17, 2026. Status: LIVE, authorized by Bill's "push live" request.
-Implementation commit: `e73bf90`, fast-forwarded from `codex/home-quote-information` to GitHub `main`.
-Production deployment: `c0edddad-2915-49ce-9f9e-c6fdc043c428`, Cloudflare status success, branch main.
-Deployment URL: https://c0edddad.customer-matrix-pro.pages.dev/
-Verified production JS: `/assets/index-B-dXD4eG.js`; CSS: `/assets/index-UPemCAQG.css`.
+Implementation commit: `c176396`, fast-forwarded from `codex/optional-quote-questions` to GitHub `main`.
+Production deployment: `e4e1bc07-e01d-4d4e-8f37-d0f3f2419d51`, Cloudflare status success, branch main.
+Deployment URL: https://e4e1bc07.customer-matrix-pro.pages.dev/
+Verified production JS: `/assets/index-dDbyBRGM.js`; CSS: `/assets/index--RRS5zI5.css`.
 
-## September 17 Follow-Up - Local, Not Deployed
+## September 17 Follow-Up - Live
 
-Branch: `codex/optional-quote-questions`. The production release above is unchanged; these follow-up fixes need a new explicit push-live request.
+Bill explicitly authorized publishing these fixes. Branch `codex/optional-quote-questions` was fast-forwarded into GitHub `main`; production identifiers above describe this follow-up release.
 
 - Removed the quote-critical stars and required-looking legend. Every interview question is optional, including Coverage A, renewal, DOB and applicant information. Blank answers, missing research and unconfirmed property matches do not prevent moving between sections, saving a draft or exporting a report. Existing format warnings and property-match safeguards remain advisory.
 - Renamed the visible report checklist to Follow-Up Notes. Internal `critical` metadata is retained only to select advisory reminders, not to enforce required fields. The Additional named insured field has not been duplicated or changed.
@@ -20,7 +20,18 @@ Branch: `codex/optional-quote-questions`. The production release above is unchan
 - `scripts/home-quote-browser-review.js`: existing full regression now also checks that the actual research appears in the Home report rows. It still covers dark mode, focus, simulated failures, multiple parcels, address privacy, refresh/recovery and exports.
 - Preview remains http://127.0.0.1:8788/ . Contacts/images/AI requests are intentionally isolated by the preview adapter. No production writes, customer messages or real applicant data used. Native print dialogs and physical-device keyboard behavior remain unverified.
 
-## Production Verification
+## Follow-Up Production Verification
+
+- Re-ran all 23 top-level tests (and 15 internal contact checks), TypeScript and build before pushing `c176396`. Deployed from a clean main worktree to only `customer-matrix-pro`.
+- `verify-deployment.mjs` and `verify-home-quote-deployment.mjs` both passed on the canonical live URL. Verified the exact tested bundle, signed login, anonymous/forged-cookie rejection, contact reads, origin protection, quote endpoint 401/403/400/405 checks, and the real Lee lookup with no-store.
+- Live browser walkthrough skipped every question in all five sections, downloaded `index.html`, and verified year 2002 / heated area 3644 are present in Home with public-record source labels despite blank interview answers. Also passed Currently insured with blank Coverage A and renewal.
+- Live report screenshots reviewed at 320/390/1440 widths; no horizontal overflow or JavaScript runtime errors. Native print dialog was not exercised, though its action remained enabled with blank answers. Local pre-release testing also covered 768 widths, complete synthetic Home/Roof facts, conflicts, imports and draft recovery.
+- Shared contacts remained at 20 entries and revision 7 before and after this release's browser checks. Intercepted contact writes in the dedicated QA browser to prevent first-run migration writes. No real customer data entered, messages sent, records changed, secrets rotated or DB migrations run. Test quote draft cleared at completion.
+- Staff dashboard, Find My Home, NC Tools and Gmail were not changed or deployed. Old downloaded HTML reports remain static and need regeneration to receive the integrated layout.
+
+## Initial Release Verification
+
+Initial release: `e73bf90`, deployment `c0edddad-2915-49ce-9f9e-c6fdc043c428`, now superseded by the follow-up above.
 
 - Re-ran all 19 top-level tests, TypeScript and Vite build before publishing. Renamed the ignored Wrangler multipart artifact `output/qa/home-quote-worker.js` to `.multipart` because it is not JavaScript source and was mistakenly included by the TypeScript file glob.
 - `node scripts/verify-deployment.mjs https://customer-matrix-pro.pages.dev agent` passed signed login, anonymous/forged-cookie rejection, contact access, cross-origin protection, bundle availability and private-config absence checks.
