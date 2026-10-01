@@ -253,7 +253,7 @@ button:disabled { cursor: not-allowed; }
   .shell-brand p { display: none; }
   .workspace-nav-desktop { display: none; }
   .workspace-main { padding: 16px 12px calc(92px + env(safe-area-inset-bottom, 0px)); }
-  .workspace-nav-mobile { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); position: fixed; bottom: 0; left: 0; right: 0; z-index: 60; gap: 4px; padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--agency-border); background: var(--agency-surface); }
+  .workspace-nav-mobile { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); position: fixed; bottom: 0; left: 0; right: 0; z-index: 60; gap: 4px; padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--agency-border); background: var(--agency-surface); }
   .workspace-nav-mobile button { flex-direction: column; gap: 4px; min-width: 0; min-height: 52px; padding: 4px 8px; font-size: 12px; }
   .workspace-nav-mobile i { font-size: 17px; }
   .workspace-main :is(button, select, input:not([type="checkbox"]):not([type="radio"]):not([type="file"])) { min-height: 44px; }

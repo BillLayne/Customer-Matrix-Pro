@@ -1,6 +1,22 @@
 # Agency Command Center — Live Handoff
 
+> **⚠️ READ FIRST (October 1, 2026) — `main` moved.** `main` now includes the **Docs workspace** (Document Links, below). Branch `codex/image-library-safety` was cut from the OLD `main` and does not contain it. **Before deploying anything from that branch, merge `main` into it** — otherwise the deploy ships the working folder without Docs and silently removes the feature from Bill's dashboard. The local working folder was left checked out on `main` (= production) with a clean tree; `codex/image-library-safety` is intact and unmodified.
+
 **Last verified against production: September 17, 2026** (optional quote questions and integrated report follow-up). Implementation commit `c176396` is on GitHub `main` and deployed to Cloudflare Pages as `e4e1bc07-e01d-4d4e-8f37-d0f3f2419d51`.
+
+## October 1: Document Links — the Docs workspace (Live)
+
+Bill asked for the SMS Command Center's "upload a PDF/photo → branded link" ability as a **standalone program**, so he can create links for email (or anywhere) without opening an SMS conversation.
+
+- **What it is:** a fourth workspace, **Docs** (header + mobile bottom bar, now 4 columns). Create Link tab: drop/choose a PDF, Word file or photo (≤ 15 MB), pick a document type (same nine as the SMS composer), optional customer name, and an editable "file name your customer sees". A live miniature of the real customer page shows the exact headline the customer will get. Result: the `https://docs.billlayneinsurance.com/d/<id>` link (auto-copied), Test Link (`?ref=staff`, not counted as a customer view), Email in Gmail (prefilled subject/body, `authuser=Bill@…`), Copy Message (editable text), Check Receipt. Library tab: every document link ever made — from this tool **and** from SMS — searchable, filterable by source, with Saved › Opened › Viewed › Not viewed receipts.
+- **It is the SAME system, not a copy.** Documents live in the SMS Command Center Worker (`agency-sms-command-center`, KV `ATTACHMENTS`) and open on the same branded `/d/<id>` preview page (PDF.js, Save, Share, Call/Text/Message bar, receipts). Nothing about that page was forked; improve it in the SMS repo and both tools benefit.
+- **The headline comes from the file name** (`documentPreviewMetadata()` in the SMS worker keys on words like "proof", "quote", "receipt"). `shared/docLinks.ts` mirrors that rule (`previewTypeForFileName`) so the miniature is truthful, and `suggestFileName()` builds names like `Roy-Meyreles-Proof-of-Insurance.pdf` so a scan called `scan0034.pdf` still gets the right headline. **If the worker's keyword rules change, change the mirror too.**
+- **Security design:** browser → this dashboard's own `/api/doc-links` + `/api/doc-links/views` Pages Functions (signed session + same-origin, like every API here) → Worker over HTTPS with **`DOC_LINK_TOKEN`**, attached server-side only. On the Worker that token is honoured on `/api/doc-links` and `/api/document-views` **only** — verified live that it is refused (401) for conversations, sending texts and the SMS upload route. Upload fields are allowlisted (file + customer), files re-validated (type, size, HEIC hint), and every returned link must match `https://docs.billlayneinsurance.com/d/<12 hex>` before it is ever rendered as an href.
+- **Production-only secret, on purpose:** `DOC_LINK_TOKEN` is set on the Pages **production** environment and NOT on preview, so preview deployments can never write to the real document store — they show "Document links are not set up on this dashboard yet". Optional var `DOC_LINK_API_BASE` (default the Worker's workers.dev URL, used server-to-server so the zone's bot rules never apply).
+- **Library storage (Worker side):** each short link also writes `doclib/<inverted-timestamp>-<id>` with the row in KV *metadata*, so one `list()` returns a page newest-first. The 114 pre-existing SMS links were backfilled on 2026-10-01; SMS uploads are indexed automatically going forward.
+- **Tests:** `tests/doc-links.test.mjs` (13 tests: session/cross-site/fail-closed gating, token never in responses, hostile/look-alike links dropped, field allowlist, upload validation, upstream error mapping, receipt normalization, the headline mirror, file-name building). Full suite 36/36, TypeScript, build.
+- **Local preview:** `npm run build` then `node --experimental-strip-types scripts/preview-doc-links.mjs` → open `http://localhost:8791/__preview-login`. Real auth + real proxy, **fake in-memory document service** and synthetic credentials — nothing reaches production. Checked at 375 px (no horizontal overflow, 4-up bottom bar) and in dark mode.
+- **No launcher entry / no new localStorage keys.** Docs is a workspace, like Images, not a `PROGRAMS` tool, so `LAUNCHER_VERSION` was not bumped.
 
 ## September 17 Follow-Up: Optional Questions and Integrated Report (Live)
 
@@ -104,14 +120,15 @@ A single-page internal dashboard Bill opens every day. Two jobs dominate:
 
 ### Workspace structure (`App.tsx`)
 
-1. **Compact sticky header** with Search / Tools / Images, command palette, and Settings. On phones, workspace navigation moves to a fixed bottom bar.
+1. **Compact sticky header** with Search / Tools / Images / Docs, command palette, and Settings. On phones, workspace navigation moves to a fixed bottom bar.
 2. **Search** is the default workspace. Six modes become a native selector on phones; the query remains above the fold. Agency actions and collapsible carrier portals remain here.
 3. **Tools** is a separate workspace with the complete launcher, filter, category controls, pinned pagination, and recent links.
 4. **Images** is a separate workspace with Library / Upload tabs, searchable complete inventory, previews, and 25 browser-local recent uploads.
+5. **Docs** (Document Links) creates branded `docs.billlayneinsurance.com/d/<id>` links for PDFs, Word files and photos, and searches every document link from this tool and from SMS. See the October 1 entry at the top.
 
 Plus the **Command Palette** overlay (§6).
 
-The three workspace sections stay mounted but hidden when inactive, preserving in-progress state. Images loads its inventory only when active. This intentionally supersedes the June single-long-page decision. There is still **no duplicate Quick Links chip row** (§6).
+The workspace sections stay mounted but hidden when inactive, preserving in-progress state. Images and Docs load their libraries only when first opened. This intentionally supersedes the June single-long-page decision. There is still **no duplicate Quick Links chip row** (§6).
 
 ### Gmail Engineering is gone from the UI
 
@@ -337,7 +354,7 @@ Never put real secret values in this file, in code, in chat, or in screenshots.
 
 - **`.env.local`** is no longer a source of frontend AI credentials.
 - **`.dev.vars`** (gitignored): local `SITE_PASSWORD`, `SESSION_SECRET`, `GEMINI_API_KEY`, deployment `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
-- **Cloudflare Pages secrets** in both production/preview: `SITE_PASSWORD`, `SESSION_SECRET`, `GEMINI_API_KEY`. Nonsecret `APP_ID`, `APP_NAME`, `GEMINI_MODEL` and D1 bindings are in `wrangler.jsonc`.
+- **Cloudflare Pages secrets** in both production/preview: `SITE_PASSWORD`, `SESSION_SECRET`, `GEMINI_API_KEY`. **Production only:** `DOC_LINK_TOKEN` (must equal the SMS Worker's `DOC_LINK_TOKEN` secret; rotate both together with Git Bash `printf '%s' "$T" | npx wrangler … secret put DOC_LINK_TOKEN` — PowerShell pipes add a BOM that silently breaks secrets). Nonsecret `APP_ID`, `APP_NAME`, `GEMINI_MODEL` and D1 bindings are in `wrangler.jsonc`.
 
 `vite.config.ts` defines empty legacy key values only so dormant components still compile. It must NEVER inject a real key into browser JavaScript. Windows user-level keys no longer affect the production browser bundle.
 
@@ -364,12 +381,17 @@ components/ContactLookup.tsx        live company-contact result panel
 components/ProgramLauncher.tsx      launcher; PROGRAMS is the source of truth
 components/CommandPalette.tsx       Ctrl+K palette: tools + client search + carrier numbers
 components/QuickImageLinksCard.tsx  image uploader + library search
+components/DocumentLinksCard.tsx    Docs workspace: create branded document links + library
+shared/docLinks.ts                  document types, file-name/headline rules, link validation
+services/docLinksClient.ts          browser client for /api/doc-links
 components/Modal.tsx / Toast.tsx
 services/imageHostService.ts        BLI Image Host client + presets
 services/aiClient.ts                authenticated AI requests, timeout and cancellation
 services/contactDirectory.ts        contact validation, merging, offline queue and conflicts
 hooks/useCompanyContacts.ts         shared reactive directory
 server/auth.ts / ai.ts / contacts.ts protected backend implementation
+server/docLinks.ts                  Document Links proxy (functions/api/doc-links/index.ts + views.ts)
+scripts/preview-doc-links.mjs       loopback Docs preview with a fake document service
 functions/api/ai.ts / contacts.ts    Pages API entry points
 migrations/0001_shared_contacts.sql  current directory and version backups
 wrangler.jsonc                      Pages configuration and separate preview D1
@@ -421,7 +443,7 @@ public/                             hosted tools + carrier logo images
 >
 > **Stack:** React 19 + TypeScript + Vite 6, compiled Tailwind, signed Cloudflare Pages authentication, server-side Gemini, and D1 contacts shared with the staff dashboard. Other state is local.
 >
-> **Layout:** separate Search / Tools / Images workspaces, with Search default and above the fold. Mobile bottom navigation, command palette, Settings, eight-item pinned pages, and Library / Upload tabs. Hidden workspaces remain mounted to retain drafts and filters.
+> **Layout:** separate Search / Tools / Images / Docs workspaces, with Search default and above the fold. Mobile bottom navigation, command palette, Settings, eight-item pinned pages, and Library / Upload tabs. Hidden workspaces remain mounted to retain drafts and filters.
 >
 > **Critical rules:**
 > 1. Another AI may be working in this repo — run `git status --short` before editing AND before deploying; if it's dirty and not yours, ask Bill. Commit your work before handing back.
@@ -440,6 +462,7 @@ public/                             hosted tools + carrier logo images
 ## 15. Commit history (newest first)
 
 ```
+(see git log)  2026-10-01  Add Docs workspace: standalone Document Links (branded PDF/photo links)
 42c49a8  2026-08-16  Premium UX pass: search, modals, launcher, palette, and image-host states
 dd4534b  2026-08-16  Handoff: rewrite for multi-assistant work; fix stale rules
 7cd468d  2026-08-11  Add BLI Auto Rater to the launcher (v4)

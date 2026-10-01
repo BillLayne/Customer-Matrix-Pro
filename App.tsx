@@ -3,6 +3,7 @@ import SearchCard from './components/SearchCard';
 import CommandPalette from './components/CommandPalette';
 import ProgramLauncher from './components/ProgramLauncher';
 import QuickImageLinksCard from './components/QuickImageLinksCard';
+import DocumentLinksCard from './components/DocumentLinksCard';
 import Toast, { type ToastAction } from './components/Toast';
 import Modal from './components/Modal';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -14,12 +15,13 @@ const todayKey = () => {
 };
 
 interface SearchLog { day: string; count: number }
-type Workspace = 'search' | 'tools' | 'images';
+type Workspace = 'search' | 'tools' | 'images' | 'docs';
 type AppToast = ToastMessage & { action?: ToastAction };
 const WORKSPACES: { id: Workspace; label: string; icon: string }[] = [
   { id: 'search', label: 'Search', icon: 'fa-magnifying-glass' },
   { id: 'tools', label: 'Tools', icon: 'fa-table-cells-large' },
   { id: 'images', label: 'Images', icon: 'fa-image' },
+  { id: 'docs', label: 'Docs', icon: 'fa-file-pdf' },
 ];
 
 export default function App() {
@@ -162,6 +164,9 @@ export default function App() {
         </section>
         <section id="workspace-images" aria-label="Images workspace" hidden={workspace !== 'images'}>
           <QuickImageLinksCard active={workspace === 'images'} addToast={addToast} />
+        </section>
+        <section id="workspace-docs" aria-label="Document links workspace" hidden={workspace !== 'docs'}>
+          <DocumentLinksCard active={workspace === 'docs'} addToast={addToast} />
         </section>
       </main>
       {navigation(true)}
