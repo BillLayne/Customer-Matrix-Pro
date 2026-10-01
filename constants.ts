@@ -109,7 +109,7 @@ export const DEFAULT_INSURANCE_PORTALS: Portal[] = [
   { id:'national-general', name:'National General', url:'https://natgenagency.com/MainMenu.aspx', icon:'fa-solid fa-globe', description:'Agency portal', image: 'https://i.imgur.com/HF8oPAF.png', color: '#002D72' },
   { id:'progressive', name:'Progressive', url:'https://www.foragentsonly.com/home/?Welcome=400', icon:'fa-solid fa-chart-line', description:'For agents only portal', image: 'https://i.imgur.com/7N1vfo0.png', color: '#00A1E0' },
   { id:'foremost', name:'Foremost', url:'https://www.foremostagent.com/ia/portal/login', icon:'fa-solid fa-house-user', description:'Agent portal login', image: 'https://i.imgur.com/rHIo4r5.jpg', color: '#F58220' },
-  { id:'nc-grange', name:'NC Grange', url:'https://ncgm.com/', icon:'fa-solid fa-tractor', description:'NC Grange portal', image: 'https://i.imgur.com/Fesnkng.png', color: '#2E7D32' }
+  { id:'nc-grange', name:'NC Grange', url:'https://ncgmweb.com/login', icon:'fa-solid fa-tractor', description:'NC Grange portal', image: 'https://i.imgur.com/Fesnkng.png', color: '#2E7D32' }
 ];
 
 /**
