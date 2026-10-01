@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Modal from './Modal';
 import type { ToastMessage } from '../types';
 import { DOC_TYPES, extensionOf, formatBytes, guessDocType } from '../shared/docLinks';
@@ -54,7 +54,6 @@ const DocEmailDialog: React.FC<Props> = ({ target, onClose, addToast }) => {
   const [showPreview, setShowPreview] = useState(true);
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   const [checkedDrafts, setCheckedDrafts] = useState(false);
-  const toRef = useRef<HTMLInputElement>(null);
   const item = target?.item || null;
 
   // Fresh form for each document.
@@ -134,7 +133,9 @@ const DocEmailDialog: React.FC<Props> = ({ target, onClose, addToast }) => {
     }
   };
 
-  return <Modal isOpen={Boolean(target)} onClose={onClose} title="Email this document" maxWidthClass="max-w-3xl" initialFocusRef={toRef as React.RefObject<HTMLElement | null>}>
+  // Focus lands on [data-autofocus] (the To field) -- no Modal-specific prop, so this same
+  // file also compiles against the staff dashboard's simpler Modal.
+  return <Modal isOpen={Boolean(target)} onClose={onClose} title="Email this document" maxWidthClass="max-w-3xl">
     {item && <div className="min-w-0 space-y-4 text-sm text-slate-700 dark:text-slate-200">
       <p className="m-0">Creates a <strong>Gold Elite Gmail draft</strong> in your Drafts with <strong>{item.fileName}</strong> attached and a &ldquo;View it online&rdquo; button. Nothing is sent until you press Send in Gmail. A copy goes to Save@ for the agency record.</p>
 
@@ -159,7 +160,7 @@ const DocEmailDialog: React.FC<Props> = ({ target, onClose, addToast }) => {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="min-w-0">
             <label htmlFor="doc-email-to" className={labelClass}>To <span className="font-normal text-slate-500">(optional &mdash; you can add it in Gmail)</span></label>
-            <input id="doc-email-to" ref={toRef} type="email" inputMode="email" autoComplete="email" value={to} disabled={working} onChange={event => setTo(event.target.value)} placeholder="customer@example.com" className={fieldClass} />
+            <input id="doc-email-to" data-autofocus type="email" inputMode="email" autoComplete="email" value={to} disabled={working} onChange={event => setTo(event.target.value)} placeholder="customer@example.com" className={fieldClass} />
             {badRecipient && <p role="alert" className="m-0 mt-1 text-xs font-semibold text-rose-700 dark:text-rose-300">&ldquo;{badRecipient}&rdquo; is not an email address.</p>}
           </div>
           <div className="min-w-0">
