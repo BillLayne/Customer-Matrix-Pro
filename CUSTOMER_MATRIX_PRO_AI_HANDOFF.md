@@ -4,6 +4,10 @@
 
 **Last verified against production: September 17, 2026** (optional quote questions and integrated report follow-up). Implementation commit `c176396` is on GitHub `main` and deployed to Cloudflare Pages as `e4e1bc07-e01d-4d4e-8f37-d0f3f2419d51`.
 
+## October 1: NC Grange portal link
+
+The NC Grange carrier-portal tile (`CARRIER_PORTALS` entry `nc-grange` in `constants.ts`) now opens the new agent login, `https://ncgmweb.com/login` (commit `41b0208`, Pages deployment `76d415a3`). The customer-facing `ncgm.com` website, payment and claims links in the carrier info block were left as they are. The staff dashboard (`Agency-Staff-Dashboard/constants.ts`) still carries the old portal link until Bill asks for it.
+
 ## October 1: Document Links — the Docs workspace (Live)
 
 Bill asked for the SMS Command Center's "upload a PDF/photo → branded link" ability as a **standalone program**, so he can create links for email (or anywhere) without opening an SMS conversation.
