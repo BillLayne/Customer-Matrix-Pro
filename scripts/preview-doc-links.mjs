@@ -50,6 +50,7 @@ const views = {
   [library[2].shortId]: { count: 1, firstViewedAt: daysAgo(3), lastViewedAt: daysAgo(3) },
 };
 const fileBytes = new Map();
+const lingering = [];
 async function fakeDocumentService(url, init = {}) {
   await new Promise(resolve => setTimeout(resolve, 350)); // feel a little like a network call
   const target = new URL(url);
@@ -73,10 +74,16 @@ async function fakeDocumentService(url, init = {}) {
   if (target.pathname === '/api/doc-links' && init.method === 'DELETE') {
     const index = library.findIndex(item => item.shortId === target.searchParams.get('id'));
     if (index < 0) return json({ ok: true, alreadyGone: true });
-    library.splice(index, 1);
+    const [gone] = library.splice(index, 1);
+    lingering.push({ item: gone, until: Date.now() + 60000 });
     return json({ ok: true });
   }
-  if (target.pathname === '/api/doc-links') return json({ items: library, cursor: null });
+  if (target.pathname === '/api/doc-links') {
+    // Like Cloudflare KV list(), a deleted row keeps showing up for about a minute.
+    const ghosts = lingering.filter(entry => entry.until > Date.now()).map(entry => entry.item);
+    const items = [...library, ...ghosts].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    return json({ items, cursor: null });
+  }
   if (target.pathname === '/api/document-views') {
     const ids = (target.searchParams.get('ids') || '').split(',');
     return json({ views: Object.fromEntries(ids.filter(id => views[id]).map(id => [id, views[id]])) });
