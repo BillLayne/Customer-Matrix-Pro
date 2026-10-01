@@ -1,4 +1,4 @@
-import { json, requireSession } from './auth.ts';
+import { appId, json, requireSession } from './auth.ts';
 import type { AuthEnv, PagesContext } from './auth.ts';
 import { MAX_DOC_BYTES, normalizeDocLinkItem, normalizeViewStats, validateDocFile } from '../shared/docLinks.ts';
 
@@ -103,6 +103,9 @@ export async function docLinksHandler(context: PagesContext<DocLinksEnv>, fetche
   const outbound = new FormData();
   outbound.append('file', file as File, (file as File).name);
   if (customer) outbound.append('customer', customer);
+  // Which dashboard made it -- decided here, never by the browser. This same
+  // file runs in both the Agency Command Center and the staff dashboard.
+  outbound.append('source', appId(env) === 'agency-staff-dashboard' ? 'staff-dashboard' : 'command-center');
   try {
     const response = await callUpstream(fetcher, `${target.base}/api/doc-links`, {
       method: 'POST', headers: { authorization: `Bearer ${target.token}`, accept: 'application/json' }, body: outbound,

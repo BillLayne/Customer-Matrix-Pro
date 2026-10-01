@@ -17,6 +17,13 @@ export const DOC_LINK_HOSTS = ['docs.billlayneinsurance.com', 'agency-sms-comman
 // Same account selector convention as Unified Search's Drive links: Bill has
 // several Google accounts signed in and /u/N indexes are unstable.
 export const GMAIL_ACCOUNT_EMAIL = 'Bill@billlayneinsurance.com';
+
+// The picture phones show when a document link is texted (og:image). It is the
+// SMS Command Center's AGENCY_PREVIEW_IMAGE -- the SAME image for links made
+// here, in the staff dashboard and in SMS (Bill, 2026-10-01: keep it
+// consistent). This is only a local display copy for the in-app preview;
+// if the Worker's image changes, replace public/doc-link-text-preview.jpg.
+export const TEXT_PREVIEW_IMAGE = '/doc-link-text-preview.jpg';
 export const AGENCY_PHONE = '(336) 835-1993';
 
 export type DocTypeId = 'id-card' | 'digital-id' | 'proof' | 'quote' | 'receipt' | 'billing' | 'no-loss' | 'cancellation' | 'general';
@@ -44,13 +51,21 @@ export const DOC_TYPES: DocTypePreset[] = [
 ];
 export const docType = (id: DocTypeId) => DOC_TYPES.find(type => type.id === id) || DOC_TYPES[DOC_TYPES.length - 1];
 
+export type DocLinkSource = 'sms' | 'command-center' | 'staff-dashboard';
+export const DOC_LINK_SOURCES: { id: DocLinkSource; label: string }[] = [
+  { id: 'command-center', label: 'Command Center' },
+  { id: 'staff-dashboard', label: 'Staff Dashboard' },
+  { id: 'sms', label: 'Sent by SMS' },
+];
+export const sourceLabel = (source: DocLinkSource) => DOC_LINK_SOURCES.find(item => item.id === source)?.label || 'Sent by SMS';
+
 export interface DocLinkItem {
   shortId: string;
   url: string;
   fileName: string;
   contentType: string;
   createdAt: string;
-  source: 'sms' | 'command-center';
+  source: DocLinkSource;
   customer: string | null;
   size: number | null;
 }
@@ -102,6 +117,8 @@ export function previewTypeForFileName(fileName: string) {
   return 'insurance document';
 }
 export const previewHeadline = (fileName: string) => `Your ${previewTypeForFileName(fileName)} is ready`;
+/** The bold title under the picture in a text-message preview (the worker's og:title). */
+export const previewLinkTitle = (fileName: string) => `${previewHeadline(fileName)} | Bill Layne Insurance`;
 
 const TYPE_FOR_PREVIEW: Record<string, DocTypeId> = {
   'insurance card': 'id-card', 'payment receipt': 'receipt', 'proof of insurance': 'proof', 'insurance quote': 'quote',
@@ -200,7 +217,7 @@ export function normalizeDocLinkItem(raw: unknown): DocLinkItem | null {
     fileName: text(record.fileName, 120) || 'document',
     contentType: text(record.contentType, 100),
     createdAt: iso(record.createdAt) || '',
-    source: record.source === 'command-center' ? 'command-center' : 'sms',
+    source: record.source === 'command-center' || record.source === 'staff-dashboard' ? record.source : 'sms',
     customer: text(record.customer, 80) || null,
     size: typeof record.size === 'number' && Number.isFinite(record.size) && record.size >= 0 ? Math.floor(record.size) : null,
   };

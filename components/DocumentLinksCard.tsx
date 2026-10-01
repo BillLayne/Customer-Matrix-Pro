@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ToastMessage } from '../types';
 import {
   DOC_ACCEPT, DOC_TYPES, buildCustomerMessage, describeReceipt, emailSubject, extensionOf, finalizeFileName,
-  formatBytes, formatWhen, gmailComposeUrl, guessDocType, matchesDocQuery, previewTypeForFileName, staffTestUrl,
-  suggestFileName, tidyCustomerName, validateDocFile,
+  DOC_LINK_SOURCES, TEXT_PREVIEW_IMAGE, formatBytes, formatWhen, gmailComposeUrl, guessDocType, matchesDocQuery,
+  previewLinkTitle, previewTypeForFileName, sourceLabel, staffTestUrl, suggestFileName, tidyCustomerName, validateDocFile,
 } from '../shared/docLinks';
-import type { DocLinkItem, DocTypeId, DocViewStats, ReceiptTone } from '../shared/docLinks';
+import type { DocLinkItem, DocLinkSource, DocTypeId, DocViewStats, ReceiptTone } from '../shared/docLinks';
 import { createDocLink, fetchDocViews, listAllDocLinks } from '../services/docLinksClient';
 
 // Standalone twin of the SMS composer's document upload: PDF / Word / photo in,
@@ -16,7 +16,7 @@ interface DocumentLinksCardProps {
   addToast: (message: string, type?: ToastMessage['type']) => void;
   active?: boolean;
 }
-type SourceFilter = 'all' | 'command-center' | 'sms';
+type SourceFilter = 'all' | DocLinkSource;
 
 const buttonClass = 'inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/10';
 const primaryClass = buttonClass + ' bg-[#003f87] !text-white hover:!bg-[#0076d3] dark:hover:!bg-[#0076d3]';
@@ -48,6 +48,29 @@ const ReceiptPill: React.FC<{ stats: DocViewStats | null | undefined; loading?: 
   </span>;
 };
 
+const SOURCE_BADGE: Record<DocLinkSource, string> = {
+  'command-center': 'bg-sky-100 text-sky-800 dark:bg-sky-400/15 dark:text-sky-200',
+  'staff-dashboard': 'bg-violet-100 text-violet-800 dark:bg-violet-400/15 dark:text-violet-200',
+  sms: 'bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-200',
+};
+
+/**
+ * What the customer's phone shows when the link is texted: the same picture
+ * every SMS Command Center document link uses, with the page's title under it.
+ */
+const TextMessagePreview: React.FC<{ fileName: string }> = ({ fileName }) => <figure className="m-0 min-w-0">
+  <figcaption className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">When texted, their phone shows</figcaption>
+  <div className="max-w-[22rem] overflow-hidden rounded-2xl border border-slate-200 bg-[#e9e9eb] shadow-sm dark:border-white/15 dark:bg-white/10">
+    <img src={TEXT_PREVIEW_IMAGE} alt="Bill Layne Insurance — Your insurance documents are ready. View, download, review." width={960} height={504}
+      className="block aspect-[1731/909] h-auto w-full object-cover" />
+    <div className="px-3.5 py-2.5">
+      <p className="m-0 line-clamp-2 text-[13px] font-semibold leading-snug text-slate-900 dark:text-white">{previewLinkTitle(fileName)}</p>
+      <p className="m-0 mt-0.5 text-xs text-slate-500 dark:text-slate-400">docs.billlayneinsurance.com</p>
+    </div>
+  </div>
+  <p className="m-0 mt-2 text-xs text-slate-500 dark:text-slate-400">The same picture as document links sent from the SMS Command Center.</p>
+</figure>;
+
 /** A faithful miniature of the docs.billlayneinsurance.com preview page hero. */
 const CustomerPreview: React.FC<{ fileName: string; hasFile: boolean }> = ({ fileName, hasFile }) => {
   const kind = previewTypeForFileName(fileName);
@@ -70,7 +93,7 @@ const CustomerPreview: React.FC<{ fileName: string; hasFile: boolean }> = ({ fil
       </div>
     </div>
     <figcaption className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-      What your customer sees on the branded page, followed by the document itself and Call / Text / Message buttons. The headline comes from the file name.
+      When they tap it: the branded page, then the document itself, a Download button, and Call / Text / Message. The headline comes from the file name.
     </figcaption>
   </figure>;
 };
@@ -236,8 +259,8 @@ const DocumentLinksCard: React.FC<DocumentLinksCardProps> = ({ addToast, active 
             <span>{kind.charAt(0).toUpperCase() + kind.slice(1)}</span>
             <span>{formatWhen(item.createdAt, false)}</span>
             {item.size ? <span>{formatBytes(item.size)}</span> : null}
-            <span className={'rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ' + (item.source === 'sms' ? 'bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-200' : 'bg-sky-100 text-sky-800 dark:bg-sky-400/15 dark:text-sky-200')}>
-              {item.source === 'sms' ? 'Sent by SMS' : 'Command Center'}
+            <span className={'rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ' + SOURCE_BADGE[item.source]}>
+              {sourceLabel(item.source)}
             </span>
           </p>
           <div className="mt-1.5"><ReceiptPill stats={views[item.shortId]} loading={viewsLoading[item.shortId]} /></div>
@@ -363,7 +386,10 @@ const DocumentLinksCard: React.FC<DocumentLinksCardProps> = ({ addToast, active 
             {file && <button type="button" className={buttonClass + ' mt-2'} disabled={creating} onClick={() => void handleCreate()}><i className="fa-solid fa-rotate-right" aria-hidden="true" />Retry</button>}
           </div>}
         </div>
-        <CustomerPreview fileName={finalName || 'your-document.pdf'} hasFile={Boolean(file)} />
+        <div className="flex min-w-0 flex-col gap-6">
+          <TextMessagePreview fileName={finalName || 'your-document.pdf'} />
+          <CustomerPreview fileName={finalName || 'your-document.pdf'} hasFile={Boolean(file)} />
+        </div>
       </div>}
     </div>}
 
@@ -374,7 +400,7 @@ const DocumentLinksCard: React.FC<DocumentLinksCardProps> = ({ addToast, active 
         <button type="button" className={buttonClass} disabled={libraryLoading} title="Refresh the library and receipts" aria-label="Refresh the library and receipts" onClick={() => void loadLibrary(true)}><i className={'fa-solid fa-rotate' + (libraryLoading ? ' fa-spin' : '')} aria-hidden="true" /></button>
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Where the link was created">
-        {([['all', 'All'], ['command-center', 'Command Center'], ['sms', 'Sent by SMS']] as const).map(([id, label]) =>
+        {[{ id: 'all' as SourceFilter, label: 'All' }, ...DOC_LINK_SOURCES].map(({ id, label }) =>
           <button key={id} type="button" aria-pressed={sourceFilter === id} onClick={() => setSourceFilter(id)} className={sourceFilter === id ? primaryClass : buttonClass}>{label}</button>)}
       </div>
       <p className="my-2 text-xs text-slate-500 dark:text-slate-400" role="status" aria-live="polite">

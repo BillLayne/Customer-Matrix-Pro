@@ -5,7 +5,7 @@ import { createSession, cookieName } from '../server/auth.ts';
 import {
   previewTypeForFileName, previewHeadline, guessDocType, suggestFileName, finalizeFileName, validateDocFile,
   buildCustomerMessage, emailSubject, gmailComposeUrl, isSafeDocLinkUrl, normalizeDocLinkItem, normalizeViewStats,
-  describeReceipt, firstNameOf, matchesDocQuery, staffTestUrl, MAX_DOC_BYTES,
+  describeReceipt, firstNameOf, matchesDocQuery, staffTestUrl, MAX_DOC_BYTES, previewLinkTitle, sourceLabel, TEXT_PREVIEW_IMAGE,
 } from '../shared/docLinks.ts';
 
 // Synthetic values only -- never real credentials.
@@ -97,7 +97,8 @@ test('creates a link, forwarding only the file and the customer label', async ()
   assert.equal((await response.json()).item.url, good.url);
   const sent = calls[0].init.body;
   assert.ok(sent instanceof FormData);
-  assert.deepEqual([...sent.keys()].sort(), ['customer', 'file']);
+  assert.deepEqual([...sent.keys()].sort(), ['customer', 'file', 'source']);
+  assert.equal(sent.get('source'), 'command-center', 'the source is set by the server, not the browser');
   assert.equal(sent.get('customer'), 'Roy Meyreles');
   assert.equal(sent.get('file').name, 'Roy-Meyreles-Proof-of-Insurance.pdf');
   assert.equal(calls[0].url, `${DEFAULT_DOC_LINK_API_BASE}/api/doc-links`);
@@ -222,4 +223,23 @@ test('receipts read Saved > Opened > Viewed > Not viewed, like the SMS thread', 
   assert.ok(matchesDocQuery(item, 'meyreles proof'));
   assert.ok(matchesDocQuery(item, 'ROY'));
   assert.ok(!matchesDocQuery(item, 'quote'));
+});
+
+test('the staff dashboard tags its links as staff-dashboard; a smuggled source is ignored', async () => {
+  const staffEnv = { ...env, APP_ID: 'agency-staff-dashboard' };
+  const { calls, fetcher } = recorder(jsonResponse({ ...good, source: 'staff-dashboard' }, 201));
+  const response = await docLinksHandler(await ctx({ method: 'POST', e: staffEnv, body: pdfForm('scan.pdf', 2048, { source: 'command-center' }) }), fetcher);
+  assert.equal(response.status, 201);
+  assert.equal(calls[0].init.body.getAll('source').length, 1);
+  assert.equal(calls[0].init.body.get('source'), 'staff-dashboard');
+  assert.equal((await response.json()).item.source, 'staff-dashboard');
+});
+
+test('library sources and the text-message preview', () => {
+  assert.equal(normalizeDocLinkItem({ ...good, source: 'staff-dashboard' }).source, 'staff-dashboard');
+  assert.equal(normalizeDocLinkItem({ ...good, source: 'evil' }).source, 'sms');
+  assert.equal(sourceLabel('staff-dashboard'), 'Staff Dashboard');
+  assert.equal(sourceLabel('command-center'), 'Command Center');
+  assert.equal(previewLinkTitle('Roy-Meyreles-Proof-of-Insurance.pdf'), 'Your proof of insurance is ready | Bill Layne Insurance');
+  assert.equal(TEXT_PREVIEW_IMAGE, '/doc-link-text-preview.jpg');
 });

@@ -33,7 +33,7 @@ const hex = () => randomBytes(6).toString('hex');
 const daysAgo = days => new Date(Date.now() - days * 86400000).toISOString();
 const library = [
   ['Pat-Example-Proof-of-Insurance.pdf', 'Pat Example', 'command-center', 1],
-  ['SAMPLE-CUSTOMER-ID-CARDS.pdf', null, 'sms', 2],
+  ['SAMPLE-CUSTOMER-ID-CARDS.pdf', null, 'staff-dashboard', 2],
   ['Jordan-Sample-Insurance-Quote.pdf', null, 'sms', 4],
   ['Taylor-Demo-Payment-Receipt.pdf', 'Taylor Demo', 'command-center', 6],
   ['scan-of-signed-no-loss-statement.pdf', null, 'sms', 9],
@@ -54,7 +54,7 @@ async function fakeDocumentService(url, init = {}) {
   if (target.pathname === '/api/doc-links' && init.method === 'POST') {
     const file = init.body.get('file');
     const shortId = hex();
-    const item = { shortId, url: `https://docs.billlayneinsurance.com/d/${shortId}`, fileName: file.name, contentType: file.type || 'application/pdf', createdAt: new Date().toISOString(), source: 'command-center', customer: init.body.get('customer') || null, size: file.size };
+    const item = { shortId, url: `https://docs.billlayneinsurance.com/d/${shortId}`, fileName: file.name, contentType: file.type || 'application/pdf', createdAt: new Date().toISOString(), source: init.body.get('source') || 'command-center', customer: init.body.get('customer') || null, size: file.size };
     library.unshift(item);
     return json(item, 201);
   }
