@@ -38,6 +38,8 @@ const library = [
   ['Taylor-Demo-Payment-Receipt.pdf', 'Taylor Demo', 'command-center', 6],
   ['scan-of-signed-no-loss-statement.pdf', null, 'sms', 9],
   ['Casey-Test-Cancellation-Form.docx', 'Casey Test', 'command-center', 12],
+  ['Old-Sample-2025-ID-Cards.pdf', 'Old Sample', 'sms', 400],
+  ['Spring-Sample-Quote.pdf', null, 'sms', 200],
 ].map(([fileName, customer, source, age]) => {
   const shortId = hex();
   return { shortId, url: `https://docs.billlayneinsurance.com/d/${shortId}`, fileName, contentType: fileName.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf', createdAt: daysAgo(age), source, customer, size: 180000 + age * 9000 };
@@ -57,6 +59,12 @@ async function fakeDocumentService(url, init = {}) {
     const item = { shortId, url: `https://docs.billlayneinsurance.com/d/${shortId}`, fileName: file.name, contentType: file.type || 'application/pdf', createdAt: new Date().toISOString(), source: init.body.get('source') || 'command-center', customer: init.body.get('customer') || null, size: file.size };
     library.unshift(item);
     return json(item, 201);
+  }
+  if (target.pathname === '/api/doc-links' && init.method === 'DELETE') {
+    const index = library.findIndex(item => item.shortId === target.searchParams.get('id'));
+    if (index < 0) return json({ ok: true, alreadyGone: true });
+    library.splice(index, 1);
+    return json({ ok: true });
   }
   if (target.pathname === '/api/doc-links') return json({ items: library, cursor: null });
   if (target.pathname === '/api/document-views') {
