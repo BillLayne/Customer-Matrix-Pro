@@ -25,10 +25,11 @@ const WORKSPACES: { id: Workspace; label: string; icon: string }[] = [
 ];
 
 export default function App() {
-  const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light', (value): value is 'light' | 'dark' => value === 'light' || value === 'dark');
   const [workspace, setWorkspace] = useState<Workspace>('search');
   const [toasts, setToasts] = useState<AppToast[]>([]);
-  const [searchLog, setSearchLog] = useLocalStorage<SearchLog>('matrix-pro-search-log', { day: todayKey(), count: 0 });
+  const [searchLog, setSearchLog] = useLocalStorage<SearchLog>('matrix-pro-search-log', { day: todayKey(), count: 0 },
+    (value): value is SearchLog => typeof value === 'object' && value !== null && typeof (value as SearchLog).day === 'string' && Number.isInteger((value as SearchLog).count));
   const [showPalette, setShowPalette] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -192,7 +193,7 @@ export default function App() {
       <Modal isOpen={showHelp} onClose={() => setShowHelp(false)} title="Keyboard Shortcuts" maxWidthClass="max-w-lg">
         <dl className="shortcut-list">
           {[
-            ['Unified Search', '/'], ['Command Palette', 'Ctrl + K / Ctrl + M'],
+            ['Unified Search', '/'], ['Command Palette', 'Ctrl + K / Ctrl + M'], ['Agency Matrix', 'Alt + M'],
             ['Dark Appearance', 'Ctrl + D'], ['Close Dialog', 'Esc'],
             ['Web Search', 'Alt + W'], ['Real Estate', 'Alt + H'],
             ['People Search', 'Alt + P'], ['Client Folder', 'Alt + F'],

@@ -387,7 +387,7 @@ button:disabled { cursor: not-allowed; }
 .finder-panel { padding: 18px 22px 22px; }
 .finder-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .finder-panel h3 { font-size: 18px; font-weight: 700; }
-.finder-panel-link { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 8px; border-radius: 6px; font-size: 14px; font-weight: 600; color: var(--agency-blue); }
+.finder-panel-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 8px; border-radius: 6px; font-size: 14px; font-weight: 600; color: var(--agency-blue); }
 .dark .finder-panel-link { color: var(--agency-action); }
 .finder-panel-link:hover { background: var(--agency-muted-surface); }
 .finder-panel-row { display: flex; align-items: center; gap: 24px; padding: 16px 22px; }

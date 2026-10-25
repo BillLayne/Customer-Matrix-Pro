@@ -10,8 +10,15 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export function useLocalStorage<T,>(key: string, initialValue: T | (() => T)): [T, React.Dispatch<React.SetStateAction<T>>] {
+/**
+ * `isValid` guards against values another version of the app (or a hand edit)
+ * left in storage: anything it rejects reads as the initial value instead of
+ * crashing the render.
+ */
+export function useLocalStorage<T,>(key: string, initialValue: T | (() => T), isValid?: (value: unknown) => value is T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const fallback = useRef<{ key: string; value: T } | null>(null);
+  const validator = useRef(isValid);
+  validator.current = isValid;
   if (!fallback.current || fallback.current.key !== key) {
     fallback.current = { key, value: typeof initialValue === 'function' ? (initialValue as () => T)() : initialValue };
   }
@@ -23,7 +30,12 @@ export function useLocalStorage<T,>(key: string, initialValue: T | (() => T)): [
     }
     if (cache.current?.key === key && cache.current.raw === raw) return cache.current.value;
     let value = fallback.current!.value;
-    try { if (raw !== null) value = JSON.parse(raw); } catch { /* Never overwrite invalid storage on mount. */ }
+    try {
+      if (raw !== null) {
+        const parsed: unknown = JSON.parse(raw);
+        if (!validator.current || validator.current(parsed)) value = parsed as T;
+      }
+    } catch { /* Never overwrite invalid storage on mount. */ }
     cache.current = { key, raw, value };
     return value;
   }, [key]);
@@ -41,8 +53,10 @@ export function useLocalStorage<T,>(key: string, initialValue: T | (() => T)): [
     try {
       window.localStorage.setItem(key, JSON.stringify(value));
       notify(key);
-    } catch {
+    } catch (error) {
       console.error('Browser settings could not be saved.');
+      // App.tsx turns this into a toast so a full browser store is not silent.
+      window.dispatchEvent(new CustomEvent('local-storage-error', { detail: { key, error } }));
     }
   }, [getSnapshot, key]);
   return [storedValue, setValue];

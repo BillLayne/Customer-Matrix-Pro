@@ -666,8 +666,8 @@ export const recordProgramLaunch = (programId: string) => {
 
 const ProgramLauncher: React.FC<ProgramLauncherProps> = ({ addToast }) => {
   const [recentProgramIds, setRecentProgramIds] = useState(() => readStoredProgramIds(RECENT_PROGRAMS_KEY));
-  const [pinnedProgramIds, setPinnedProgramIds] = useLocalStorage<string[]>(PINNED_PROGRAMS_KEY, DEFAULT_PINNED);
-  const [seenVersion, setSeenVersion] = useLocalStorage<number>(LAUNCHER_VERSION_KEY, 1);
+  const [pinnedProgramIds, setPinnedProgramIds] = useLocalStorage<string[]>(PINNED_PROGRAMS_KEY, DEFAULT_PINNED, (value): value is string[] => Array.isArray(value) && value.every(id => typeof id === 'string'));
+  const [seenVersion, setSeenVersion] = useLocalStorage<number>(LAUNCHER_VERSION_KEY, 1, (value): value is number => typeof value === 'number' && Number.isFinite(value));
   const [filterQuery, setFilterQuery] = useState('');
   const [pinnedPage, setPinnedPage] = useState(0);
   const [storedCategory, setActiveCategory] = useLocalStorage<ProgramCategory | 'All'>('matrix-pro-launcher-category', 'All');

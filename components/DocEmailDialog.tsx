@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Modal from './Modal';
 import type { ToastMessage } from '../types';
 import { DOC_TYPES, extensionOf, formatBytes, guessDocType } from '../shared/docLinks';
@@ -60,9 +60,13 @@ const DocEmailDialog: React.FC<Props> = ({ target, onClose, addToast }) => {
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   const [checkedDrafts, setCheckedDrafts] = useState(false);
   const item = target?.item || null;
+  // The draft in flight for THIS document; closing or switching documents abandons it.
+  const run = useRef<AbortController | null>(null);
 
   // Fresh form for each document.
   useEffect(() => {
+    run.current?.abort();
+    run.current = null;
     if (!target) return;
     const guessed = target.typeId || guessDocType(target.item.fileName);
     setTypeId(guessed);
@@ -109,14 +113,20 @@ const DocEmailDialog: React.FC<Props> = ({ target, onClose, addToast }) => {
       setTesting(false);
     }
   };
+  useEffect(() => () => run.current?.abort(), []);
 
   const createDraft = async () => {
     if (!item || working || lockedByUncertainty) return;
     if (badRecipient) { setStatus({ kind: 'error', message: `"${badRecipient}" is not an email address.`, uncertain: false }); return; }
     setCheckedDrafts(false);
+    run.current?.abort();
+    const controller = new AbortController();
+    run.current = controller;
+    const stale = () => controller.signal.aborted || run.current !== controller;
     try {
       setStatus({ kind: 'working', step: target?.file ? 'Preparing the attachment...' : 'Loading the document to attach...' });
-      const bytes = target?.file ? new Uint8Array(await target.file.arrayBuffer()) : await fetchDocFile(item.shortId);
+      const bytes = target?.file ? new Uint8Array(await target.file.arrayBuffer()) : await fetchDocFile(item.shortId, AbortSignal.any([controller.signal, AbortSignal.timeout(60000)]));
+      if (stale()) return;
       const html = buildDocEmailHtml({
         typeId, customer: target?.customer || item.customer || '', fileName: item.fileName,
         fileMeta: metaFor(bytes.length), url: item.url, note,
@@ -130,9 +140,12 @@ const DocEmailDialog: React.FC<Props> = ({ target, onClose, addToast }) => {
         html,
         attachment: { name: item.fileName, mimeType: item.contentType || 'application/octet-stream', bytes },
       });
+      if (stale()) return;
       setStatus({ kind: 'done', remainingQuota: result.remainingQuota });
       addToast('Gmail draft created with the document attached.', 'success');
     } catch (error) {
+      if (stale()) return;
+      if (error instanceof DOMException && error.name === 'TimeoutError') { setStatus({ kind: 'error', message: 'Loading the document took too long. Check your connection and retry.', uncertain: false }); return; }
       const uncertain = error instanceof GatewayError && error.uncertain;
       setStatus({ kind: 'error', message: error instanceof Error ? error.message : 'The draft could not be created.', uncertain });
     }

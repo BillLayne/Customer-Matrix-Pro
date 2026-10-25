@@ -28,7 +28,11 @@ const contactIcons: Record<ContactDetail['kind'], string> = {
   phone: 'fa-phone', fax: 'fa-fax', email: 'fa-envelope', website: 'fa-globe',
 };
 
-const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onClientSearch, addToast }) => {
+// The body mounts only while open, so the contacts store (and its minute-by-minute
+// refresh) is subscribed only when the palette is actually in use.
+const CommandPalette: React.FC<CommandPaletteProps> = (props) => props.isOpen ? <CommandPaletteBody {...props} /> : null;
+
+const CommandPaletteBody: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onClientSearch, addToast }) => {
   const { directory } = useCompanyContacts();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);

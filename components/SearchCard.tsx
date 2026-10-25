@@ -105,7 +105,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
   const [query, setQuery] = useState('');
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [quoteHasDraft, setQuoteHasDraft] = useState(false);
-  const [searchHistory, setSearchHistory] = useLocalStorage<SearchEntry[]>('matrix-pro-search-history', []);
+  const [searchHistory, setSearchHistory] = useLocalStorage<SearchEntry[]>('matrix-pro-search-history', [], (value): value is SearchEntry[] => Array.isArray(value));
   const [showMoreCarriers, setShowMoreCarriers] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [isGisModalOpen, setIsGisModalOpen] = useState(false);
@@ -155,7 +155,10 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
       if (mountedRef.current) setStorageError('Draft could not be saved on this device. Keep this page open or copy the text before leaving.');
     }
   }, []);
+  const firstDraftEffect = useRef(true);
   useEffect(() => {
+    // The mount run only re-saves what was just restored; keep the "Restored" notice for it.
+    if (firstDraftEffect.current) { firstDraftEffect.current = false; return; }
     setDraftStatus(draft.text || draft.customerName ? 'Saving draft...' : '');
     const timer = window.setTimeout(persistDraft, 450);
     return () => clearTimeout(timer);
@@ -198,16 +201,13 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
       const target = event.target instanceof HTMLElement ? event.target : null;
       const inEditor = target?.isContentEditable || target?.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"])');
       if (event.defaultPrevented || event.isComposing || document.querySelector('[role="dialog"],dialog[open]') || inEditor) return;
-      if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        event.preventDefault(); inputRef.current?.focus(); inputRef.current?.select(); return;
-      }
+      // '/' and Ctrl+K / Ctrl+M are handled in App.tsx (focus search, palette).
       if ((event.altKey && event.key.toLowerCase() === 'n') ||
           ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'm')) {
         event.preventDefault(); handleNotesOpen(); return;
       }
-      const shortcuts: Record<string, SearchMode> = { w: 'web', h: 'realestate', p: 'people', f: 'onedrive', c: 'contacts' };
-      const next = event.altKey ? shortcuts[event.key.toLowerCase()] :
-        (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'm' ? 'agency' : undefined;
+      const shortcuts: Record<string, SearchMode> = { m: 'agency', w: 'web', h: 'realestate', p: 'people', f: 'onedrive', c: 'contacts' };
+      const next = event.altKey && !event.ctrlKey && !event.metaKey ? shortcuts[event.key.toLowerCase()] : undefined;
       if (next) { event.preventDefault(); setMode(next); inputRef.current?.focus(); }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -360,11 +360,12 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
     link.download = (reportSubject.replace(/[^a-z0-9_-]/gi, '_') || 'property_report') + '.html';
     link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+  const reportFrameRef = useRef<HTMLIFrameElement>(null);
   const handleReportPrint = () => {
     if (!reportHtml) return;
-    const popup = window.open('', '_blank');
-    if (!popup) { setPropertyError('The print window was blocked. Allow pop-ups and retry.'); return; }
-    popup.opener = null; popup.document.write(reportHtml); popup.document.close(); popup.focus(); popup.print();
+    // The preview frame has no allow-scripts, so the AI markup never runs; printing it keeps it that way.
+    try { reportFrameRef.current?.contentWindow?.focus(); reportFrameRef.current?.contentWindow?.print(); }
+    catch { setPropertyError('Printing from the preview failed. Save the HTML and print it from your browser.'); }
   };
   const handleReportEmail = async () => {
     if (!reportHtml || isCopying) return;
@@ -405,7 +406,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
   );
 
   const modeButtons: { mode: SearchMode, icon: string, label: string, shortcut: string, description: string, action: string }[] = [
-    { mode: 'agency', icon: 'fa-solid fa-shield-halved', label: 'Agency Matrix', shortcut: 'Ctrl + M', description: 'Find customer accounts', action: 'Search Matrix' },
+    { mode: 'agency', icon: 'fa-solid fa-shield-halved', label: 'Agency Matrix', shortcut: 'Alt + M', description: 'Find customer accounts', action: 'Search Matrix' },
     { mode: 'web', icon: 'fa-solid fa-globe', label: 'Web Search', shortcut: 'Alt + W', description: 'Search the web', action: 'Search Web' },
     { mode: 'realestate', icon: 'fa-solid fa-house', label: 'Real Estate', shortcut: 'Alt + H', description: 'Look up property information', action: 'Search Property' },
     { mode: 'people', icon: 'fa-solid fa-user', label: 'People', shortcut: 'Alt + P', description: 'Find people and addresses', action: 'Search People' },
@@ -538,7 +539,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
         {isGeneratingReport && <div role="status" className="flex flex-wrap items-center gap-3 text-sm"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />Building property report...<button className={buttonClass} onClick={() => { cancelRequest(); setPropertyError('Report cancelled.'); }}>Cancel</button></div>}
         {propertyFeedback}
         {reportHtml && <>
-          <iframe srcDoc={reportHtml} title="AI Property Report" className="mb-3 h-[min(62vh,650px)] w-full border border-slate-200 bg-white" sandbox="allow-popups allow-popups-to-escape-sandbox" />
+          <iframe ref={reportFrameRef} srcDoc={reportHtml} title="AI Property Report" className="mb-3 h-[min(62vh,650px)] w-full border border-slate-200 bg-white" sandbox="allow-same-origin allow-modals allow-popups allow-popups-to-escape-sandbox" />
           <div className="flex flex-wrap justify-end gap-2">
             <button onClick={handleReportDownload} className={buttonClass}><i className="fa-solid fa-download" aria-hidden="true" />Save HTML</button>
             <button onClick={handleReportPrint} className={buttonClass}><i className="fa-solid fa-print" aria-hidden="true" />Print</button>

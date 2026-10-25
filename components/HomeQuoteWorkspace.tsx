@@ -3,9 +3,9 @@ import Modal from './Modal';
 import {
   QUOTE_SECTIONS, PROPERTY_FIELDS, PROPERTY_LINKS, newQuoteDraft, normalizeAddress,
   restoreQuoteDraft, selectedProperty, quoteGaps, propertyConflicts, answerWarnings,
-  buildHomeQuoteReport, findMyHomeUrl,
+  buildHomeQuoteReport, findMyHomeUrl, normalizeResearch,
 } from '../shared/homeQuote';
-import type { QuoteDraft, QuoteResearch } from '../shared/homeQuote';
+import type { QuoteDraft } from '../shared/homeQuote';
 
 const STORAGE_KEY = 'matrix-home-quote-session-v1';
 const buttonClass = 'quote-button';
@@ -60,7 +60,9 @@ const HomeQuoteWorkspace: React.FC<{
       if (!response.ok) throw new Error(result?.error || 'Property research could not finish. Please retry.');
       if (!result || result.address !== current.address || !Array.isArray(result.results)) throw new Error('The lookup returned an unexpected address. Please retry.');
       if (request.current !== controller) return;
-      setDraft(previous => ({ ...previous, research: result as QuoteResearch, selectedId: result.results[0]?.id || '', confirmed: false, updatedAt: new Date().toISOString() }));
+      // Same guard as the JSON import path: every link and fact is re-validated in the browser.
+      const research = normalizeResearch(result, current.address);
+      setDraft(previous => ({ ...previous, research, selectedId: research.results[0]?.id || '', confirmed: false, updatedAt: new Date().toISOString() }));
     } catch (failure) {
       if (request.current === controller) setError(controller.signal.aborted ? 'Research timed out. Your interview answers are unchanged. Retry or open Find My Home.' : failure instanceof Error ? failure.message : 'Property research failed. Please retry.');
     } finally {

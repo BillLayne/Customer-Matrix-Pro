@@ -35,7 +35,7 @@ const canFocus = (element: HTMLElement) =>
 
 const focusableElements = (dialog: HTMLElement) =>
   Array.from(dialog.querySelectorAll<HTMLElement>(
-    'a[href], button, input, textarea, select, [tabindex], [contenteditable="true"]'
+    'a[href], button, input, textarea, select, iframe, [tabindex], [contenteditable="true"]'
   )).filter((element) => element.tabIndex >= 0 && !element.matches(':disabled') && canFocus(element));
 
 const Modal: React.FC<ModalProps> = ({
