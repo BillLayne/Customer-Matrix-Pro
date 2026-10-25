@@ -112,7 +112,7 @@ Windows workerd could not spawn with Wrangler 4.129.1 or 4.133.0 (`spawn UNKNOWN
 
 ```powershell
 npm run build
-node --experimental-strip-types scripts/preview-home-quote.mjs
+node scripts/preview-home-quote.mjs
 ```
 
 Preview starts only on loopback port 8788. The running preview started for this task has process ID 52308; check actual process/port before stopping anything. Other API 503s in preview are intentional; production contacts remain intact. The quote UI tests also deliberately trigger a synthetic 502. No unexpected frontend runtime exceptions were observed.

@@ -2,7 +2,30 @@
 
 > **⚠️ READ FIRST (October 1, 2026) — `main` moved.** `main` now includes the **Docs workspace** (Document Links, below). Branch `codex/image-library-safety` was cut from the OLD `main` and does not contain it. **Before deploying anything from that branch, merge `main` into it** — otherwise the deploy ships the working folder without Docs and silently removes the feature from Bill's dashboard. The local working folder was left checked out on `main` (= production) with a clean tree; `codex/image-library-safety` is intact and unmodified.
 
-**Last verified against production: September 17, 2026** (optional quote questions and integrated report follow-up). Implementation commit `c176396` is on GitHub `main` and deployed to Cloudflare Pages as `e4e1bc07-e01d-4d4e-8f37-d0f3f2419d51`.
+**Last verified against production: October 25, 2026** (search redesign deployed as `84ba757e` from commit `db62075`; the hardening batch below was committed afterwards and is deployed when the "Deployed" line in that section says so).
+
+## October 25: search redesign, review fixes and hardening
+
+**Search workspace redesign (commit `db62075`, LIVE):** the Search tab is Bill's "Find a customer." mockup — hero heading, 56 px search field with a navy "Search <destination>" button, six destination cards (`.finder-destination`, `aria-pressed` = navy fill + gold "Selected" pill; a gold check circle on phones), a recent-searches bar, an always-visible **Favorite companies** chip row (`renderPortalChip` in `SearchCard.tsx`; the collapsed Carrier Portals tiles and the `matrix-pro-show-carrier-gateway` preference are gone; "More carriers" toggles the rest) and a **Quick tools** row. All styles are plain `.finder-*` CSS in `index.css` (dark mode through the `--agency-*` variables; carrier logos keep a white plate). The Real Estate tools row and the Contact Numbers lookup render under the cards unchanged. Header: `BL` mark, no magnifier button; Settings dialog has a Command Palette row. **Agency Matrix mode is now `Alt + M`** (Ctrl+M was already claimed by the palette in `App.tsx`, so the old label was dead).
+
+**Full review + fixes (commits `359f93f` cleanup, `30082e7` backend, `2635693` frontend, `e497334` images, plus tests):**
+
+- *Dependencies:* `npm audit fix` took DOMPurify to 3.4.17 (critical advisory) and Vite to 6.4.5 (two high, dev server only). The three remaining moderates are build-time only inside Tailwind 3's PostCSS chain; they go away with the Tailwind 4 upgrade, which was deliberately left for a separate worktree together with Vite 8. `wrangler ^4.152` is a devDependency; `@google/genai`, `marked`, `@types/marked` removed; `@types/react` added.
+- *Scripts:* `npm run check` (lint + tests + build) and **`npm run deploy`** (check, then `wrangler pages deploy dist --project-name customer-matrix-pro --branch main`). `npm test` is plain `node --test` (Node ≥ 22.18, `engines` set). `npm run secrets:check` is what the pre-commit hook runs.
+- *Dead code removed* (everything is recoverable from tag **`pre-cleanup-2026-10-25`**, e.g. `git checkout pre-cleanup-2026-10-25 -- components/AiAssistant.tsx`): `AiAssistant`, `TaskMatrixCard`, `PdfParserCard`, `NeedsAnalysisCard`, `QuoteAssistantCard`, `Favorites`, `Header`, `PortalsCard`, `QuickActions`, `QuickSearchPopup`, `services/emailEngine.ts`, `geminiService.ts`, `emailDesignSystemV2.ts`, `poiTemplate.ts`, the dead `constants.ts` exports (`PROMPT_TEMPLATES`, `TEMPLATE_KEYS`, `CARRIER_RESOURCES`, `COLORS`, logos, system prompts) and dead `types.ts` interfaces. This supersedes the older "do not delete them" note in §Gmail Engineering: the Gmail Engineering rebuild, if it happens, starts from the tag or from `GMAIL_ENGINEERING_STUDIO_HANDOFF.md` (kept). **The hosted DL-123 generator and its launcher tile were removed** (Bill does not write non-owner / DL-123 business).
+- *TypeScript:* `tsconfig.json` has an explicit `include` list (junk in `output/` or `public/` can no longer break lint), `strict: true` and `noUnusedLocals: true`.
+- *Static assets:* `public/_routes.json` excludes `/assets/*` from Functions, so hashed bundles no longer run the auth middleware (they carry no data; everything else, including the hosted tools in `public/`, is still gated).
+- *Pre-commit hook:* `.githooks/pre-commit` runs `scripts/check-staged-secrets.mjs` (now also catches `DOC_LINK_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` values and any `granite-xxxx-NNNN` access code). Enable once per clone: `git config core.hooksPath .githooks`.
+- *Login limits (server/auth.ts):* wrong passwords are counted per client address (**10 per 15 minutes**) and overall (100) in D1 table `login_attempts` (**migration `0002_login_attempts.sql` — apply to production AND preview D1 with `npx wrangler d1 migrations apply agency-shared-contacts --remote` / `agency-shared-contacts-preview --remote`**; until it is applied the limiter uses per-isolate memory, which still works but forgets between isolates). A locked address gets a 429 sign-in page; each wrong password also costs a 300 ms pause. Recommended on top: a Cloudflare WAF rate-limit rule on `POST /login` (dashboard, no code).
+- *Sessions:* **24 hours** (was 7 days). The signing key now includes var **`SESSION_VERSION`** (`wrangler.jsonc`, both environments) — bump it in the Pages dashboard to sign every device out at once. Cookie names carry the `__Host-` prefix (`__Host-customer_matrix_pro_session`, `__Host-agency_staff_session`). Every existing cookie became invalid with this deploy, so one re-login per device is expected. `/logout` accepts GET and POST only.
+- *AI (server/ai.ts):* memo tasks send `thinkingBudget: 0` and research tasks 2048 so gemini-2.5-flash cannot spend the output budget on reasoning; `MAX_TOKENS` is reported as "too long" **before** the empty-text check; partial memo text comes back `{ text, truncated: true }` and `services/aiClient.ts` appends a visible "[AI output was cut off here…]" line; safety blocks return `AI_BLOCKED`.
+- *Doc links:* the `customer` field is only read when it is a string; a deleted or auto-cleaned document returns **410 `DOC_GONE`** from `/api/doc-links/file` instead of "please retry".
+- *Frontend:* `components/ErrorBoundary.tsx` wraps the app (Reload / "Reset saved settings" that clears this browser's `matrix-pro-*`, `quicklink-*`, `quick-image-*`, `theme` keys); `useLocalStorage(key, initial, isValid?)` validates stored shapes (theme, search log, pinned tools, launcher version, search history) and dispatches `local-storage-error` on failed writes so the storage-full toast fires; `DocEmailDialog` aborts the in-flight draft when closed or switched to another document and times the file fetch out at 60 s; the command palette body mounts only while open (no more `/api/contacts` polling for a closed palette); the property report prints from its sandboxed preview frame (no scripts) instead of `document.write` into a same-origin popup; live home-quote research runs through `normalizeResearch` like imports; the modal focus trap includes iframes.
+- *Images:* the last 20 imgur images (portal logos in `constants.ts`, the photo guide composer set, receipt-maker carrier logos, NC Grange calculator logo) now load from img.billlayneinsurance.com (keys `im-<imgur hash>-*`, label `cmp-imgur-migration`). Zero imgur references remain outside the markdown archives.
+- **Staff dashboard is now out of sync:** `Playground\Agency-Staff-Dashboard` carries byte-identical copies of `server/auth.ts`, `server/docLinks.ts` and the Docs components from before this batch. Copy the CMP versions over (and apply migration 0002 there too) before its next deploy, or the two dashboards will have different session rules.
+
+**Deployed:** not yet — this batch is committed on `main` and awaits Bill's go-ahead (`npm run deploy`, then apply migration 0002, then one re-login per device).
+
 
 ## October 1: NC Grange portal link
 
@@ -19,7 +42,7 @@ Bill asked for the SMS Command Center's "upload a PDF/photo → branded link" ab
 - **Production-only secret, on purpose:** `DOC_LINK_TOKEN` is set on the Pages **production** environment and NOT on preview, so preview deployments can never write to the real document store — they show "Document links are not set up on this dashboard yet". Optional var `DOC_LINK_API_BASE` (default the Worker's workers.dev URL, used server-to-server so the zone's bot rules never apply).
 - **Library storage (Worker side):** each short link also writes `doclib/<inverted-timestamp>-<id>` with the row in KV *metadata*, so one `list()` returns a page newest-first. The 114 pre-existing SMS links were backfilled on 2026-10-01; SMS uploads are indexed automatically going forward.
 - **Tests:** `tests/doc-links.test.mjs` (13 tests: session/cross-site/fail-closed gating, token never in responses, hostile/look-alike links dropped, field allowlist, upload validation, upstream error mapping, receipt normalization, the headline mirror, file-name building). Full suite 36/36, TypeScript, build (47/47 after the Gmail-draft work, with `tests/doc-email.test.mjs`).
-- **Local preview:** `npm run build` then `node --experimental-strip-types scripts/preview-doc-links.mjs` → open `http://localhost:8791/__preview-login`. Real auth + real proxy, **fake in-memory document service** and synthetic credentials — nothing reaches production. Checked at 375 px (no horizontal overflow, 4-up bottom bar) and in dark mode.
+- **Local preview:** `npm run build` then `node scripts/preview-doc-links.mjs` → open `http://localhost:8791/__preview-login`. Real auth + real proxy, **fake in-memory document service** and synthetic credentials — nothing reaches production. Checked at 375 px (no horizontal overflow, 4-up bottom bar) and in dark mode.
 - **Text-message preview (2026-10-01, follow-up):** Create Link shows "When texted, their phone shows" — the SAME picture every SMS Command Center document link uses (the Worker's `AGENCY_PREVIEW_IMAGE` og:image; Bill asked for consistency, so per-document preview cards were deliberately NOT built). `public/doc-link-text-preview.jpg` is only a local display copy (no imgur reference in this repo); replace it if the Worker image ever changes. The customer page itself gained a clear **Download** button + phone/computer instructions (SMS repo `03d7714`).
 - **Sources:** the proxy tags uploads server-side as `command-center`, or `staff-dashboard` when `APP_ID` is `agency-staff-dashboard` (the same `server/docLinks.ts` runs in both dashboards). Library filters: All · Command Center · Staff Dashboard · Sent by SMS.
 - **Delete (2026-10-01, Command Center ONLY):** Library rows have **Delete** (in-page two-step confirm, Cancel focused, warns if the customer opened it in the last 30 days) plus **Select to delete** → "Select all N shown" → bulk delete (4 at a time; failures stay selected for retry), and age filters (3 / 6 / 12 months) for periodic cleanup. Deletion is permanent: the Worker removes the file, receipts, preview and library entry, then the link; customers who open a deleted link get a branded "no longer available — call us" page. **Permission is server-side:** `canDeleteDocLinks()` in `server/docLinks.ts` is false when `APP_ID` is `agency-staff-dashboard`, so the staff proxy returns 403 and the UI (which reads `canDelete` from the list response) hides the controls.
@@ -141,9 +164,7 @@ The workspace sections stay mounted but hidden when inactive, preserving in-prog
 
 ### Gmail Engineering is gone from the UI
 
-Removed in `9b1a351` because it was broken; Bill plans to rebuild it. **The files are deliberately still in the repo — do not delete them:** `components/AiAssistant.tsx`, `services/geminiService.ts`, `services/emailEngine.ts`, `services/emailDesignSystemV2.ts`, `services/poiTemplate.ts`, and `PROMPT_TEMPLATES` / `TEMPLATE_KEYS` / `TemplateContract` in `constants.ts`. `GMAIL_ENGINEERING_STUDIO_HANDOFF.md` is an archive of how that system worked.
-
-`AiAssistant.tsx` is imported nowhere, but `tsc --noEmit` still type-checks it, so it must keep compiling.
+Removed in `9b1a351` because it was broken; Bill plans to rebuild it. The dormant files (`components/AiAssistant.tsx`, `services/geminiService.ts`, `services/emailEngine.ts`, `services/emailDesignSystemV2.ts`, `services/poiTemplate.ts`, `PROMPT_TEMPLATES` / `TEMPLATE_KEYS` / `TemplateContract` in `constants.ts`) were **deleted in the October 25 cleanup**; recover them from tag `pre-cleanup-2026-10-25`. `GMAIL_ENGINEERING_STUDIO_HANDOFF.md` is kept as the archive of how that system worked.
 
 ---
 
@@ -187,7 +208,7 @@ npx wrangler pages deploy dist --project-name customer-matrix-pro --branch main
 
 A Cloudflare Pages Function password-gates the whole site.
 
-- Cookie `customer_matrix_pro_session`, HMAC-signed, audience-scoped, one week, HttpOnly + Secure + SameSite=Lax. Staff uses `agency_staff_session`.
+- Cookie `__Host-customer_matrix_pro_session`, HMAC-signed (secret + password + `SESSION_VERSION`), audience-scoped, **24 hours**, HttpOnly + Secure + SameSite=Lax. Staff uses `__Host-agency_staff_session`. Wrong passwords are rate-limited (see October 25).
 - Routes: `POST /login`, `/logout`
 - Password comes from `SITE_PASSWORD`; `SESSION_SECRET` must also be configured. Missing credentials fail closed. The old fixed `approved` cookie and client-side staff gate are no longer accepted.
 - Old publicly embedded passwords were replaced. Private login instructions are outside both public repositories at `../Agency-Staff-Contact-Backups/command-center-access-2026-09-07.txt`. Do not copy values into source or documentation.
@@ -299,7 +320,7 @@ On next load those ids are pinned once and badged **NEW**; unpinning afterwards 
 
 Entries may carry both a Windows `target` and a `hostedTarget`. On the deployed site the hosted URL wins; locally, `targetType: 'local'` opens a `file:///` URL. A local-only tool with no `hostedTarget` shows a warning toast on the live site instead of a broken link.
 
-Tools hosted inside this repo's `public/`: `/html-studio.html`, `/nc-grange-down-payment-calculator.html`, `/photo-guide-composer.html`, `/dl123-generator/index.html`. **Real deployed utilities, not examples** — edit them here.
+Tools hosted inside this repo's `public/`: `/html-studio.html`, `/nc-grange-down-payment-calculator.html`, `/photo-guide-composer.html`, `/receipt-maker.html`. **Real deployed utilities, not examples** — edit them here. (The DL-123 generator was removed on 2026-10-25.)
 
 ---
 
@@ -364,7 +385,7 @@ Never put real secret values in this file, in code, in chat, or in screenshots.
 
 - **`.env.local`** is no longer a source of frontend AI credentials.
 - **`.dev.vars`** (gitignored): local `SITE_PASSWORD`, `SESSION_SECRET`, `GEMINI_API_KEY`, deployment `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
-- **Cloudflare Pages secrets** in both production/preview: `SITE_PASSWORD`, `SESSION_SECRET`, `GEMINI_API_KEY`. **Production only:** `DOC_LINK_TOKEN` (must equal the SMS Worker's `DOC_LINK_TOKEN` secret; rotate both together with Git Bash `printf '%s' "$T" | npx wrangler … secret put DOC_LINK_TOKEN` — PowerShell pipes add a BOM that silently breaks secrets). Nonsecret `APP_ID`, `APP_NAME`, `GEMINI_MODEL` and D1 bindings are in `wrangler.jsonc`.
+- **Cloudflare Pages secrets** in both production/preview: `SITE_PASSWORD`, `SESSION_SECRET`, `GEMINI_API_KEY`. **Production only:** `DOC_LINK_TOKEN` (must equal the SMS Worker's `DOC_LINK_TOKEN` secret; rotate both together with Git Bash `printf '%s' "$T" | npx wrangler … secret put DOC_LINK_TOKEN` — PowerShell pipes add a BOM that silently breaks secrets). Nonsecret `APP_ID`, `APP_NAME`, `GEMINI_MODEL`, `SESSION_VERSION` and D1 bindings are in `wrangler.jsonc`.
 
 `vite.config.ts` defines empty legacy key values only so dormant components still compile. It must NEVER inject a real key into browser JavaScript. Windows user-level keys no longer affect the production browser bundle.
 
@@ -457,7 +478,7 @@ public/                             hosted tools + carrier logo images
 >
 > **Critical rules:**
 > 1. Another AI may be working in this repo — run `git status --short` before editing AND before deploying; if it's dirty and not yours, ask Bill. Commit your work before handing back.
-> 2. `npm run lint && npm run build`, then `npx wrangler pages deploy dist --project-name customer-matrix-pro`. **A push is NOT a deploy**, and a deploy ships the working folder, not the last commit.
+> 2. `npm run deploy` (lint + tests + build, then the Pages deploy with the repo's own wrangler). **A push is NOT a deploy**, and a deploy ships the working folder, not the last commit.
 > 3. `curl` on the live site returns **401 + a login page** — that's the gate working, not a failed deploy.
 > 4. Adding a launcher tool: append to `PROGRAMS` in `components/ProgramLauncher.tsx`, then bump `LAUNCHER_VERSION` (read its current value first) and list the new id in `NEW_IN_VERSION` — otherwise it never appears for Bill, because his browser has a saved pin list.
 > 5. Favorites live in the launcher's Pinned row only. Don't add a second shortcut list — the old Quick Links chip row was deliberately deleted.
