@@ -6,11 +6,11 @@ import type { Portal, SearchMode } from './types';
 ============================================================================ */
 export const DEFAULT_INSURANCE_PORTALS: Portal[] = [
   { id:'agency-matrix', name:'Agency Matrix', url:'https://agents.agencymatrix.com/#/', icon:'fa-solid fa-building', description:'Primary agent portal', color: '#1e293b' },
-  { id:'nationwide', name:'Nationwide', url:'https://agentcenter.nationwide.com/home', icon:'fa-solid fa-flag-usa', description:'Agent center portal', image: 'https://i.imgur.com/Mv5V7tV.png', color: '#005596' },
-  { id:'national-general', name:'National General', url:'https://natgenagency.com/MainMenu.aspx', icon:'fa-solid fa-globe', description:'Agency portal', image: 'https://i.imgur.com/HF8oPAF.png', color: '#002D72' },
-  { id:'progressive', name:'Progressive', url:'https://www.foragentsonly.com/home/?Welcome=400', icon:'fa-solid fa-chart-line', description:'For agents only portal', image: 'https://i.imgur.com/7N1vfo0.png', color: '#00A1E0' },
-  { id:'foremost', name:'Foremost', url:'https://www.foremostagent.com/ia/portal/login', icon:'fa-solid fa-house-user', description:'Agent portal login', image: 'https://i.imgur.com/rHIo4r5.jpg', color: '#F58220' },
-  { id:'nc-grange', name:'NC Grange', url:'https://ncgmweb.com/login', icon:'fa-solid fa-tractor', description:'NC Grange portal', image: 'https://i.imgur.com/Fesnkng.png', color: '#2E7D32' }
+  { id:'nationwide', name:'Nationwide', url:'https://agentcenter.nationwide.com/home', icon:'fa-solid fa-flag-usa', description:'Agent center portal', image: 'https://img.billlayneinsurance.com/i/2026/10/im-mv5v7tv-rnmj3q.png', color: '#005596' },
+  { id:'national-general', name:'National General', url:'https://natgenagency.com/MainMenu.aspx', icon:'fa-solid fa-globe', description:'Agency portal', image: 'https://img.billlayneinsurance.com/i/2026/08/im-hf8opaf-c8yp48.png', color: '#002D72' },
+  { id:'progressive', name:'Progressive', url:'https://www.foragentsonly.com/home/?Welcome=400', icon:'fa-solid fa-chart-line', description:'For agents only portal', image: 'https://img.billlayneinsurance.com/i/2026/08/im-7n1vfo0-qb328g.png', color: '#00A1E0' },
+  { id:'foremost', name:'Foremost', url:'https://www.foremostagent.com/ia/portal/login', icon:'fa-solid fa-house-user', description:'Agent portal login', image: 'https://img.billlayneinsurance.com/i/2026/08/im-rhio4r5-5t7drm.jpg', color: '#F58220' },
+  { id:'nc-grange', name:'NC Grange', url:'https://ncgmweb.com/login', icon:'fa-solid fa-tractor', description:'NC Grange portal', image: 'https://img.billlayneinsurance.com/i/2026/08/im-fesnkng-f7nhhd.png', color: '#2E7D32' }
 ];
 
 /**
