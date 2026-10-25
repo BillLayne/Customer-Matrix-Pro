@@ -137,7 +137,7 @@ export default function App() {
       <header className="shell-header">
         <div className="shell-header-inner">
           <div className="shell-brand">
-            <img src="/favicon.svg" width="32" height="32" alt="" />
+            <span className="shell-mark" aria-hidden="true">BL</span>
             <div>
               <h1>Agency Command Center</h1>
               <p>Bill Layne Insurance</p>
@@ -145,9 +145,6 @@ export default function App() {
           </div>
           {navigation(false)}
           <div className="shell-actions">
-            <button type="button" className="shell-icon-button" onClick={() => setShowPalette(true)} aria-label="Open command palette" title="Command palette (Ctrl+K)">
-              <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
-            </button>
             <button type="button" className="shell-icon-button" onClick={() => setShowSettings(true)} aria-label="Settings and help" title="Settings and help">
               <i className="fa-solid fa-gear" aria-hidden="true" />
             </button>
@@ -177,6 +174,11 @@ export default function App() {
           <label htmlFor="dark-appearance">Dark appearance</label>
           <input id="dark-appearance" type="checkbox" role="switch" checked={theme === 'dark'} onChange={toggleTheme} />
         </div>
+        <button type="button" className="settings-help" onClick={() => { setShowSettings(false); setShowPalette(true); }}>
+          <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
+          Command Palette
+          <kbd>Ctrl + K</kbd>
+        </button>
         <button type="button" className="settings-help" onClick={() => setShowHelp(true)}>
           <i className="fa-solid fa-circle-question" aria-hidden="true" />
           Keyboard Shortcuts

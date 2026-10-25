@@ -106,7 +106,6 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [quoteHasDraft, setQuoteHasDraft] = useState(false);
   const [searchHistory, setSearchHistory] = useLocalStorage<SearchEntry[]>('matrix-pro-search-history', []);
-  const [showCarrierGateway, setShowCarrierGateway] = useLocalStorage<boolean>('matrix-pro-show-carrier-gateway', false);
   const [showMoreCarriers, setShowMoreCarriers] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [isGisModalOpen, setIsGisModalOpen] = useState(false);
@@ -391,56 +390,29 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
     }
   };
 
-  // Shared by the main portal row and the "More Carriers" panel so both stay identical.
-  const renderPortalTile = (portal: Portal) => (
-    <a
-      key={portal.id}
-      href={portal.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      title={portal.description}
-      className="group/portal relative flex min-h-20 flex-col items-center justify-center overflow-hidden rounded-xl border border-transparent bg-white/5 p-3 text-center backdrop-blur-md transition-all duration-300 hover:shadow-glow"
-      style={{
-        backgroundColor: portal.color ? `${portal.color}1A` : undefined,
-        borderColor: portal.color ? `${portal.color}33` : undefined,
-      }}
-    >
-      <div
-        className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover/portal:opacity-100"
-        style={{ backgroundColor: portal.color }}
-      ></div>
-      <div className="relative z-10 mb-2 flex h-10 w-full items-center justify-center transition-transform duration-300 group-hover/portal:scale-110">
-        {/* Dark mode: carrier artwork is dark ink, so it needs a light plate to stay legible.
-            The plate drops away on hover, where the tile fills with the carrier colour. */}
-        <span className="flex h-full max-w-full items-center justify-center rounded-lg px-1.5 transition-colors duration-300 dark:bg-white/95 dark:group-hover/portal:bg-transparent">
-          {(LOCAL_LOGOS[portal.id] || portal.image) ? (
-            <img
-              src={LOCAL_LOGOS[portal.id] || portal.image}
-              alt={portal.name}
-              className="h-full w-auto object-contain transition-all duration-300 group-hover/portal:brightness-0 group-hover/portal:invert"
-            />
-          ) : (
-            <i
-              className={`${portal.icon} text-xl text-[var(--portal-color)] transition-colors duration-300 group-hover/portal:text-white`}
-              style={{ '--portal-color': portal.color || '#94a3b8' } as React.CSSProperties}
-            ></i>
-          )}
-        </span>
-      </div>
-      <span className="relative z-10 text-[9px] font-black uppercase leading-tight tracking-widest text-slate-600 transition-colors duration-300 group-hover/portal:text-white dark:text-slate-400">
-        {portal.name}
+  // Shared by the Favorite companies row and the More carriers panel so both stay identical.
+  const renderPortalChip = (portal: Portal) => (
+    <a key={portal.id} href={portal.url} target="_blank" rel="noopener noreferrer" title={portal.description} className="finder-chip finder-portal">
+      {/* Dark mode: carrier artwork is dark ink, so the logo sits on a light plate. */}
+      <span className="finder-portal-logo">
+        {(LOCAL_LOGOS[portal.id] || portal.image)
+          ? <img src={LOCAL_LOGOS[portal.id] || portal.image} alt="" />
+          : <i className={portal.icon} style={{ color: portal.color || undefined }} aria-hidden="true" />}
       </span>
+      <span className="finder-chip-label">{portal.name}</span>
+      <i className="fa-solid fa-arrow-up-right-from-square finder-chip-ext" aria-hidden="true" />
     </a>
   );
 
-  const modeButtons: { mode: SearchMode, icon: string, label: string, shortcut: string }[] = [
-    { mode: 'agency', icon: 'fa-shield-halved', label: 'Agency Matrix', shortcut: 'Ctrl + M' },
-    { mode: 'web', icon: 'fa-brands fa-google', label: 'Web Search', shortcut: 'Alt + W' },
-    { mode: 'realestate', icon: 'fa-solid fa-house', label: 'Real Estate', shortcut: 'Alt + H' },
-    { mode: 'people', icon: 'fa-solid fa-user', label: 'People', shortcut: 'Alt + P' },
-    { mode: 'onedrive', icon: 'fa-brands fa-google-drive', label: 'Client Folder', shortcut: 'Alt + F' },
-    { mode: 'contacts', icon: 'fa-solid fa-address-book', label: 'Contact Numbers', shortcut: 'Alt + C' },
+  const modeButtons: { mode: SearchMode, icon: string, label: string, shortcut: string, description: string, action: string }[] = [
+    { mode: 'agency', icon: 'fa-solid fa-shield-halved', label: 'Agency Matrix', shortcut: 'Ctrl + M', description: 'Find customer accounts', action: 'Search Matrix' },
+    { mode: 'web', icon: 'fa-solid fa-globe', label: 'Web Search', shortcut: 'Alt + W', description: 'Search the web', action: 'Search Web' },
+    { mode: 'realestate', icon: 'fa-solid fa-house', label: 'Real Estate', shortcut: 'Alt + H', description: 'Look up property information', action: 'Search Property' },
+    { mode: 'people', icon: 'fa-solid fa-user', label: 'People', shortcut: 'Alt + P', description: 'Find people and addresses', action: 'Search People' },
+    { mode: 'onedrive', icon: 'fa-solid fa-folder-open', label: 'Client Folder', shortcut: 'Alt + F', description: 'Open customer documents', action: 'Search Folder' },
+    { mode: 'contacts', icon: 'fa-solid fa-phone', label: 'Contact Numbers', shortcut: 'Alt + C', description: 'Find phone numbers', action: 'Find Contacts' },
   ];
+  const currentMode = modeButtons.find(button => button.mode === mode) ?? modeButtons[0];
 
   const buttonClass = 'inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/10';
   const primaryClass = buttonClass + ' bg-[#003f87] !text-white hover:!bg-[#0076d3] dark:hover:!bg-[#0076d3]';
@@ -453,89 +425,103 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
   </div>;
   return (
     <>
-      <section aria-label="Unified Search" className="min-w-0 border-b border-slate-200 bg-white px-4 py-4 dark:border-white/10 dark:bg-white/5 sm:px-5">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="flex items-center gap-2 font-outfit text-lg font-bold text-slate-900 dark:text-white">
-            <i className="fa-solid fa-magnifying-glass text-[#0076d3]" aria-hidden="true" />Unified Search
-          </h2>
-          <span className="text-xs text-slate-500 dark:text-slate-400">{searchCount} searches today</span>
-        </div>
-        <div className="mb-3 sm:hidden">
-          <label htmlFor="search-mode" className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">Search in</label>
-          <select id="search-mode" value={mode} onChange={event => setMode(event.target.value as SearchMode)} className={fieldClass}>
-            {modeButtons.map(button => <option key={button.mode} value={button.mode}>{button.label}</option>)}
-          </select>
-        </div>
-        <div className="mb-3 hidden flex-wrap gap-1.5 sm:flex" role="group" aria-label="Search mode">
-          {modeButtons.map(button => <button key={button.mode} type="button" aria-pressed={mode === button.mode}
-            title={button.label + ' (' + button.shortcut + ')'} onClick={() => { setMode(button.mode); inputRef.current?.focus(); }}
-            className={mode === button.mode ? primaryClass : buttonClass}>
-            <i className={'fa-solid ' + button.icon} aria-hidden="true" />{button.label}
-          </button>)}
-        </div>
-        <label htmlFor="unified-search-query" className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-          {mode === 'realestate' ? 'Property address' : mode === 'contacts' ? 'Company name' : mode === 'onedrive' ? 'Client name' : 'Name, address, or search term'}
-        </label>
-        <form onSubmit={event => { event.preventDefault(); handleSearch(); }} className="flex min-w-0 gap-2">
-          <input ref={inputRef} id="unified-search-query" type="search" value={query}
-            onChange={event => { setQuery(event.target.value); setSearchError(''); }}
-            placeholder={MODE_META[mode].placeholder} className={fieldClass + ' flex-1'}
-            aria-invalid={Boolean(searchError)} aria-describedby={searchError ? 'search-error' : undefined} />
-          <button type="submit" aria-label={mode === 'contacts' ? 'Find company contacts' : 'Search ' + modeButtons.find(button => button.mode === mode)?.label} className={primaryClass + ' shrink-0'} disabled={!query.trim()}>
-            <i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><span className="hidden min-[380px]:inline">{mode === 'contacts' ? 'Find' : 'Search'}</span>
-          </button>
-        </form>
-        {searchError && <p id="search-error" role="alert" className="mt-2 text-sm text-rose-700 dark:text-rose-300">{searchError}</p>}
-        {mode === 'contacts' && <ContactLookup query={query} onQueryChange={setQuery} addToast={addToast} />}
-        {historyEntries.length > 0 && <div className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5" aria-label="Recent searches">
-          <span className="text-xs text-slate-500">Recent</span>
-          {historyEntries.map((entry, index) => <button key={index} onClick={() => runSearch(entry.query, entry.mode || mode)}
-            title={(modeButtons.find(button => button.mode === (entry.mode || mode))?.label || '') + ': ' + entry.query}
-            className={buttonClass + ' max-w-full !py-1'}>
-            <span className="max-w-44 truncate">{entry.query}</span>
-            {entry.mode && <i className={'fa-solid ' + modeButtons.find(button => button.mode === entry.mode)?.icon} aria-hidden="true" />}
-          </button>)}
-          <button className={buttonClass} title="Clear search history" aria-label="Clear search history" onClick={() => setSearchHistory([])}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
-        </div>}
-        <div className="mt-3 flex flex-wrap gap-1.5 border-t border-slate-100 pt-3 dark:border-white/10">
-          <button onClick={handleNewFolder} className={buttonClass}><i className="fa-brands fa-google-drive" aria-hidden="true" />Cloud Folder</button>
-          <button onClick={handleNotesOpen} className={buttonClass}><i className="fa-solid fa-note-sticky" aria-hidden="true" />{hasDraft ? 'Resume Memo' : 'Audit Memo'}</button>
-          {[
-            { label: 'Matrix Home', href: 'https://agents.agencymatrix.com/#/', icon: 'fa-house-chimney-window' },
-            { label: 'New Prospect', href: 'https://agents.agencymatrix.com/customerEdit.php?id=0', icon: 'fa-user-plus' },
-            { label: 'Reports', href: 'https://agents.agencymatrix.com/#/reports', icon: 'fa-chart-column' },
-          ].map(link => <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer" className={buttonClass}><i className={'fa-solid ' + link.icon} aria-hidden="true" />{link.label}</a>)}
-        </div>
-        {hasDraft && (!isNotesModalOpen || isNotesMinimized) && <p className="mt-2 break-words text-xs text-slate-500 dark:text-slate-400" role="status">Memo draft retained{customerName ? ': ' + customerName : ''}.</p>}
-        {storageError && <p role="alert" className="mt-2 text-sm text-rose-700 dark:text-rose-300">{storageError}</p>}
-
-        {mode === 'realestate' && <div className="mt-3 border-t border-slate-100 pt-3 dark:border-white/10">
-          <div className="flex flex-wrap gap-2">
-            <button className={buttonClass} onClick={handleNcInsuranceToolsOpen} disabled={!query.trim()}><i className="fa-solid fa-house" aria-hidden="true" />Open NC Tools</button>
-            <button className={primaryClass} aria-label="Quote Information" onClick={() => setQuoteOpen(true)} disabled={!query.trim() && !quoteHasDraft} title={quoteHasDraft ? 'Open or resume home quote information' : 'Research this address and collect prospect answers'}><i className="fa-solid fa-clipboard-question" aria-hidden="true" />Quote Information{quoteHasDraft && <span className="text-xs font-normal">(draft)</span>}</button>
-            <button className={buttonClass} onClick={handleGenerateReport} disabled={!query.trim() || Boolean(busyTask)}><i className="fa-solid fa-file-lines" aria-hidden="true" />Property Report</button>
-            <button className={buttonClass} onClick={handleGisSearch} disabled={!query.trim() || Boolean(busyTask)}><i className="fa-solid fa-map" aria-hidden="true" />County Map</button>
-            <button className={buttonClass} onClick={() => propertyFileInputRef.current?.click()} disabled={Boolean(busyTask)} title="Attach property evidence (10 MiB total)"><i className="fa-solid fa-paperclip" aria-hidden="true" />Attach</button>
-            <input ref={propertyFileInputRef} type="file" multiple className="hidden" aria-label="Property evidence" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif" onChange={handlePropertyFileChange} />
-          </div>
-          {propertyFiles.length > 0 && <ul className="mt-2 space-y-1">
-            {propertyFiles.map((file, index) => <li key={index} className="flex min-w-0 items-center gap-2 text-xs text-slate-600 dark:text-slate-300"><span className="min-w-0 flex-1 truncate">{file.name}</span><button className={buttonClass} disabled={Boolean(busyTask)} aria-label={'Remove ' + file.name} onClick={() => removePropertyFile(index)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button></li>)}
-          </ul>}
-          {!isReportModalOpen && !isGisModalOpen && propertyFeedback}
-        </div>}
-        <div className="mt-3 border-t border-slate-100 pt-3 dark:border-white/10">
-          <button type="button" onClick={() => { setShowMoreCarriers(false); setShowCarrierGateway(prev => !prev); }}
-            className={buttonClass + ' w-full !justify-between'} aria-label="Carrier Portals" aria-expanded={showCarrierGateway} aria-controls="carrier-portals">
-            <span><i className="fa-solid fa-building-shield mr-2" aria-hidden="true" />Carrier Portals</span><i className={'fa-solid ' + (showCarrierGateway ? 'fa-chevron-up' : 'fa-chevron-down')} aria-hidden="true" />
-          </button>
-          {showCarrierGateway && <div id="carrier-portals">
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-              {DEFAULT_INSURANCE_PORTALS.map(renderPortalTile)}
-              <button className={buttonClass} onClick={() => setShowMoreCarriers(prev => !prev)} aria-expanded={showMoreCarriers} aria-controls="more-carriers-panel"><i className="fa-solid fa-ellipsis" aria-hidden="true" />More Carriers</button>
+      <section aria-label="Unified Search" className="finder">
+        <div className="finder-hero">
+          <div className="finder-heading">
+            <div>
+              <h2>Find a customer.</h2>
+              <p>One search. The right destination.</p>
             </div>
-            {showMoreCarriers && <div id="more-carriers-panel" className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">{MORE_CARRIER_PORTALS.map(renderPortalTile)}</div>}
+            <span className="finder-count">{searchCount} searches today</span>
+          </div>
+          <label htmlFor="unified-search-query" className="sr-only">
+            {mode === 'realestate' ? 'Property address' : mode === 'contacts' ? 'Company name' : mode === 'onedrive' ? 'Client name' : 'Name, address, or search term'}
+          </label>
+          <form onSubmit={event => { event.preventDefault(); handleSearch(); }} className="finder-form">
+            <div className="finder-field">
+              <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
+              <input ref={inputRef} id="unified-search-query" type="search" value={query} data-unified-search
+                onChange={event => { setQuery(event.target.value); setSearchError(''); }}
+                placeholder={MODE_META[mode].placeholder}
+                aria-invalid={Boolean(searchError)} aria-describedby={searchError ? 'search-error' : undefined} />
+            </div>
+            <button type="submit" className="finder-submit" aria-label={mode === 'contacts' ? 'Find company contacts' : 'Search ' + currentMode.label} disabled={!query.trim()}>
+              <span>{currentMode.action}</span><i className="fa-solid fa-arrow-right" aria-hidden="true" />
+            </button>
+          </form>
+          {searchError && <p id="search-error" role="alert" className="finder-error">{searchError}</p>}
+
+          <p className="finder-label" id="finder-destinations-label">Choose where to search</p>
+          <div className="finder-destinations" role="group" aria-labelledby="finder-destinations-label">
+            {modeButtons.map(button => <button key={button.mode} type="button" aria-pressed={mode === button.mode}
+              title={button.label + ' (' + button.shortcut + ')'} onClick={() => { setMode(button.mode); inputRef.current?.focus(); }}
+              className="finder-destination">
+              <span className="finder-destination-icon"><i className={button.icon} aria-hidden="true" /></span>
+              <span className="finder-destination-copy">
+                <span className="finder-destination-title">{button.label}</span>
+                <span className="finder-destination-desc">{button.description}</span>
+              </span>
+              {mode === button.mode
+                ? <span className="finder-selected">Selected</span>
+                : <i className="fa-solid fa-arrow-right finder-destination-arrow" aria-hidden="true" />}
+            </button>)}
+          </div>
+          <p className="finder-note"><i className="fa-solid fa-circle-info" aria-hidden="true" />Your search term stays in place when you switch destinations.</p>
+
+          {mode === 'contacts' && <div className="finder-context"><ContactLookup query={query} onQueryChange={setQuery} addToast={addToast} /></div>}
+          {mode === 'realestate' && <div className="finder-context">
+            <div className="finder-chips">
+              <button type="button" className="finder-chip" onClick={handleNcInsuranceToolsOpen} disabled={!query.trim()}><i className="fa-solid fa-house finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Open NC Tools</span></button>
+              <button type="button" className="finder-chip finder-chip-primary" aria-label="Quote Information" onClick={() => setQuoteOpen(true)} disabled={!query.trim() && !quoteHasDraft} title={quoteHasDraft ? 'Open or resume home quote information' : 'Research this address and collect prospect answers'}><i className="fa-solid fa-clipboard-question finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Quote Information{quoteHasDraft && ' (draft)'}</span></button>
+              <button type="button" className="finder-chip" onClick={handleGenerateReport} disabled={!query.trim() || Boolean(busyTask)}><i className="fa-solid fa-file-lines finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Property Report</span></button>
+              <button type="button" className="finder-chip" onClick={handleGisSearch} disabled={!query.trim() || Boolean(busyTask)}><i className="fa-solid fa-map finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">County Map</span></button>
+              <button type="button" className="finder-chip" onClick={() => propertyFileInputRef.current?.click()} disabled={Boolean(busyTask)} title="Attach property evidence (10 MiB total)"><i className="fa-solid fa-paperclip finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Attach</span></button>
+              <input ref={propertyFileInputRef} type="file" multiple className="hidden" aria-label="Property evidence" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif" onChange={handlePropertyFileChange} />
+            </div>
+            {propertyFiles.length > 0 && <ul className="mt-2 space-y-1">
+              {propertyFiles.map((file, index) => <li key={index} className="flex min-w-0 items-center gap-2 text-xs text-slate-600 dark:text-slate-300"><span className="min-w-0 flex-1 truncate">{file.name}</span><button className={buttonClass} disabled={Boolean(busyTask)} aria-label={'Remove ' + file.name} onClick={() => removePropertyFile(index)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button></li>)}
+            </ul>}
+            {!isReportModalOpen && !isGisModalOpen && propertyFeedback}
+          </div>}
+
+          {historyEntries.length > 0 && <div className="finder-recent" aria-label="Recent searches">
+            <span className="finder-recent-title"><i className="fa-regular fa-clock" aria-hidden="true" />Recent searches</span>
+            <div className="finder-recent-chips">
+              {historyEntries.map((entry, index) => <button key={index} type="button" className="finder-chip" onClick={() => runSearch(entry.query, entry.mode || mode)}
+                title={(modeButtons.find(button => button.mode === (entry.mode || mode))?.label || '') + ': ' + entry.query}>
+                <i className="fa-solid fa-magnifying-glass finder-chip-icon" aria-hidden="true" />
+                <span className="finder-chip-label">{entry.query}</span>
+              </button>)}
+            </div>
+            <button type="button" className="finder-clear" onClick={() => setSearchHistory([])} title="Clear search history"><i className="fa-regular fa-trash-can" aria-hidden="true" />Clear</button>
           </div>}
         </div>
+
+        <div className="finder-panel">
+          <div className="finder-panel-head">
+            <h3>Favorite companies</h3>
+            <button type="button" className="finder-panel-link" onClick={() => setShowMoreCarriers(prev => !prev)} aria-expanded={showMoreCarriers} aria-controls="more-carriers-panel">
+              More carriers<i className={'fa-solid ' + (showMoreCarriers ? 'fa-chevron-up' : 'fa-chevron-down')} aria-hidden="true" />
+            </button>
+          </div>
+          <div className="finder-chips finder-chips-grid">{DEFAULT_INSURANCE_PORTALS.map(renderPortalChip)}</div>
+          {showMoreCarriers && <div id="more-carriers-panel" className="finder-chips finder-chips-grid finder-chips-more">{MORE_CARRIER_PORTALS.map(renderPortalChip)}</div>}
+        </div>
+
+        <div className="finder-panel finder-panel-row">
+          <h3>Quick tools</h3>
+          <div className="finder-chips">
+            <button type="button" className="finder-chip" onClick={handleNewFolder}><i className="fa-solid fa-cloud finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Cloud Folder</span></button>
+            <button type="button" className="finder-chip" onClick={handleNotesOpen}><i className="fa-solid fa-file-lines finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">{hasDraft ? 'Resume Memo' : 'Audit Memo'}</span></button>
+            {[
+              { label: 'Matrix Home', href: 'https://agents.agencymatrix.com/#/', icon: 'fa-house' },
+              { label: 'New Prospect', href: 'https://agents.agencymatrix.com/customerEdit.php?id=0', icon: 'fa-user-plus' },
+              { label: 'Reports', href: 'https://agents.agencymatrix.com/#/reports', icon: 'fa-chart-column' },
+            ].map(link => <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer" className="finder-chip"><i className={'fa-solid ' + link.icon + ' finder-chip-icon'} aria-hidden="true" /><span className="finder-chip-label">{link.label}</span></a>)}
+          </div>
+        </div>
+        {hasDraft && (!isNotesModalOpen || isNotesMinimized) && <p className="finder-status" role="status">Memo draft retained{customerName ? ': ' + customerName : ''}.</p>}
+        {storageError && <p role="alert" className="finder-error">{storageError}</p>}
       </section>
 
       <HomeQuoteWorkspace isOpen={active && quoteOpen} address={query} onClose={() => setQuoteOpen(false)} onDraftChange={setQuoteHasDraft} />
