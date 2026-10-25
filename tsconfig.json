@@ -24,10 +24,26 @@
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noFallthroughCasesInSwitch": true
   },
   "exclude": [
     "dist",
     "node_modules"
+  ],
+  "include": [
+    "*.ts",
+    "*.tsx",
+    "components",
+    "hooks",
+    "services",
+    "shared",
+    "server",
+    "functions",
+    "data",
+    "scripts",
+    "tests"
   ]
 }

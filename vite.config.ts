@@ -10,10 +10,6 @@ export default defineConfig(() => {
         proxy: { '/api': 'http://127.0.0.1:8788', '/login': 'http://127.0.0.1:8788', '/logout': 'http://127.0.0.1:8788' },
       },
       plugins: [react()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(''),
-        'process.env.GEMINI_API_KEY': JSON.stringify('')
-      },
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),

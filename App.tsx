@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import SearchCard from './components/SearchCard';
 import CommandPalette from './components/CommandPalette';
 import ProgramLauncher from './components/ProgramLauncher';

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Refuses a commit that stages a private config file or a secret value. Enable once per clone:
+#   git config core.hooksPath .githooks
+exec node scripts/check-staged-secrets.mjs
