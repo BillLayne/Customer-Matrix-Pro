@@ -49,10 +49,18 @@ export async function aiHandler({ request, env }: PagesContext<AiEnv>) {
   const timeout = setTimeout(abort, 80000);
   try {
     const attachments = [...(input.attachments || []), ...(input.attachment ? [input.attachment] : [])];
+    const research = input.task === 'property-report' || input.task === 'county-map';
     const body = {
       contents: [{ role: 'user', parts: [{ text: buildAiPrompt(input) }, ...attachments.map(file => ({ inlineData: { mimeType: file.mimeType, data: file.data } }))] }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: input.task === 'property-report' ? 10000 : 5000 },
-      ...(['property-report', 'county-map'].includes(input.task) ? { tools: [{ googleSearch: {} }] } : {}),
+      // gemini-2.5 counts its own reasoning against maxOutputTokens, so memo
+      // tasks run without a thinking budget and research tasks get a bounded one;
+      // otherwise a long notes request could spend the whole budget before answering.
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: research ? 10000 : 5000,
+        thinkingConfig: { thinkingBudget: research ? 2048 : 0 },
+      },
+      ...(research ? { tools: [{ googleSearch: {} }] } : {}),
     };
     const configuredModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
     const models = [...new Set([configuredModel, 'gemini-2.5-flash'])];
@@ -62,17 +70,24 @@ export async function aiHandler({ request, env }: PagesContext<AiEnv>) {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY }, body: JSON.stringify(body), signal: controller.signal,
       });
-      const result = await response.json() as { error?: { message?: string; status?: string }; candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> }; finishReason?: string }> };
+      const result = await response.json() as { error?: { message?: string; status?: string }; promptFeedback?: { blockReason?: string }; candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> }; finishReason?: string }> };
       if (!response.ok) {
         if ([404, 429, 503].includes(response.status) && index < models.length - 1) continue;
         if ([400, 401, 403].includes(response.status)) return json({ error: 'The AI connection needs administrator attention. Your draft is saved.', code: 'AI_CREDENTIAL_ERROR' }, 502);
         if (response.status === 429) return json({ error: 'AI is busy or its usage limit was reached. Your draft is saved; try again shortly.', code: 'AI_BUSY' }, 429);
         return json({ error: 'AI is temporarily unavailable. Your draft is saved; please retry.', code: 'AI_UNAVAILABLE' }, 502);
       }
-      const resultText = result.candidates?.[0]?.content?.parts?.filter(part => !part.thought).map(part => part.text || '').join('').trim();
-      if (!resultText) return json({ error: 'AI returned no usable text. Please review the notes or attachment and retry.', code: 'AI_EMPTY' }, 502);
-      if (result.candidates?.[0]?.finishReason === 'MAX_TOKENS') return json({ error: 'The response was too long. Shorten the notes or use fewer attachments and retry.', code: 'AI_TRUNCATED' }, 422);
-      return json({ text: resultText });
+      const candidate = result.candidates?.[0];
+      const resultText = candidate?.content?.parts?.filter(part => !part.thought).map(part => part.text || '').join('').trim() || '';
+      const truncated = candidate?.finishReason === 'MAX_TOKENS';
+      // Order matters: a budget exhausted before any text is a length problem, not an empty answer.
+      if (truncated && (!resultText || research)) return json({ error: 'The response was too long. Shorten the notes or use fewer attachments and retry.', code: 'AI_TRUNCATED' }, 422);
+      if (!resultText) {
+        const blocked = candidate?.finishReason === 'SAFETY' || Boolean(result.promptFeedback?.blockReason);
+        return json({ error: blocked ? 'AI declined this content. Remove sensitive or unrelated material from the notes or attachment and retry.' : 'AI returned no usable text. Please review the notes or attachment and retry.', code: blocked ? 'AI_BLOCKED' : 'AI_EMPTY' }, 502);
+      }
+      // Partial memo text is still useful; the client marks it so Bill knows to review the end.
+      return json(truncated ? { text: resultText, truncated: true } : { text: resultText });
     }
     return json({ error: 'AI is temporarily unavailable.', code: 'AI_UNAVAILABLE' }, 502);
   } catch {

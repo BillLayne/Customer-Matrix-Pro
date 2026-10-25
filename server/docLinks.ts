@@ -122,7 +122,8 @@ export async function docLinksHandler(context: PagesContext<DocLinksEnv>, fetche
   if (!file || typeof file === 'string') return json({ error: 'Choose a file to upload.' }, 400);
   const problem = validateDocFile(file as File);
   if (problem) return json({ error: problem }, 400);
-  const customer = String(form.get('customer') ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  const customerField = form.get('customer');
+  const customer = (typeof customerField === 'string' ? customerField : '').replace(/\s+/g, ' ').trim().slice(0, 80);
 
   const outbound = new FormData();
   outbound.append('file', file as File, (file as File).name);
@@ -157,7 +158,7 @@ export async function docLinkFileHandler(context: PagesContext<DocLinksEnv>, fet
   if (!/^[a-f0-9]{12}$/.test(id)) return json({ error: 'Invalid document id.' }, 400);
   try {
     const response = await callUpstream(fetcher, `${target.base}/d/${id}/open?ref=staff`, { headers: { accept: '*/*' } });
-    if (response.status === 404) return json({ error: 'That document no longer exists.' }, 404);
+    if (response.status === 404 || response.status === 410) return json({ error: 'That document is no longer available. It was deleted or passed its 90-day cleanup, so it cannot be attached.', code: 'DOC_GONE' }, 410);
     if (!response.ok || !response.body) return json({ error: 'Could not load the document. Please retry.' }, 502);
     if (Number(response.headers.get('content-length') || 0) > MAX_DOC_BYTES) return json({ error: 'This document is too large to attach.' }, 413);
     return new Response(response.body, {

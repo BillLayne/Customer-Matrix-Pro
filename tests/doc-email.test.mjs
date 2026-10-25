@@ -114,7 +114,12 @@ test('file proxy: signed-in only, validated id, fetched as staff so it never cou
   assert.equal((await docLinkFileHandler(await ctx({ method: 'POST' }), none.fetcher)).status, 405);
   assert.equal(none.calls.length, 0);
 
-  assert.equal((await docLinkFileHandler(await ctx(), recorder(new Response('gone', { status: 404 })).fetcher)).status, 404);
+  // Deleted or auto-cleaned documents are gone for good, so the dashboard says so instead of asking for a retry.
+  for (const status of [404, 410]) {
+    const gone = await docLinkFileHandler(await ctx(), recorder(new Response('gone', { status })).fetcher);
+    assert.equal(gone.status, 410);
+    assert.equal((await gone.json()).code, 'DOC_GONE');
+  }
   assert.equal((await docLinkFileHandler(await ctx(), recorder(new Response('x', { headers: { 'content-length': String(40 * 1024 * 1024) } })).fetcher)).status, 413);
   assert.equal((await docLinkFileHandler(await ctx(), async () => { throw new Error('down'); })).status, 502);
 });

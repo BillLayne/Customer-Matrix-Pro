@@ -44,7 +44,7 @@ export async function requestAi(request: AiRequest, options: { signal?: AbortSig
         : typeof data?.error === 'string' ? data.error : `AI request failed (HTTP ${response.status}). Please retry.`);
     }
     if (typeof data?.text !== 'string' || !data.text.trim()) throw new Error('AI returned an empty or invalid response. Please retry.');
-    return data.text;
+    return data.truncated === true ? data.text + '\n\n[AI output was cut off here. Shorten the notes or split the attachment and retry for the rest.]' : data.text;
   } catch (error) {
     if (timedOut) throw new Error('AI took too long. Your draft is preserved; please retry.');
     if (controller.signal.aborted) throw new DOMException('Request cancelled.', 'AbortError');

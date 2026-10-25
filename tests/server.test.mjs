@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
-import { authenticationMiddleware, createSession, verifySession, cookieName, requireSession } from '../server/auth.ts';
+import { authenticationMiddleware, createSession, verifySession, cookieName, requireSession, resetLoginMemory, LOGIN_MAX_PER_ADDRESS } from '../server/auth.ts';
 import { contactsHandler, validateContacts } from '../server/contacts.ts';
 import { aiHandler, validateAiInput, buildAiPrompt } from '../server/ai.ts';
 
@@ -17,6 +17,7 @@ async function request(path, body, method = body ? 'PUT' : 'GET', extra = {}) {
 function database() {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(readFileSync(new URL('../migrations/0001_shared_contacts.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../migrations/0002_login_attempts.sql', import.meta.url), 'utf8'));
   const db = { prepare(sql) {
     let params = [];
     const statement = {
@@ -39,7 +40,8 @@ test('signed sessions reject old fixed cookie, tampering, expiry, wrong app and 
   assert.equal(await verifySession(`x${token}`, env, now), false);
   assert.equal(await verifySession(token, { ...env, APP_ID: 'agency-staff-dashboard' }, now), false);
   assert.equal(await verifySession(token, { ...env, SITE_PASSWORD: 'changed' }, now), false);
-  assert.equal(await verifySession(token, env, now + 7 * 86400000), false);
+  assert.equal(await verifySession(token, env, now + 86400000), false);
+  assert.equal(await verifySession(token, { ...env, SESSION_VERSION: '2' }, now), false);
   assert.equal(await verifySession(token, { SITE_PASSWORD: 'only-a-password' }, now), false);
 });
 
@@ -58,7 +60,7 @@ test('login issues protected expiring cookie; cross-origin login and writes fail
   const login = new Request(origin + '/login', { method: 'POST', headers: { origin, 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ password: env.SITE_PASSWORD }) });
   const response = await authenticationMiddleware({ request: login, env, next });
   assert.equal(response.status, 303);
-  assert.match(response.headers.get('set-cookie'), /HttpOnly; Secure; SameSite=Lax; Max-Age=604800/);
+  assert.match(response.headers.get('set-cookie'), /^__Host-customer_matrix_pro_session=.+; Path=\/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400$/);
   const rejected = await requireSession(await request('/api/contacts', { entries: [], revision: 0 }, 'PUT', { origin: 'https://elsewhere.test' }), env);
   assert.equal(rejected.status, 403);
 });
@@ -122,5 +124,66 @@ test('AI authentication errors are actionable without provider details', async (
     const body = await response.json();
     assert.equal(body.code, 'AI_CREDENTIAL_ERROR');
     assert.doesNotMatch(JSON.stringify(body), /secret provider/);
+  } finally { globalThis.fetch = previous; }
+});
+
+const loginAttempt = (password, ip = '203.0.113.9') => new Request(origin + '/login', { method: 'POST', headers: { origin, 'cf-connecting-ip': ip, 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ password }) });
+
+test('wrong passwords are refused, counted per address and locked out after the limit', async () => {
+  resetLoginMemory();
+  const { db, sqlite } = database();
+  const context = { env: { ...env, CONTACTS_DB: db }, next };
+  for (let attempt = 0; attempt < LOGIN_MAX_PER_ADDRESS; attempt++) {
+    const refused = await authenticationMiddleware({ ...context, request: loginAttempt('not-the-password') });
+    assert.equal(refused.status, 401);
+    assert.equal(refused.headers.get('set-cookie'), null);
+  }
+  const locked = await authenticationMiddleware({ ...context, request: loginAttempt(env.SITE_PASSWORD) });
+  assert.equal(locked.status, 429);
+  assert.match(await locked.text(), /Too many sign-in attempts/);
+  // Another address is unaffected and a good password clears its own counter.
+  const other = await authenticationMiddleware({ ...context, request: loginAttempt(env.SITE_PASSWORD, '198.51.100.4') });
+  assert.equal(other.status, 303);
+  assert.equal(sqlite.prepare("SELECT count FROM login_attempts WHERE key = 'ip:203.0.113.9'").get().count, LOGIN_MAX_PER_ADDRESS);
+  assert.equal(sqlite.prepare("SELECT count FROM login_attempts WHERE key = 'ip:198.51.100.4'").get(), undefined);
+  sqlite.close();
+});
+
+test('login limiter still works from memory when the database is missing', async () => {
+  resetLoginMemory();
+  for (let attempt = 0; attempt < LOGIN_MAX_PER_ADDRESS; attempt++) await authenticationMiddleware({ env, next, request: loginAttempt('wrong', '192.0.2.1') });
+  const locked = await authenticationMiddleware({ env, next, request: loginAttempt(env.SITE_PASSWORD, '192.0.2.1') });
+  assert.equal(locked.status, 429);
+  resetLoginMemory();
+});
+
+test('logout clears the cookie, only same-origin, only GET or POST', async () => {
+  const out = await authenticationMiddleware({ env, next, request: await request('/logout') });
+  assert.equal(out.status, 303);
+  assert.match(out.headers.get('set-cookie'), /^__Host-customer_matrix_pro_session=; Path=\/; HttpOnly; Secure; SameSite=Lax; Max-Age=0$/);
+  const crossSite = await authenticationMiddleware({ env, next, request: new Request(origin + '/logout', { headers: { origin: 'https://elsewhere.test' } }) });
+  assert.equal(crossSite.status, 403);
+  const wrongMethod = await authenticationMiddleware({ env, next, request: await request('/logout', null, 'DELETE') });
+  assert.equal(wrongMethod.status, 405);
+});
+
+test('AI reports truncation before emptiness and returns partial memo text marked truncated', async () => {
+  const previous = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => Response.json({ candidates: [{ content: { parts: [] }, finishReason: 'MAX_TOKENS' }] });
+    let response = await aiHandler({ env: { ...env, GEMINI_API_KEY: 'synthetic-private-key' }, request: await request('/api/ai', { task: 'organize-notes', text: 'Synthetic notes' }, 'POST'), next });
+    assert.equal(response.status, 422);
+    assert.equal((await response.json()).code, 'AI_TRUNCATED');
+    globalThis.fetch = async (url, options) => {
+      const sent = JSON.parse(options.body);
+      assert.equal(sent.generationConfig.thinkingConfig.thinkingBudget, 0);
+      return Response.json({ candidates: [{ content: { parts: [{ text: 'REQUEST SUMMARY: partial' }] }, finishReason: 'MAX_TOKENS' }] });
+    };
+    response = await aiHandler({ env: { ...env, GEMINI_API_KEY: 'synthetic-private-key' }, request: await request('/api/ai', { task: 'organize-notes', text: 'Synthetic notes' }, 'POST'), next });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { text: 'REQUEST SUMMARY: partial', truncated: true });
+    globalThis.fetch = async () => Response.json({ candidates: [{ content: { parts: [] }, finishReason: 'SAFETY' }] });
+    response = await aiHandler({ env: { ...env, GEMINI_API_KEY: 'synthetic-private-key' }, request: await request('/api/ai', { task: 'organize-notes', text: 'Synthetic notes' }, 'POST'), next });
+    assert.equal((await response.json()).code, 'AI_BLOCKED');
   } finally { globalThis.fetch = previous; }
 });
