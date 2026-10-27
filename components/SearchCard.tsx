@@ -8,7 +8,9 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import ContactLookup from './ContactLookup';
 import HomeQuoteWorkspace from './HomeQuoteWorkspace';
 import VinLookup from './VinLookup';
+import AutoQuoteWorkspace from './AutoQuoteWorkspace';
 import { looksLikeVin } from '../shared/vin';
+import { looksLikeProspectName } from '../shared/autoQuote';
 import DOMPurify from 'dompurify';
 
 interface SearchCardProps {
@@ -112,6 +114,8 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
   const [query, setQuery] = useState('');
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [vinOpen, setVinOpen] = useState(false);
+  const [autoQuoteOpen, setAutoQuoteOpen] = useState(false);
+  const [autoQuoteHasDraft, setAutoQuoteHasDraft] = useState(false);
   const [quoteHasDraft, setQuoteHasDraft] = useState(false);
   const [searchHistory, setSearchHistory] = useLocalStorage<SearchEntry[]>('matrix-pro-search-history', [], (value): value is SearchEntry[] => Array.isArray(value));
   const [showMoreCarriers, setShowMoreCarriers] = useState(false);
@@ -481,7 +485,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
           {mode === 'realestate' && <div className="finder-context">
             <div className="finder-chips">
               <button type="button" className="finder-chip" onClick={handleFindMyHomeOpen} disabled={!query.trim()}><i className="fa-solid fa-house finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Find My Home</span></button>
-              <button type="button" className="finder-chip finder-chip-primary" aria-label="Quote Information" onClick={() => setQuoteOpen(true)} disabled={!query.trim() && !quoteHasDraft} title={quoteHasDraft ? 'Open or resume home quote information' : 'Research this address and collect prospect answers'}><i className="fa-solid fa-clipboard-question finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Quote Information{quoteHasDraft && ' (draft)'}</span></button>
+              <button type="button" className="finder-chip finder-chip-primary" aria-label="Home Quote Information" onClick={() => setQuoteOpen(true)} disabled={!query.trim() && !quoteHasDraft} title={quoteHasDraft ? 'Open or resume home quote information' : 'Research this address and collect prospect answers'}><i className="fa-solid fa-clipboard-question finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Home Quote Info{quoteHasDraft && ' (draft)'}</span></button>
               <button type="button" className="finder-chip" onClick={handleGenerateReport} disabled={!query.trim() || Boolean(busyTask)}><i className="fa-solid fa-file-lines finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Property Report</span></button>
               <button type="button" className="finder-chip" onClick={handleGisSearch} disabled={!query.trim() || Boolean(busyTask)}><i className="fa-solid fa-map finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">County Map</span></button>
               <button type="button" className="finder-chip" onClick={() => propertyFileInputRef.current?.click()} disabled={Boolean(busyTask)} title="Attach property evidence (10 MiB total)"><i className="fa-solid fa-paperclip finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Attach</span></button>
@@ -523,6 +527,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
             <button type="button" className="finder-chip" onClick={handleNewFolder}><i className="fa-solid fa-cloud finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Cloud Folder</span></button>
             <button type="button" className="finder-chip" onClick={handleNotesOpen}><i className="fa-solid fa-file-lines finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">{hasDraft ? 'Resume Memo' : 'Audit Memo'}</span></button>
             <button type="button" className="finder-chip" onClick={() => setVinOpen(true)} title="Decode a VIN with NHTSA public data"><i className="fa-solid fa-car finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Check a VIN</span></button>
+            <button type="button" className="finder-chip" onClick={() => setAutoQuoteOpen(true)} title={autoQuoteHasDraft ? 'Open or resume auto quote information' : 'Collect everything needed to quote an auto policy'}><i className="fa-solid fa-clipboard-list finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Auto Quote Info{autoQuoteHasDraft && ' (draft)'}</span></button>
             {[
               { label: 'Matrix Home', href: 'https://agents.agencymatrix.com/#/', icon: 'fa-house' },
               { label: 'New Prospect', href: 'https://agents.agencymatrix.com/customerEdit.php?id=0', icon: 'fa-user-plus' },
@@ -535,6 +540,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
       </section>
 
       <VinLookup isOpen={active && vinOpen} initialVin={looksLikeVin(query) ? query : ''} onClose={() => setVinOpen(false)} addToast={addToast} />
+      <AutoQuoteWorkspace isOpen={active && autoQuoteOpen} prospect={(mode === 'agency' || mode === 'onedrive') && looksLikeProspectName(query) ? query : ''} onClose={() => setAutoQuoteOpen(false)} onDraftChange={setAutoQuoteHasDraft} />
       <HomeQuoteWorkspace isOpen={active && quoteOpen} address={query} onClose={() => setQuoteOpen(false)} onDraftChange={setQuoteHasDraft} />
       <Modal isOpen={active && isGisModalOpen} onClose={() => { cancelRequest(); setIsGisModalOpen(false); }} title="County Property Map">
         {isGisSearching && <div role="status" className="flex flex-wrap items-center gap-3 text-sm"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />Finding county map...<button className={buttonClass} onClick={() => { cancelRequest(); setPropertyError('County search cancelled.'); }}>Cancel</button></div>}
