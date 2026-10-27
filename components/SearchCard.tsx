@@ -7,6 +7,8 @@ import type { AiTask, AiAttachment } from '../services/aiClient';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import ContactLookup from './ContactLookup';
 import HomeQuoteWorkspace from './HomeQuoteWorkspace';
+import VinLookup from './VinLookup';
+import { looksLikeVin } from '../shared/vin';
 import DOMPurify from 'dompurify';
 
 interface SearchCardProps {
@@ -109,6 +111,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
   const [mode, setMode] = useState<SearchMode>('agency');
   const [query, setQuery] = useState('');
   const [quoteOpen, setQuoteOpen] = useState(false);
+  const [vinOpen, setVinOpen] = useState(false);
   const [quoteHasDraft, setQuoteHasDraft] = useState(false);
   const [searchHistory, setSearchHistory] = useLocalStorage<SearchEntry[]>('matrix-pro-search-history', [], (value): value is SearchEntry[] => Array.isArray(value));
   const [showMoreCarriers, setShowMoreCarriers] = useState(false);
@@ -519,6 +522,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
           <div className="finder-chips">
             <button type="button" className="finder-chip" onClick={handleNewFolder}><i className="fa-solid fa-cloud finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Cloud Folder</span></button>
             <button type="button" className="finder-chip" onClick={handleNotesOpen}><i className="fa-solid fa-file-lines finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">{hasDraft ? 'Resume Memo' : 'Audit Memo'}</span></button>
+            <button type="button" className="finder-chip" onClick={() => setVinOpen(true)} title="Decode a VIN with NHTSA public data"><i className="fa-solid fa-car finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Check a VIN</span></button>
             {[
               { label: 'Matrix Home', href: 'https://agents.agencymatrix.com/#/', icon: 'fa-house' },
               { label: 'New Prospect', href: 'https://agents.agencymatrix.com/customerEdit.php?id=0', icon: 'fa-user-plus' },
@@ -530,6 +534,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
         {storageError && <p role="alert" className="finder-error">{storageError}</p>}
       </section>
 
+      <VinLookup isOpen={active && vinOpen} initialVin={looksLikeVin(query) ? query : ''} onClose={() => setVinOpen(false)} addToast={addToast} />
       <HomeQuoteWorkspace isOpen={active && quoteOpen} address={query} onClose={() => setQuoteOpen(false)} onDraftChange={setQuoteHasDraft} />
       <Modal isOpen={active && isGisModalOpen} onClose={() => { cancelRequest(); setIsGisModalOpen(false); }} title="County Property Map">
         {isGisSearching && <div role="status" className="flex flex-wrap items-center gap-3 text-sm"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />Finding county map...<button className={buttonClass} onClick={() => { cancelRequest(); setPropertyError('County search cancelled.'); }}>Cancel</button></div>}

@@ -4,6 +4,14 @@
 
 **Last verified against production: October 27, 2026** - production is **`db62075` + the Find My Home hotfix** (deployment `5ab2909d`). The October 25 hardening batch is on `main` (pushed to GitHub) but **still not deployed**; its "Deployed: not yet" line below stands.
 
+## October 27: "Check a VIN" quick tool
+
+A new chip in the Search workspace's **Quick tools** row (after Audit Memo) opens `components/VinLookup.tsx`: type or paste a VIN, Enter/Decode, and the modal shows year/make/model/trim plus body, doors, engine, fuel, drive, transmission, GVWR class, airbags, ABS/ESC, manufacturer and build plant, then the recall list. If the search box already holds something VIN-shaped the field is prefilled. **Copy summary** puts one pasteable line (headline + VIN + key facts) on the clipboard for Matrix notes.
+
+- **Data:** NHTSA vPIC `DecodeVinValues` (free, public, CORS `*`) and NHTSA `recallsByVehicle` (CORS allows the pages.dev origin). Both are called straight from the browser; nothing is stored. Recalls are matched by make/model/year, **not** by VIN, and the UI says so and links NHTSA's VIN lookup.
+- **Logic lives in `shared/vin.ts`** (normalize, validate incl. the North American check digit - a mismatch is a warning, not a block, because some imports legitimately fail it - URL builders, an allow-listed `summarizeVehicle`, `normalizeRecalls`). `tests/vin.test.mjs` covers it (10 tests; suite is now 80).
+- Failures are soft: a bad VIN gets a plain-English reason; a dead NHTSA call gets an error line; a failed recall fetch leaves the decode intact with a note. 12 s timeout, cancel button, aborts on close.
+
 ## October 27: Real Estate now opens Find My Home
 
 Bill asked for the Real Estate destination (and its chip, formerly "Open NC Tools") to open his newer **Find My Home** site instead of NC Insurance Tools. One constant changed (`FIND_MY_HOME_URL` in `SearchCard.tsx`) plus the chip label and the mode placeholder in `constants.ts`; the `?address=` hand-off is identical because `find-my-home-information/src/App.tsx` reads that parameter on mount and runs the lookup. Verified live with a test address before shipping. The NC Tools launcher tile was deliberately left alone.
@@ -253,7 +261,7 @@ Agency Matrix mode picks `selection=Address` when the query contains a digit, el
   - Superseded: an older `Client Folders` folder (`1lqq_4WpQ…`, "First Last" naming) in `billlayneinsurance@gmail.com`'s My Drive. It still exists but is NOT the live system.
   - The hosted dashboard cannot open `H:\...` paths — browsers block `file://` navigation from an https page — so the web URL is the only workable link.
 
-- Secondary action row is grouped by intent: **Workspace** (Cloud Folder · Audit Memo · **Find My Home** in Real Estate mode) and **Agency Matrix** (Matrix Home · New Prospect · Reports).
+- Secondary action row is grouped by intent: **Workspace** (Cloud Folder · Audit Memo · **Check a VIN** · **Find My Home** in Real Estate mode) and **Agency Matrix** (Matrix Home · New Prospect · Reports).
 - **Audit Memo** (Alt+N or Ctrl+Shift+M): name, notes, optional PDF/image, Organize/Extract, Copy Memo & Open Matrix. Local draft survives closing/reload; Undo restores the original AI input; AI and clipboard errors do not discard work. Prompts must not invent completed actions or timestamps. A memo remains until explicit Discard. Attachment limits are enforced before upload; cancellation and session recovery are visible.
 - **County Property Map and Property Risk Report** use the same shared premium modal shell as Audit Memo. Keep their wording plain and their actions descriptive.
 - **Real Estate → Find My Home handoff (changed 2026-10-27 on Bill's instruction)** — Enter, Search, or the **Find My Home** chip opens `https://find-my-home-information.pages.dev/?address=...` (`FIND_MY_HOME_URL` / `buildFindMyHomeUrl` in `SearchCard.tsx`). That site's `src/App.tsx` consumes `address` on mount and runs the lookup automatically — same parameter the old NC Insurance Tools link used, so nothing else had to change. The retired base `https://26d5834f.nc-insurance-tools-gemini.pages.dev/` is gone from Search; the launcher tile `nc-tools-property` still opens NC Tools on purpose. Property Report and County Map call the server API; report HTML is sanitized before preview/export.
