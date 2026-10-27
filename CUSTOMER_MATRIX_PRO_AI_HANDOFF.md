@@ -2,11 +2,13 @@
 
 > **⚠️ READ FIRST (October 1, 2026) — `main` moved.** `main` now includes the **Docs workspace** (Document Links, below). Branch `codex/image-library-safety` was cut from the OLD `main` and does not contain it. **Before deploying anything from that branch, merge `main` into it** — otherwise the deploy ships the working folder without Docs and silently removes the feature from Bill's dashboard. The local working folder was left checked out on `main` (= production) with a clean tree; `codex/image-library-safety` is intact and unmodified.
 
-**Last verified against production: October 25, 2026** (search redesign deployed as `84ba757e` from commit `db62075`; the hardening batch below was committed afterwards and is deployed when the "Deployed" line in that section says so).
+**Last verified against production: October 27, 2026** - production is **`db62075` + the Find My Home hotfix** (deployment `5ab2909d`). The October 25 hardening batch is on `main` (pushed to GitHub) but **still not deployed**; its "Deployed: not yet" line below stands.
 
 ## October 27: Real Estate now opens Find My Home
 
 Bill asked for the Real Estate destination (and its chip, formerly "Open NC Tools") to open his newer **Find My Home** site instead of NC Insurance Tools. One constant changed (`FIND_MY_HOME_URL` in `SearchCard.tsx`) plus the chip label and the mode placeholder in `constants.ts`; the `?address=` hand-off is identical because `find-my-home-information/src/App.tsx` reads that parameter on mount and runs the lookup. Verified live with a test address before shipping. The NC Tools launcher tile was deliberately left alone.
+
+**Deployed:** `5ab2909d` on 2026-10-27 as a **hotfix built from `db62075` plus this change only** - a throwaway worktree at C:/Users/bill/cmp-hotfix (since removed): `npm ci`, `npm run lint && npm run build`, then raw `wrangler pages deploy dist --project-name customer-matrix-pro --branch main` with the Cloudflare vars sourced from the main checkout's `.dev.vars`. This was deliberate: deploying from `main` HEAD would also have shipped the un-approved hardening batch, which forces a re-login on every device and needs D1 migration 0002. So **production is not `main` HEAD** until Bill approves that batch; `npm run deploy` from `main` will then carry this change with it. Commit on `main`: `7397db1`. Note `vite.config.ts` now bakes an EMPTY Gemini key on purpose (AI calls are server-side), so a worktree build needs no `.env.local`.
 
 ## October 25: search redesign, review fixes and hardening
 
