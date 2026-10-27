@@ -37,7 +37,7 @@ export const MORE_CARRIER_PORTALS: Portal[] = [
 export const MODE_META: Record<SearchMode, { placeholder: string; showTax: boolean }> = {
   agency: { placeholder:'Search Agency Matrix by name or address…', showTax:false },
   web: { placeholder:'Search the web…', showTax:false },
-  realestate: { placeholder:'Enter NC property address for NC Insurance Tools…', showTax:true },
+  realestate: { placeholder:'Enter NC property address for Find My Home…', showTax:true },
   people: { placeholder:'Enter name, phone, or address…', showTax:false },
   onedrive: { placeholder:'Search Client Folder by name…', showTax:false },
   contacts: { placeholder:'Start typing an insurance company name…', showTax:false }

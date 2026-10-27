@@ -4,6 +4,10 @@
 
 **Last verified against production: October 25, 2026** (search redesign deployed as `84ba757e` from commit `db62075`; the hardening batch below was committed afterwards and is deployed when the "Deployed" line in that section says so).
 
+## October 27: Real Estate now opens Find My Home
+
+Bill asked for the Real Estate destination (and its chip, formerly "Open NC Tools") to open his newer **Find My Home** site instead of NC Insurance Tools. One constant changed (`FIND_MY_HOME_URL` in `SearchCard.tsx`) plus the chip label and the mode placeholder in `constants.ts`; the `?address=` hand-off is identical because `find-my-home-information/src/App.tsx` reads that parameter on mount and runs the lookup. Verified live with a test address before shipping. The NC Tools launcher tile was deliberately left alone.
+
 ## October 25: search redesign, review fixes and hardening
 
 **Search workspace redesign (commit `db62075`, LIVE):** the Search tab is Bill's "Find a customer." mockup — hero heading, 56 px search field with a navy "Search <destination>" button, six destination cards (`.finder-destination`, `aria-pressed` = navy fill + gold "Selected" pill; a gold check circle on phones), a recent-searches bar, an always-visible **Favorite companies** chip row (`renderPortalChip` in `SearchCard.tsx`; the collapsed Carrier Portals tiles and the `matrix-pro-show-carrier-gateway` preference are gone; "More carriers" toggles the rest) and a **Quick tools** row. All styles are plain `.finder-*` CSS in `index.css` (dark mode through the `--agency-*` variables; carrier logos keep a white plate). The Real Estate tools row and the Contact Numbers lookup render under the cards unchanged. Header: `BL` mark, no magnifier button; Settings dialog has a Command Palette row. **Agency Matrix mode is now `Alt + M`** (Ctrl+M was already claimed by the palette in `App.tsx`, so the old label was dead).
@@ -226,7 +230,7 @@ The highest-traffic component in the app. Treat it carefully.
 |---|---|---|
 | Agency Matrix | `agents.agencymatrix.com` customer search | `/` focuses Unified Search |
 | Web Search | Google | Alt + W |
-| Real Estate | NC Insurance Tools property lookup, `?address=` prefilled | Alt + H |
+| Real Estate | **Find My Home** property lookup (`find-my-home-information.pages.dev`), `?address=` prefilled and auto-run | Alt + H |
 | People | TruePeopleSearch | Alt + P |
 | Client Folder | Google Drive `title:` search over the agency's client folders | Alt + F |
 | Contact Numbers | Built-in plus shared contact directory, live matching | Alt + C |
@@ -247,10 +251,10 @@ Agency Matrix mode picks `selection=Address` when the query contains a digit, el
   - Superseded: an older `Client Folders` folder (`1lqq_4WpQ…`, "First Last" naming) in `billlayneinsurance@gmail.com`'s My Drive. It still exists but is NOT the live system.
   - The hosted dashboard cannot open `H:\...` paths — browsers block `file://` navigation from an https page — so the web URL is the only workable link.
 
-- Secondary action row is grouped by intent: **Workspace** (Cloud Folder · Audit Memo · **NC Tools** in Real Estate mode) and **Agency Matrix** (Matrix Home · New Prospect · Reports).
+- Secondary action row is grouped by intent: **Workspace** (Cloud Folder · Audit Memo · **Find My Home** in Real Estate mode) and **Agency Matrix** (Matrix Home · New Prospect · Reports).
 - **Audit Memo** (Alt+N or Ctrl+Shift+M): name, notes, optional PDF/image, Organize/Extract, Copy Memo & Open Matrix. Local draft survives closing/reload; Undo restores the original AI input; AI and clipboard errors do not discard work. Prompts must not invent completed actions or timestamps. A memo remains until explicit Discard. Attachment limits are enforced before upload; cancellation and session recovery are visible.
 - **County Property Map and Property Risk Report** use the same shared premium modal shell as Audit Memo. Keep their wording plain and their actions descriptive.
-- **Real Estate → NC Tools handoff** — Enter, Search, or Open NC Tools preserves the exact legacy base `https://26d5834f.nc-insurance-tools-gemini.pages.dev/` with `?address=...`. Do not silently replace it with the launcher's different base URL. Property Report and County Map call the server API; report HTML is sanitized before preview/export.
+- **Real Estate → Find My Home handoff (changed 2026-10-27 on Bill's instruction)** — Enter, Search, or the **Find My Home** chip opens `https://find-my-home-information.pages.dev/?address=...` (`FIND_MY_HOME_URL` / `buildFindMyHomeUrl` in `SearchCard.tsx`). That site's `src/App.tsx` consumes `address` on mount and runs the lookup automatically — same parameter the old NC Insurance Tools link used, so nothing else had to change. The retired base `https://26d5834f.nc-insurance-tools-gemini.pages.dev/` is gone from Search; the launcher tile `nc-tools-property` still opens NC Tools on purpose. Property Report and County Map call the server API; report HTML is sanitized before preview/export.
 - **Contact Numbers** — results appear as Bill types, in a contained scrolling panel. `tel:` links; copy buttons on phone/fax/email/website. 17 companies built in.
 - **Manual contact editor** — Add Contact or the company card's pencil opens one add/edit manager. Built-in corrections retain `replacesDetail`; removing a correction restores the original. Shared status, retry, conflict review, Backup, and Restore are available. Native dialog has one scroll area; values wrap instead of truncating.
 - **Carrier Portals** — collapsible drawer (`matrix-pro-show-carrier-gateway`). Six daily portals from `DEFAULT_INSURANCE_PORTALS`, plus a **More Carriers** panel of ten from `MORE_CARRIER_PORTALS` (both in `constants.ts`).

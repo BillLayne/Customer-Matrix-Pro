@@ -15,9 +15,14 @@ interface SearchCardProps {
   onSearch: () => void;
   active?: boolean;
 }
-const NC_INSURANCE_TOOLS_AGENCY_URL = 'https://26d5834f.nc-insurance-tools-gemini.pages.dev/';
-const buildNcInsuranceToolsUrl = (address: string) =>
-  NC_INSURANCE_TOOLS_AGENCY_URL + '?address=' + encodeURIComponent(address.trim());
+/**
+ * Real Estate mode opens Bill's Find My Home property lookup. That site reads
+ * `?address=` on load (src/App.tsx in Playground/find-my-home-information) and
+ * runs the lookup automatically. Replaced the NC Insurance Tools link 2026-10-27.
+ */
+const FIND_MY_HOME_URL = 'https://find-my-home-information.pages.dev/';
+const buildFindMyHomeUrl = (address: string) =>
+  FIND_MY_HOME_URL + '?address=' + encodeURIComponent(address.trim());
 const BLI_CLIENTS_DRIVE_ID = '0AHhWG49MZdQjUk9PVA';
 const DRIVE_ACCOUNT_EMAIL = 'Bill@billlayneinsurance.com';
 const withAuthUser = (url: string) =>
@@ -236,7 +241,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
     switch (selectedMode) {
       case 'agency': url = matrixUrl(value); break;
       case 'web': url = 'https://www.google.com/search?q=' + encodeURIComponent(value); break;
-      case 'realestate': url = buildNcInsuranceToolsUrl(value); break;
+      case 'realestate': url = buildFindMyHomeUrl(value); break;
       case 'people': url = 'https://www.truepeoplesearch.com/results?name=' + encodeURIComponent(value); break;
       case 'onedrive': url = clientFolderSearchUrl(value); break;
       case 'contacts': return;
@@ -246,7 +251,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
     else setSearchError('The search window was blocked. Allow pop-ups and retry.');
   };
   const handleSearch = () => runSearch();
-  const handleNcInsuranceToolsOpen = () => runSearch(query, 'realestate');
+  const handleFindMyHomeOpen = () => runSearch(query, 'realestate');
   const handleNewFolder = () => {
     const opened = window.open(query.trim() ? clientFolderSearchUrl(query) : clientFoldersRootUrl(), '_blank');
     if (opened) opened.opener = null;
@@ -472,7 +477,7 @@ const SearchCard: React.FC<SearchCardProps> = ({ addToast, searchCount, onSearch
           {mode === 'contacts' && <div className="finder-context"><ContactLookup query={query} onQueryChange={setQuery} addToast={addToast} /></div>}
           {mode === 'realestate' && <div className="finder-context">
             <div className="finder-chips">
-              <button type="button" className="finder-chip" onClick={handleNcInsuranceToolsOpen} disabled={!query.trim()}><i className="fa-solid fa-house finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Open NC Tools</span></button>
+              <button type="button" className="finder-chip" onClick={handleFindMyHomeOpen} disabled={!query.trim()}><i className="fa-solid fa-house finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Find My Home</span></button>
               <button type="button" className="finder-chip finder-chip-primary" aria-label="Quote Information" onClick={() => setQuoteOpen(true)} disabled={!query.trim() && !quoteHasDraft} title={quoteHasDraft ? 'Open or resume home quote information' : 'Research this address and collect prospect answers'}><i className="fa-solid fa-clipboard-question finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Quote Information{quoteHasDraft && ' (draft)'}</span></button>
               <button type="button" className="finder-chip" onClick={handleGenerateReport} disabled={!query.trim() || Boolean(busyTask)}><i className="fa-solid fa-file-lines finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">Property Report</span></button>
               <button type="button" className="finder-chip" onClick={handleGisSearch} disabled={!query.trim() || Boolean(busyTask)}><i className="fa-solid fa-map finder-chip-icon" aria-hidden="true" /><span className="finder-chip-label">County Map</span></button>
