@@ -62,8 +62,11 @@ export async function aiHandler({ request, env }: PagesContext<AiEnv>) {
       },
       ...(research ? { tools: [{ googleSearch: {} }] } : {}),
     };
-    const configuredModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
-    const models = [...new Set([configuredModel, 'gemini-2.5-flash'])];
+    // gemini-2.5-flash was retired for new API keys in October 2026 (Google's 404
+    // says to move to gemini-3.8-flash). Keep the fallback a DIFFERENT live model
+    // so a 404/429/503 on the configured one has somewhere to go.
+    const configuredModel = env.GEMINI_MODEL || 'gemini-3.8-flash';
+    const models = [...new Set([configuredModel, 'gemini-3.5-flash'])];
     for (let index = 0; index < models.length; index++) {
       const model = models[index];
       if (!/^[a-zA-Z0-9.-]+$/.test(model)) return json({ error: 'AI model configuration needs attention.', code: 'AI_NOT_CONFIGURED' }, 503);

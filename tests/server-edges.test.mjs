@@ -58,13 +58,13 @@ const aiCall = async (e, json = aiNotes, extra = {}) => aiHandler({ env: e, requ
 
 // ----------------------------------------------------------------- server/ai.ts
 
-test('AI: a custom model that 404s falls back to gemini-2.5-flash on the second call', async () => {
+test('AI: a custom model that 404s falls back to gemini-3.5-flash on the second call', async () => {
   await withFetch((url, options, n) => n === 1 ? aiError(404) : aiOk(), async (calls) => {
     const response = await aiCall({ ...aiEnv, GEMINI_MODEL: 'gemini-custom-preview' });
     assert.equal(response.status, 200);
     assert.equal(calls.length, 2);
     assert.equal(calls[0].url, AI_MODEL_URL('gemini-custom-preview'));
-    assert.equal(calls[1].url, AI_MODEL_URL('gemini-2.5-flash'));
+    assert.equal(calls[1].url, AI_MODEL_URL('gemini-3.5-flash'));
     // Both attempts send the identical request body; only the model changes.
     assert.equal(calls[0].options.body, calls[1].options.body);
     assert.match(await response.text(), /Pending follow-up/);
@@ -73,13 +73,13 @@ test('AI: a custom model that 404s falls back to gemini-2.5-flash on the second 
 
 test('AI: 429 on the only model is AI_BUSY 429; 503 is AI_UNAVAILABLE 502; no second model is tried', async () => {
   await withFetch(() => aiError(429), async (calls) => {
-    const response = await aiCall(aiEnv);
+    const response = await aiCall({ ...aiEnv, GEMINI_MODEL: 'gemini-3.5-flash' });
     assert.equal(response.status, 429);
     assert.equal((await response.json()).code, 'AI_BUSY');
-    assert.equal(calls.length, 1, 'default model == fallback model, so nothing to fall back to');
+    assert.equal(calls.length, 1, 'configured model == fallback model, so nothing to fall back to');
   });
   await withFetch(() => aiError(503), async (calls) => {
-    const response = await aiCall({ ...aiEnv, GEMINI_MODEL: 'gemini-2.5-flash' });
+    const response = await aiCall({ ...aiEnv, GEMINI_MODEL: 'gemini-3.5-flash' }); // same as the fallback, so only one model is tried
     assert.equal(response.status, 502);
     const body = await response.json();
     assert.equal(body.code, 'AI_UNAVAILABLE');
