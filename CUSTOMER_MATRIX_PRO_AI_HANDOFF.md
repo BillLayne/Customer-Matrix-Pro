@@ -2,7 +2,19 @@
 
 > **⚠️ READ FIRST (October 1, 2026) — `main` moved.** `main` now includes the **Docs workspace** (Document Links, below). Branch `codex/image-library-safety` was cut from the OLD `main` and does not contain it. **Before deploying anything from that branch, merge `main` into it** — otherwise the deploy ships the working folder without Docs and silently removes the feature from Bill's dashboard. The local working folder was left checked out on `main` (= production) with a clean tree; `codex/image-library-safety` is intact and unmodified.
 
-**Last verified against production: October 27, 2026** - production is **`db62075` + the Find My Home hotfix + the Check a VIN tool** (deployment `5501c2d0`; `main` commits `7397db1` and `31bd77d`). The October 25 hardening batch is on `main` (pushed to GitHub) but **still not deployed**; its "Deployed: not yet" line below stands, and `npm run deploy` from `main` will carry everything when Bill approves it.
+**Last verified against production: October 27, 2026** - production is **`db62075` + Find My Home + Check a VIN + the AI key/model fix + the thinking-budget cap** (deployment `b02f8784`; `main` commits `7397db1`, `31bd77d`, `e9fd747`). The October 25 hardening batch is on `main` (pushed to GitHub) but **still not deployed**; its "Deployed: not yet" line below stands, and `npm run deploy` from `main` will carry everything when Bill approves it.
+
+## October 27: AI features restored (key + model + thinking cap)
+
+Property Report, County Map and Audit Memo had failed since September ("The AI connection needs administrator attention"). Two independent causes, both fixed:
+
+1. **Dead key.** The production `GEMINI_API_KEY` came from the Google Cloud project suspended in July; every key from that project returns HTTP 400. The working key Bill's Quote Studio uses (`AIzaSy...kUGk`) was validated (models list 200, real generations) and installed as the **production** secret via Git Bash `printf '%s' "$KEY" | npx wrangler pages secret put GEMINI_API_KEY --project-name customer-matrix-pro`. Preview env not updated.
+2. **Retired model.** `gemini-2.5-flash` is no longer available to new keys (Google's 404 says use `gemini-3.8-flash`), and the server's fallback list was `[configured, gemini-2.5-flash]`, so a key swap alone would still fail. `main` `e9fd747`: `GEMINI_MODEL` = `gemini-3.8-flash` in both `wrangler.jsonc` environments, in-code default the same, fallback deliberately a different live model (`gemini-3.5-flash`). Model names churn - **probe with the real key before pinning a name** (`gemini-3.8-flash`, `gemini-3.5-flash`, `gemini-3-flash-preview` answered on 2026-10-27; `*-lite` and all 2.5 did not).
+3. **Thinking cap is mandatory on 3.x.** Measured on the exact property-report prompt: uncapped `gemini-3.8-flash` took **137 s** (past the server's 80 s timeout -> `AI_TIMEOUT`), capped at `thinkingBudget: 2048` for research tasks it took **36 s** with a complete report; `gemini-3.5-flash` uncapped overran `maxOutputTokens`. `main` already had the cap from the hardening batch; the hotfix build ported just that body change.
+
+**Proof:** the deployed build was run locally with `wrangler pages dev` and a throwaway `.dev.vars` password; through the real server code, a property report returned 200 in 43 s (14 k chars, `subject` + `htmlBody`, correct county) and a memo in 7 s. Local-dev gotchas learned: `--binding` flags are ignored when `wrangler.jsonc` exists (use `.dev.vars`); the session cookie is `Secure`, so curl must resend it by header; killing the `workerd` listener only makes the parent `wrangler` respawn it - stop the `node` process instead.
+
+**Deployed:** `b02f8784` (hotfix from `db62075` + Find My Home + Check a VIN + model + thinking cap). Production is still not `main` HEAD.
 
 ## October 27: "Check a VIN" quick tool
 
@@ -90,7 +102,7 @@ Bill asked for the SMS Command Center's "upload a PDF/photo → branded link" ab
 - Shared contacts remain available with 20 entries. The fresh test browser's existing first-run contact migration advanced revision 6 to 7; no contact edit controls were used. No customer messages or application submissions were sent. Staff, Find My Home, NC Tools and Gmail were not deployed or modified.
 - Local preview remains available at `http://127.0.0.1:8788/` via the loopback-only Node adapter because Windows workerd failed to spawn. Its other API 503s are preview-only, not a production limitation. An ignored Wrangler multipart build artifact was renamed from `.js` to `.multipart` so TypeScript no longer tries to parse it.
 
-**Release caveat:** The saved Gemini key was invalid during review. The new server API and error recovery are implemented, but successful live AI generation remains blocked until Bill supplies a valid replacement key. Never report AI generation as verified merely because the interface builds.
+**Release caveat (RESOLVED 2026-10-27):** the saved Gemini key was invalid during the September review. A working key and a live model were installed on 2026-10-27 and AI generation was verified end to end - see "October 27: AI features restored" above.
 
 This describes the dashboard **as it actually exists right now**. If anything here disagrees with the code, the code wins — re-verify and fix this file in the same commit.
 
@@ -409,7 +421,7 @@ Never put real secret values in this file, in code, in chat, or in screenshots.
 
 `scripts/configure-pages.mjs preview|production` merges private secrets into both Pages projects without printing values. A production update requires explicit authorization. `scripts/verify-deployment.mjs URL agent|staff` validates gate, contacts, CSRF protection, and key-free bundle; its authenticated browser state is saved only under ignored `output/qa`.
 
-The old saved Gemini key is invalid. Do not reinstall it from Windows or `.env.local`. Ask Bill for a current key through the private clipboard workflow, validate with synthetic text, then update both projects and verify the actual API response. No customer messages should be sent during checks.
+The old saved Gemini key (suspended Google Cloud project) is dead - never reinstall it from Windows or `.env.local`. On 2026-10-27 the key Bill's Quote Studio uses (`AIzaSy...kUGk`, from that project's gitignored `.dev.vars`) was validated with real calls and installed as the CMP **production** secret. The preview environment and the staff dashboard were NOT updated. Validate any future key with synthetic text first; never send customer messages during checks.
 
 ---
 
@@ -455,7 +467,7 @@ public/                             hosted tools + carrier logo images
 
 ## 12. Known issues / open items
 
-- **Live AI generation remains unverified until the invalid Gemini key is replaced.** Draft/error handling and the server contract have automated synthetic coverage.
+- ~~Live AI generation remains unverified until the invalid Gemini key is replaced.~~ Resolved 2026-10-27 (see the AI block at the top). Still open: the **staff dashboard** has the same dead model pin and presumably the dead key.
 - Search carrier logos now use existing local assets. Dormant Gmail constants may still contain legacy image URLs; do not revive them without a separate Gmail review.
 - Agent frontend bundle is approximately 357 kB (about 111 kB gzipped), down from roughly 604 kB. No framework migration was needed.
 - Contacts sync; other local state does not. Individual accounts, audit identities, and per-user permissions are not implemented: dashboards use separate shared access passwords.
