@@ -2,7 +2,7 @@
 
 > **⚠️ READ FIRST (October 1, 2026) — `main` moved.** `main` now includes the **Docs workspace** (Document Links, below). Branch `codex/image-library-safety` was cut from the OLD `main` and does not contain it. **Before deploying anything from that branch, merge `main` into it** — otherwise the deploy ships the working folder without Docs and silently removes the feature from Bill's dashboard. The local working folder was left checked out on `main` (= production) with a clean tree; `codex/image-library-safety` is intact and unmodified.
 
-**Last verified against production: October 27, 2026** - production is **`db62075` + the Find My Home hotfix** (deployment `5ab2909d`). The October 25 hardening batch is on `main` (pushed to GitHub) but **still not deployed**; its "Deployed: not yet" line below stands.
+**Last verified against production: October 27, 2026** - production is **`db62075` + the Find My Home hotfix + the Check a VIN tool** (deployment `5501c2d0`; `main` commits `7397db1` and `31bd77d`). The October 25 hardening batch is on `main` (pushed to GitHub) but **still not deployed**; its "Deployed: not yet" line below stands, and `npm run deploy` from `main` will carry everything when Bill approves it.
 
 ## October 27: "Check a VIN" quick tool
 
@@ -11,6 +11,8 @@ A new chip in the Search workspace's **Quick tools** row (after Audit Memo) open
 - **Data:** NHTSA vPIC `DecodeVinValues` (free, public, CORS `*`) and NHTSA `recallsByVehicle` (CORS allows the pages.dev origin). Both are called straight from the browser; nothing is stored. Recalls are matched by make/model/year, **not** by VIN, and the UI says so and links NHTSA's VIN lookup.
 - **Logic lives in `shared/vin.ts`** (normalize, validate incl. the North American check digit - a mismatch is a warning, not a block, because some imports legitimately fail it - URL builders, an allow-listed `summarizeVehicle`, `normalizeRecalls`). `tests/vin.test.mjs` covers it (10 tests; suite is now 80).
 - Failures are soft: a bad VIN gets a plain-English reason; a dead NHTSA call gets an error line; a failed recall fetch leaves the decode intact with a note. 12 s timeout, cancel button, aborts on close.
+
+**Deployed:** `5501c2d0` on 2026-10-27 by the same hotfix pattern as Find My Home below (throwaway worktree at `db62075` + both changes, `npm ci`, lint, tests, build, raw wrangler deploy). `main` commit: `31bd77d`.
 
 ## October 27: Real Estate now opens Find My Home
 
