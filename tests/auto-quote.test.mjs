@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   POLICY_FIELDS, DRIVER_FIELDS, VEHICLE_FIELDS, MAX_DRIVERS, newAutoQuoteDraft, restoreAutoQuoteDraft, draftHasContent,
   looksLikeProspectName, autoQuoteGaps, autoAnswerWarnings, vehicleConflicts, buildAutoQuoteReport, buildAutoQuotePacket,
-  packetBlockers, packetFileName, packetPrompt, splitName, decodeFromSummary,
+  packetBlockers, packetFileName, packetPrompt, splitName, decodeFromSummary, NATIONAL_GENERAL_PROMPT,
 } from '../shared/autoQuote.ts';
 import { summarizeVehicle } from '../shared/vin.ts';
 
@@ -205,4 +205,27 @@ test('packet export waits for a last name, a driver and a vehicle; the report ne
   draft.vehicles = [{ year: '2013' }];
   assert.deepEqual(packetBlockers(draft), []);
   assert.match(buildAutoQuoteReport(newAutoQuoteDraft(), today), /Follow-Up Notes/);
+});
+
+test('National General handoff preserves additional intake details and prints the reusable skill prompt', () => {
+  const draft = sampleDraft();
+  draft.answers.mailingAddress = 'PO Box 12, Elkin NC 28621';
+  draft.answers.consumerConsent = 'Not confirmed';
+  draft.answers.staffMember = 'Test staff';
+  draft.vehicles[0].garagingAddress = '102 Main St, Elkin NC 28621';
+  const restored = restoreAutoQuoteDraft(JSON.parse(JSON.stringify(draft)));
+  assert.equal(restored.answers.consumerConsent, 'Not confirmed');
+  assert.equal(restored.answers.mailingAddress, draft.answers.mailingAddress);
+  assert.equal(restored.vehicles[0].garagingAddress, draft.vehicles[0].garagingAddress);
+  const report = buildAutoQuoteReport(restored, today);
+  assert.ok(report.includes(NATIONAL_GENERAL_PROMPT.replace(/'/g, '&#39;')));
+  assert.match(report, /Consumer-report consent|Applicant consent for consumer reports/);
+  assert.match(report, /Not confirmed/);
+  assert.match(report, /PO Box 12/);
+  assert.match(report, /102 Main St/);
+  const packet = buildAutoQuotePacket(restored, today);
+  assert.match(packet.notes, /Consumer-report consent: Not confirmed/);
+  assert.match(packet.notes, /Different mailing address: PO Box 12/);
+  assert.match(packet.notes, /different garaging address: 102 Main St/);
+  assert.match(packetPrompt(packet), /start-auto-quotes skill/);
 });

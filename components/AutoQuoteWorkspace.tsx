@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Modal from './Modal';
 import {
-  AUTO_SECTIONS, DRIVER_FIELDS, VEHICLE_FIELDS, MAX_DRIVERS, MAX_VEHICLES, RATER_URL,
+  AUTO_SECTIONS, DRIVER_FIELDS, VEHICLE_FIELDS, MAX_DRIVERS, MAX_VEHICLES, RATER_URL, NATIONAL_GENERAL_PROMPT,
   newAutoQuoteDraft, restoreAutoQuoteDraft, normalizeName, draftHasContent, autoQuoteGaps, vehicleConflicts,
   autoAnswerWarnings, buildAutoQuoteReport, buildAutoQuotePacket, packetBlockers, packetFileName, packetPrompt,
   decodeFromSummary, driverLabel, vehicleLabel,
@@ -170,6 +170,12 @@ const AutoQuoteWorkspace: React.FC<{
       setNotice('Quote packet copied. Paste it into Claude Code and say "start the quotes", or load it in the BLI Auto Rater.');
     } catch { downloadPacket(); }
   };
+  const copyNationalGeneralPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(NATIONAL_GENERAL_PROMPT);
+      setNotice('Prompt copied. Attach the downloaded report or PDF when you paste it into Codex.');
+    } catch { setNotice('Clipboard unavailable. Select and copy the National General prompt below.'); }
+  };
   const fieldsFor = (fields: AutoField[], values: Answers, prefix: string, onChange: (key: string, value: string) => void, skip: string[] = []) =>
     fields.filter(field => !skip.includes(field.key)).map(field => <FieldInput key={field.key} field={field} id={prefix + field.key} value={values[field.key] || ''} onChange={value => onChange(field.key, value)} />);
 
@@ -232,6 +238,7 @@ const AutoQuoteWorkspace: React.FC<{
         </section>}
         {view === 'report' && <section aria-label="Auto quote report and packet">
           <div className="quote-report-heading"><div><h3>Auto quote intake</h3><p className="quote-muted">{gaps.length} follow-up notes. All questions are optional; unanswered items do not block the report.</p></div><div className="quote-actions"><button className={buttonClass + ' quote-primary'} onClick={() => { download(buildAutoQuoteReport(draft), 'auto-quote-intake.html', 'text/html;charset=utf-8'); setNotice('Report downloaded as auto-quote-intake.html. It contains private prospect information.'); }}>{icon('fa-download')}Download report</button><button className={buttonClass} onClick={() => { try { previewRef.current?.contentWindow?.focus(); previewRef.current?.contentWindow?.print(); } catch { setNotice('Download the report and print it from your browser.'); } }}>{icon('fa-print')}Print / PDF</button></div></div>
+          <div className="quote-card"><h4>National General quote with Codex</h4><p className="quote-muted">Download the report or save it as a PDF. Copy this prompt into Codex and attach the report.</p><label className="quote-label" htmlFor="national-general-prompt">Prompt</label><textarea id="national-general-prompt" className="quote-input" readOnly rows={4} value={NATIONAL_GENERAL_PROMPT} /><div className="quote-actions mt-4"><button className={buttonClass} onClick={() => void copyNationalGeneralPrompt()}>{icon('fa-copy')}Copy National General prompt</button></div></div>
           <div className="quote-research-status" role="status">{blockers.length ? `Quote packet needs: ${blockers.join(', ')}.` : 'Quote packet ready for the BLI Auto Rater or the start-auto-quotes skill.'}</div>
           <div className="quote-actions">
             <button className={buttonClass} disabled={blockers.length > 0} onClick={() => void copyPacket()}>{icon('fa-copy')}Copy quote packet</button>

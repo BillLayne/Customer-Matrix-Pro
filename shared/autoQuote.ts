@@ -20,6 +20,7 @@ export const APPLICANT_FIELDS: AutoField[] = [
   { key: 'phone', label: 'Phone', type: 'tel' },
   { key: 'email', label: 'Email', type: 'email' },
   { key: 'street', label: 'Street address', critical: true, hint: 'Where the vehicles are garaged. Note a different mailing address under follow-up.' },
+  { key: 'mailingAddress', label: 'Mailing address, if different', hint: 'Include street, apartment, city, state and ZIP.' },
   { key: 'city', label: 'City', critical: true },
   { key: 'state', label: 'State', type: 'select', options: STATES, hint: 'Blank = NC.' },
   { key: 'zip', label: 'ZIP', critical: true },
@@ -27,8 +28,10 @@ export const APPLICANT_FIELDS: AutoField[] = [
   { key: 'gender', label: 'Gender (as licensed)', type: 'select', options: ['Male', 'Female', 'Needs verification'] },
   { key: 'residence', label: 'Residence', type: 'select', options: ['Own home', 'Own mobile home', 'Own condo', 'Rent', 'Live with parents / other', 'Needs verification'], hint: 'Owning the home can earn a homeowner discount.' },
   { key: 'yearsAtAddress', label: 'Years at address', type: 'select', options: ['5+ years', '3–5 years', '1–3 years', 'Less than 1 year', 'Needs verification'] },
-  { key: 'effectiveDate', label: 'Requested effective date', type: 'date', critical: true, hint: 'Never backdate.' },
-  { key: 'occupation', label: 'Occupation', hint: 'Leave blank for the agency default (Business Administration); it does not affect the rate.' },
+  { key: 'effectiveDate', label: 'Requested effective date', type: 'date', critical: true, hint: 'For National General, blank means the date the quote is prepared. Never backdate.' },
+  { key: 'occupation', label: 'Occupation', hint: 'Leave blank if unknown; verify a required occupation before making a factual attestation.' },
+  { key: 'staffMember', label: 'Staff member collecting information' },
+  { key: 'consumerConsent', label: 'Applicant consent for consumer reports', type: 'select', options: ['Confirmed', 'Not confirmed', 'Not given'], hint: 'Confirm permission for the carrier to obtain the reports described in its notice.' },
 ];
 export const DRIVER_FIELDS: AutoField[] = [
   { key: 'name', label: 'Driver name', critical: true },
@@ -56,6 +59,7 @@ export const VEHICLE_FIELDS: AutoField[] = [
   { key: 'lienholder', label: 'Lienholder / lessor (name, city, state)', hint: 'Skipped at the quote stage; needed at issue.' },
   { key: 'ownershipLength', label: 'How long owned', type: 'select', options: ['5+ years', '3–5 years', '1–3 years', '6–12 months', '1–6 months', 'New purchase'] },
   { key: 'garagingZip', label: 'Garaging ZIP', hint: 'Blank = same as the applicant ZIP.' },
+  { key: 'garagingAddress', label: 'Garaging address, if different', hint: 'Include street, city, state and ZIP.' },
   { key: 'comprehensive', label: 'Comprehensive (other than collision) deductible', type: 'select', options: ['None — liability only', '$0 (ACV / full)', '$100', '$250', '$500', '$1,000'] },
   { key: 'collision', label: 'Collision deductible', type: 'select', options: ['None — liability only', '$100', '$250', '$500', '$1,000'] },
   { key: 'towing', label: 'Towing / roadside', type: 'select', options: ['No', 'Yes'] },
@@ -308,12 +312,16 @@ export function buildAutoQuotePacket(draft: AutoQuoteDraft, now = new Date()): A
   const gaps = autoQuoteGaps(draft);
   const notes = [
     answers.notes?.trim(),
+    answers.mailingAddress?.trim() ? 'Different mailing address: ' + answers.mailingAddress.trim() : '',
+    answers.consumerConsent?.trim() ? 'Consumer-report consent: ' + answers.consumerConsent.trim() : '',
+    answers.staffMember?.trim() ? 'Intake completed by: ' + answers.staffMember.trim() : '',
     answers.coverageNotes?.trim() ? 'Coverage requests: ' + answers.coverageNotes.trim() : '',
     answers.claims === 'Yes' ? 'Household claims: ' + (answers.claimsDetails?.trim() || 'details not entered') : '',
     answers.lapse === 'Yes' ? 'Lapse: ' + (answers.lapseDetails?.trim() || 'details not entered') : '',
     answers.documents?.trim() ? 'Outstanding documents: ' + answers.documents.trim() : '',
     ...draft.drivers.map((driver, index) => driver.discounts?.trim() ? `${driverLabel(driver, index)} discounts: ${driver.discounts.trim()}` : ''),
     ...draft.vehicles.map((vehicle, index) => vehicle.vehicleNotes?.trim() ? `${vehicleLabel(vehicle, index, draft.decodes[normalizeVin(vehicle.vin || '')])}: ${vehicle.vehicleNotes.trim()}` : ''),
+    ...draft.vehicles.map((vehicle, index) => vehicle.garagingAddress?.trim() ? `${vehicleLabel(vehicle, index, draft.decodes[normalizeVin(vehicle.vin || '')])} different garaging address: ${vehicle.garagingAddress.trim()}` : ''),
     gaps.length ? 'Follow-up before rating: ' + gaps.join('; ') : '',
   ].filter(Boolean).join('\n').slice(0, 6000);
   return {
@@ -355,6 +363,8 @@ export const packetFileName = (packet: AutoQuotePacket) => `QUOTE-PACKET-${(pack
 export const packetPrompt = (packet: AutoQuotePacket) =>
   'Start carrier quotes from this packet - use the start-auto-quotes skill. Open each carrier in the packet\'s carriers list, start a new NC auto quote, and key in the applicant, drivers, vehicles and coverages. Stop before ordering reports or final rating; never enter an SSN or payment information.\n\n' + JSON.stringify(packet, null, 2);
 
+export const NATIONAL_GENERAL_PROMPT = "Use $national-general-auto-quote to prepare a National General auto quote using the attached intake report. Follow the agency's defaults unless the intake or I specify otherwise. Ask about missing information needed to continue, rate the quote, and download the quote PDF for my review.";
+
 // ---- HTML report ----
 const escape = (value: string) => value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]!));
 export const vpicDecoderUrl = (vin: string) => 'https://vpic.nhtsa.dot.gov/decoder/Decoder?VIN=' + encodeURIComponent(normalizeVin(vin));
@@ -389,7 +399,8 @@ export function buildAutoQuoteReport(draft: AutoQuoteDraft, now = new Date()) {
     .map(decode => `<li><a href="${escape(vpicDecoderUrl(decode.vin))}" target="_blank" rel="noopener noreferrer">NHTSA vPIC decoder - ${escape(decode.vin)}</a> (retrieved ${escape(decode.retrievedAt)})</li>`).join('');
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow"><title>Auto quote intake | ${escape(answers.name || 'New prospect')}</title><style>${REPORT_STYLE}</style></head><body><main><header><img src="https://img.billlayneinsurance.com/i/2026/08/bli-agency-logo-4jqj2j.png" alt="Bill Layne Insurance"><h1>Auto Quote Intake</h1><p>${escape(answers.name || 'Prospect name not entered')}</p><span class="badge">Working intake - not a quote or binder</span><p class="muted">Private agency worksheet. Prepared ${escape(now.toLocaleString('en-US'))}.</p></header>
   <nav aria-label="Report index"><a href="#review">1. Follow-up</a><a href="#applicant">2. Applicant</a><a href="#drivers">3. Drivers</a><a href="#vehicles">4. Vehicles</a><a href="#coverage">5. Coverage</a><a href="#history">6. Current Policy</a><a href="#sources">7. Sources</a></nav>
-  <section id="review"><h2>1. Follow-Up Notes</h2><p>${gaps.length} follow-up notes. All interview questions are optional; unanswered items do not block this report. Carrier eligibility rules and the MVR / CLUE reports still apply.</p>${gaps.length ? list(gaps) : '<p>Core interview checklist entered. Verify all answers and carrier requirements before quoting.</p>'}${conflicts.length ? `<div class="alert"><strong>Conflicting information</strong>${list(conflicts)}</div>` : ''}<p class="alert">Standing rules: never backdate the effective date. North Carolina does not use SR-22 filings. Lienholders are collected at issue, not needed to quote. A missing license number never blocks a quote. Driver history comes from the prospect and the MVR / CLUE reports, never assumed clean. Occupation defaults to Business Administration.</p></section>
+  <section id="national-general-prompt"><h2>National General prompt for Codex</h2><p>Copy this prompt into Codex and attach this intake report:</p><p>${escape(NATIONAL_GENERAL_PROMPT)}</p></section>
+  <section id="review"><h2>1. Follow-Up Notes</h2><p>${gaps.length} follow-up notes. All interview questions are optional; unanswered items do not block this report. Carrier eligibility rules and the MVR / CLUE reports still apply.</p>${gaps.length ? list(gaps) : '<p>Core interview checklist entered. Verify all answers and carrier requirements before quoting.</p>'}${conflicts.length ? `<div class="alert"><strong>Conflicting information</strong>${list(conflicts)}</div>` : ''}<p class="alert">Never backdate. North Carolina does not use SR-22 filings. Blank answers are not confirmed facts. For National General, a clean driving record and licensing at age 16 are preliminary assumptions when no different information is provided; verify against available records and disclose assumptions. Other quoting workflows may require confirmed history before rating.</p></section>
   ${section('applicant', '2. Applicant', `<dl>${rows(APPLICANT_FIELDS, answers)}</dl>`)}
   ${section('drivers', '3. Drivers', drivers)}
   ${section('vehicles', '4. Vehicles', vehicles, 'Sources: prospect / staff entries and the NHTSA public decode, labeled separately. Verify against the title or registration.')}
