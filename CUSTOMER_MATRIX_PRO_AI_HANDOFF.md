@@ -1,8 +1,14 @@
 # Agency Command Center — Live Handoff
 
+## October 28: National General handoff in Auto Quote Info
+
+Bill approved the preview; source change `451b5b8` and isolated production deployment `27f5c930` are live. On Report & packet, staff can copy the National General Codex prompt, and the downloadable/printable report includes the same prompt. The interview adds staff member, applicant consumer-report consent, separate mailing address and per-vehicle garaging address. The existing multi-carrier packet remains available; the added values are carried in its notes. The local `national-general-auto-quote` skill reads the Command Center report.
+
+Release: rebuilt the production hotfix line from `db62075` plus Find My Home, Check a VIN, Auto Quote Info and the production AI model/thinking settings. Before this change, the reconstructed baseline Vite build produced the exact live JS and CSS asset names (`index--JnXTYWO.js`, `index-CUbNXv6S.css`). The approved build passed lint, 70 tests and Vite build; the current-main version passed 91 tests. Authenticated live UI confirmed the added applicant fields, prompt, copy button and report text. No customer test data entered. The October 25 hardening batch is still undeployed; production is not `main` HEAD. Keep the isolated release worktree at `C:/Users/bill/cmp-natgen-release` as a reference for this deployment; do not deploy current main's unrelated pending changes without their separate review.
+
 > **⚠️ READ FIRST (October 1, 2026) — `main` moved.** `main` now includes the **Docs workspace** (Document Links, below). Branch `codex/image-library-safety` was cut from the OLD `main` and does not contain it. **Before deploying anything from that branch, merge `main` into it** — otherwise the deploy ships the working folder without Docs and silently removes the feature from Bill's dashboard. The local working folder was left checked out on `main` (= production) with a clean tree; `codex/image-library-safety` is intact and unmodified.
 
-**Last verified against production: October 27, 2026** - production is **`db62075` + Find My Home + Check a VIN + the AI key/model fix + the thinking-budget cap + Auto Quote Info** (deployment `ba06b6f3`; `main` commits `7397db1`, `31bd77d`, `e9fd747`, `b33225a`). The October 25 hardening batch is on `main` (pushed to GitHub) but **still not deployed**; its "Deployed: not yet" line below stands, and `npm run deploy` from `main` will carry everything when Bill approves it.
+**Last verified against production: October 28, 2026** - production is **`db62075` + Find My Home + Check a VIN + the AI key/model fix + the thinking-budget cap + Auto Quote Info + the National General handoff** (deployment `27f5c930`; `main` commits `7397db1`, `31bd77d`, `e9fd747`, `b33225a`, `451b5b8`). The October 25 hardening batch is on `main` (pushed to GitHub) but **still not deployed**; its "Deployed: not yet" line below stands, and `npm run deploy` from `main` will carry everything when Bill approves it.
 
 ## October 27: "Auto Quote Info" workspace (separate from the home quote)
 
